@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { coachAction, listProposalsAction, resolveProposalAction } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Sparkles, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import type { AiProposal } from "@/types/models";
+import { ProposalCard } from "./proposal-card";
 
 interface Message {
   role: "user" | "assistant";
@@ -20,6 +21,7 @@ export function CoachView() {
   const [busy, setBusy] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [proposals, setProposals] = useState<AiProposal[]>([]);
+  const [proposalBusy, setProposalBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -67,14 +69,22 @@ export function CoachView() {
   }
 
   async function approve(proposalId: string) {
+    setProposalBusy(proposalId);
     const res = await resolveProposalAction(proposalId, "approve");
-    if (!res.ok) setError(res.error ?? "Failed to apply.");
+    setProposalBusy(null);
+    if (!res.ok) {
+      setError(res.error ?? "Failed to apply.");
+      loadProposals();
+      return;
+    }
     setProposals((p) => p.filter((x) => x.id !== proposalId));
     loadProposals();
   }
 
   async function reject(proposalId: string) {
+    setProposalBusy(proposalId);
     await resolveProposalAction(proposalId, "reject");
+    setProposalBusy(null);
     setProposals((p) => p.filter((x) => x.id !== proposalId));
   }
 
@@ -88,23 +98,7 @@ export function CoachView() {
       {proposals.length > 0 && (
         <div className="flex flex-col gap-2">
           {proposals.map((p) => (
-            <Card key={p.id} className="border-sky-900/60">
-              <div className="flex items-start gap-2">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-sky-300">{p.action_type.replace(/_/g, " ")}</p>
-                  {p.reasoning && <p className="mt-1 text-sm text-zinc-300">{p.reasoning}</p>}
-                  <div className="mt-2 flex gap-2">
-                    <Button size="sm" onClick={() => approve(p.id)}>
-                      Apply
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => reject(p.id)}>
-                      Dismiss
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <ProposalCard key={p.id} proposal={p} onApprove={approve} onReject={reject} busy={proposalBusy === p.id} />
           ))}
         </div>
       )}

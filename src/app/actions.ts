@@ -34,7 +34,7 @@ import { coachService } from "@/services/coach/coach-service";
 import { metricsService } from "@/services/metrics-service";
 import { buildCoachContext } from "@/services/coach/context";
 import { listDomains, getActivePlan } from "@/repositories/supabase-repository";
-import { listTasks, listWorkouts, listFinancialSnapshots, listMilestones, listEvidence, getDailyCheckin as getTodayCheckin } from "@/repositories/supabase-repository";
+import { listTasks, listWorkouts, listFinancialSnapshots, listMilestones, listEvidence, getDailyCheckin as getTodayCheckin, listMomentumHistory, listIdeas, getWeeklyReview, upsertWeeklyReview } from "@/repositories/supabase-repository";
 import type { AiAction } from "@/domain/ai-actions";
 import { detectOvercommitment } from "@/domain/reliability";
 import { DEFERRAL_REASON_Z, FRICTION_REASON_Z, WEEK_MODE_Z } from "@/domain/constants";
@@ -244,6 +244,29 @@ export async function setWeekModeAction(mode: z.infer<typeof WEEK_MODE_Z>) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
   await upsertWeeklyMode({ user_id: user.id, week_start: mondayOf(), mode });
+  revalidateAll();
+  return { ok: true };
+}
+
+export async function saveWeeklyReviewAction(input: {
+  wins: string[];
+  difficulties: string[];
+  lessons: string[];
+  nextWeekFocus?: string;
+}) {
+  const { user } = await requireUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  const weekStart = mondayOf();
+  const existing = await getWeeklyReview(user.id, weekStart);
+  await upsertWeeklyReview({
+    user_id: user.id,
+    week_start: weekStart,
+    wins: input.wins,
+    difficulties: input.difficulties,
+    lessons: input.lessons,
+    next_week_focus: input.nextWeekFocus ?? null,
+    ...(existing?.mode ? { mode: existing.mode } : {}),
+  });
   revalidateAll();
   return { ok: true };
 }
@@ -501,7 +524,7 @@ export async function getDashboardAction() {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
   const weekStart = mondayOf();
-  const [domains, todayTasks, weeklyCommitments, completedTasks, workouts, financial, todayCheckin, promises, experiments, evidence, milestones] = await Promise.all([
+  const [domains, todayTasks, weeklyCommitments, completedTasks, workouts, financial, todayCheckin, promises, experiments, evidence, milestones, momentumHistory, ideas, weeklyReview] = await Promise.all([
     listDomains(user.id),
     listTasks(user.id, { status: "today" }),
     listTasks(user.id, { status: "this_week" }),
@@ -513,6 +536,9 @@ export async function getDashboardAction() {
     listExperiments(user.id),
     listEvidence(user.id, 30),
     listMilestones(user.id),
+    listMomentumHistory(user.id, 30),
+    listIdeas(user.id),
+    getWeeklyReview(user.id, weekStart),
   ]);
 
   const bigFour = await metricsService.bigFourProgressThisWeek(user.id, weekStart);
@@ -539,6 +565,10 @@ export async function getDashboardAction() {
       experiments,
       evidence,
       milestones,
+      momentumHistory,
+      ideas,
+      weeklyReview,
+      weeklyWins: completedTasks.filter((t) => t.weekly_win),
       bigFour,
       momentum,
       momentumLabel: (await import("@/domain/momentum")).momentumLabel(momentum),
@@ -547,7 +577,7 @@ export async function getDashboardAction() {
       agency,
       overcommit,
       weekStart,
-      weekMode: (await import("@/services/ai-action-service")).getWeekMode(user.id),
+      weekMode: await (await import("@/services/ai-action-service")).getWeekMode(user.id),
     },
   };
 }
