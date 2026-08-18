@@ -12,7 +12,17 @@ const envSchema = z.object({
     .default("auto"),
 });
 
-const parsed = envSchema.safeParse(process.env);
+const rawEnv = {
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  AI_DAILY_BUDGET_USD: process.env.AI_DAILY_BUDGET_USD,
+  AI_MONTHLY_BUDGET_USD: process.env.AI_MONTHLY_BUDGET_USD,
+  AI_MOCK_MODE: process.env.AI_MOCK_MODE,
+};
+
+const parsed = envSchema.safeParse(rawEnv);
 
 if (!parsed.success) {
   console.error(
