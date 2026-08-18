@@ -9,6 +9,10 @@ export async function requireUser() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (user) {
+    const { ensureBootstrapped } = await import("@/services/bootstrap");
+    await ensureBootstrapped(user.id, supabase);
+  }
   return { supabase, user };
 }
 
