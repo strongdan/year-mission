@@ -47,6 +47,10 @@ export function mockCoachReply(input: string): string {
     return "Do the smallest unfinished thing from Today's list that also advances a deferred task. Keep it under 30 minutes.";
   }
 
+  if (lower.includes("add") || lower.includes("new habit") || lower.includes("start learning")) {
+    return "Adding unrelated goals dilutes the year. Treat any new pursuit as an experiment with a clear target metric and an end date, and keep at most two active — they should not silently become obligations.";
+  }
+
   if (lower.includes("experiment") || lower.includes("cold") || lower.includes("meditat")) {
     return "Treat that as an experiment with a clear target metric and an end date. Keep at most two experiments active — they should not silently become obligations.";
   }
