@@ -105,6 +105,29 @@ export class TaskService {
     return { ok: true };
   }
 
+  async start(userId: string, taskId: string): Promise<ServiceResult> {
+    const task = await getTask(taskId);
+    if (!task) return { ok: false, error: "Task not found." };
+    if (task.status !== "today" && task.status !== "this_week" && task.status !== "in_progress") {
+      return { ok: false, error: "Only This Week, Today, or in-progress tasks can be started." };
+    }
+
+    if (task.status === "this_week") {
+      const todayCount = await countStatus(userId, "today");
+      const decision = canAddToToday(todayCount);
+      if (!decision.allowed) return { ok: false, error: "Today is full. Finish or replace a task first." };
+      await updateTask(taskId, { status: "today" });
+      await insertTaskEvent({ user_id: userId, task_id: taskId, event_type: "status_changed", event_data: { to_status: "today" } });
+    }
+
+    if (task.status !== "in_progress") {
+      await updateTask(taskId, { status: "in_progress" });
+      await insertTaskEvent({ user_id: userId, task_id: taskId, event_type: "started" });
+    }
+
+    return { ok: true };
+  }
+
   async complete(userId: string, taskId: string): Promise<ServiceResult> {
     const task = await getTask(taskId);
     if (!task) return { ok: false, error: "Task not found." };

@@ -16,6 +16,7 @@ import { ProgressBar, MomentumRing } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { TrendingDown, Flag, FlaskConical, Lightbulb } from "lucide-react";
 import type { WeekMode } from "@/domain/constants";
+import { LogProgress } from "./log-progress";
 
 type DashboardData = NonNullable<Awaited<ReturnType<typeof getDashboardAction>>["data"]>;
 
@@ -67,8 +68,11 @@ export function ProgressView() {
 
   const [reviewWins, setReviewWins] = useState("");
   const [reviewDifficulties, setReviewDifficulties] = useState("");
-  const [reviewLessons, setReviewLessons] = useState("");
-  const [reviewFocus, setReviewFocus] = useState("");
+  const [reviewWhy, setReviewWhy] = useState("");
+  const [reviewStop, setReviewStop] = useState("");
+  const [reviewOvercommit, setReviewOvercommit] = useState<"yes" | "no" | null>(null);
+  const [reviewNextWin, setReviewNextWin] = useState("");
+  const [reviewActions, setReviewActions] = useState<Record<string, string>>({ money: "", body: "", home: "", capability: "" });
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewSaved, setReviewSaved] = useState(false);
 
@@ -81,6 +85,27 @@ export function ProgressView() {
   const [ideaTitle, setIdeaTitle] = useState("");
   const [ideaBusy, setIdeaBusy] = useState(false);
 
+  function applyReview(review: DashboardData["weeklyReview"]) {
+    if (!review) return;
+    const wins = review.wins;
+    const difficulties = review.difficulties;
+    const stop = review.stop_doing;
+    const actions = review.most_important_actions;
+    setReviewWins(Array.isArray(wins) ? (wins as string[]).join("\n") : "");
+    setReviewDifficulties(Array.isArray(difficulties) ? (difficulties as string[]).join("\n") : "");
+    setReviewWhy(review.why_not ?? "");
+    setReviewStop(Array.isArray(stop) ? (stop as string[]).join("\n") : "");
+    setReviewOvercommit(review.overcommitted == null ? null : review.overcommitted ? "yes" : "no");
+    setReviewNextWin(review.next_weekly_win ?? "");
+    if (actions && typeof actions === "object") {
+      const next: Record<string, string> = { money: "", body: "", home: "", capability: "" };
+      for (const [k, v] of Object.entries(actions)) {
+        if (typeof v === "string") next[k] = v;
+      }
+      setReviewActions(next);
+    }
+  }
+
   async function load() {
     const res = await getDashboardAction();
     if (!res.ok || !res.data) {
@@ -90,15 +115,7 @@ export function ProgressView() {
     setData(res.data);
     setWeekMode(res.data.weekMode);
     setWeeklyWin(res.data.weeklyReview?.weekly_win_id ?? res.data.weeklyWins[0]?.id ?? null);
-    if (res.data.weeklyReview) {
-      const wins = res.data.weeklyReview.wins;
-      const difficulties = res.data.weeklyReview.difficulties;
-      const lessons = res.data.weeklyReview.lessons;
-      setReviewWins(Array.isArray(wins) ? (wins as string[]).join("\n") : "");
-      setReviewDifficulties(Array.isArray(difficulties) ? (difficulties as string[]).join("\n") : "");
-      setReviewLessons(Array.isArray(lessons) ? (lessons as string[]).join("\n") : "");
-      setReviewFocus(res.data.weeklyReview.next_week_focus ?? "");
-    }
+    applyReview(res.data.weeklyReview);
   }
 
   useEffect(() => {
@@ -112,15 +129,7 @@ export function ProgressView() {
       setData(res.data);
       setWeekMode(res.data.weekMode);
       setWeeklyWin(res.data.weeklyReview?.weekly_win_id ?? res.data.weeklyWins[0]?.id ?? null);
-      if (res.data.weeklyReview) {
-        const wins = res.data.weeklyReview.wins;
-        const difficulties = res.data.weeklyReview.difficulties;
-        const lessons = res.data.weeklyReview.lessons;
-        setReviewWins(Array.isArray(wins) ? (wins as string[]).join("\n") : "");
-        setReviewDifficulties(Array.isArray(difficulties) ? (difficulties as string[]).join("\n") : "");
-        setReviewLessons(Array.isArray(lessons) ? (lessons as string[]).join("\n") : "");
-        setReviewFocus(res.data.weeklyReview.next_week_focus ?? "");
-      }
+      applyReview(res.data.weeklyReview);
     });
     return () => {
       cancelled = true;
@@ -154,8 +163,19 @@ export function ProgressView() {
     setReviewBusy(true);
     const wins = reviewWins.split("\n").map((s) => s.trim()).filter(Boolean);
     const difficulties = reviewDifficulties.split("\n").map((s) => s.trim()).filter(Boolean);
-    const lessons = reviewLessons.split("\n").map((s) => s.trim()).filter(Boolean);
-    const res = await saveWeeklyReviewAction({ wins, difficulties, lessons, nextWeekFocus: reviewFocus });
+    const stopDoing = reviewStop.split("\n").map((s) => s.trim()).filter(Boolean);
+    const mostImportantActions = Object.fromEntries(
+      Object.entries(reviewActions).filter(([, v]) => v.trim())
+    );
+    const res = await saveWeeklyReviewAction({
+      wins,
+      difficulties,
+      why: reviewWhy,
+      stopDoing,
+      overcommitted: reviewOvercommit === "yes" ? true : reviewOvercommit === "no" ? false : null,
+      nextWeeklyWin: reviewNextWin,
+      mostImportantActions,
+    });
     setReviewBusy(false);
     if (res.ok) {
       setReviewSaved(true);
@@ -285,6 +305,8 @@ export function ProgressView() {
         )}
       </Card>
 
+      <LogProgress checkin={data.todayCheckin} debt={data.financial[0] ?? null} house={data.houseReadinessDate ? { id: "latest", user_id: "", date: data.houseReadinessDate, readiness_score: data.houseReadiness ?? 0, notes: null } : null} onSaved={load} />
+
       <Card>
         <CardHeader title="Reliability" subtitle="Do I do what I say I will do?" />
         <div className="flex items-end gap-3">
@@ -322,12 +344,20 @@ export function ProgressView() {
             <p className="mt-1 font-medium">{weight === null ? "—" : `${weight} lb`}</p>
           </div>
           <div className="rounded-xl bg-zinc-800/50 p-3">
+            <p className="text-xs text-zinc-500">Steps today</p>
+            <p className="mt-1 font-medium">{data.stepsToday === null ? "—" : data.stepsToday.toLocaleString()}</p>
+          </div>
+          <div className="rounded-xl bg-zinc-800/50 p-3">
             <p className="text-xs text-zinc-500">Workouts this week</p>
             <p className="mt-1 font-medium">{data.workouts.length}</p>
           </div>
           <div className="rounded-xl bg-zinc-800/50 p-3">
-            <p className="text-xs text-zinc-500">Active experiments</p>
-            <p className="mt-1 font-medium">{activeExperiments.length}</p>
+            <p className="text-xs text-zinc-500">House readiness</p>
+            <p className="mt-1 font-medium">{data.houseReadiness === null ? "—" : `${data.houseReadiness}%`}</p>
+          </div>
+          <div className="rounded-xl bg-zinc-800/50 p-3">
+            <p className="text-xs text-zinc-500">Alcohol-free days</p>
+            <p className="mt-1 font-medium">{data.alcoholFreeDays}</p>
           </div>
         </div>
       </Card>
@@ -439,10 +469,10 @@ export function ProgressView() {
       </Card>
 
       <Card>
-        <CardHeader title="Weekly review" subtitle="What happened, why, and what's next." />
+        <CardHeader title="Weekly review" subtitle="Ten minutes. What happened, why, and what's next." />
         <div className="flex flex-col gap-3">
           <div>
-            <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">What went well (one per line)</label>
+            <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">What went well? (one per line)</label>
             <textarea
               value={reviewWins}
               onChange={(e) => setReviewWins(e.target.value)}
@@ -451,7 +481,7 @@ export function ProgressView() {
             />
           </div>
           <div>
-            <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">What didn&apos;t happen</label>
+            <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">What didn&apos;t happen? (one per line)</label>
             <textarea
               value={reviewDifficulties}
               onChange={(e) => setReviewDifficulties(e.target.value)}
@@ -460,21 +490,59 @@ export function ProgressView() {
             />
           </div>
           <div>
-            <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Lessons about yourself</label>
+            <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Why didn&apos;t it happen?</label>
             <textarea
-              value={reviewLessons}
-              onChange={(e) => setReviewLessons(e.target.value)}
+              value={reviewWhy}
+              onChange={(e) => setReviewWhy(e.target.value)}
+              rows={2}
+              placeholder="Energy, blockers, overreach, avoidance…"
+              className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none placeholder:text-zinc-600 focus:border-zinc-600"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">What should I stop doing? (one per line)</label>
+            <textarea
+              value={reviewStop}
+              onChange={(e) => setReviewStop(e.target.value)}
               rows={2}
               className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none placeholder:text-zinc-600 focus:border-zinc-600"
             />
           </div>
           <div>
-            <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Next week focus</label>
+            <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Did I overcommit?</label>
+            <div className="mt-1 flex gap-2">
+              {(["yes", "no"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setReviewOvercommit(reviewOvercommit === v ? null : v)}
+                  className={`rounded-full border px-3 py-1.5 text-xs capitalize transition-colors ${
+                    reviewOvercommit === v ? "border-zinc-300 bg-zinc-100 text-zinc-950" : "border-zinc-800 text-zinc-400 hover:bg-zinc-800"
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Next week&apos;s Weekly Win</label>
             <input
-              value={reviewFocus}
-              onChange={(e) => setReviewFocus(e.target.value)}
+              value={reviewNextWin}
+              onChange={(e) => setReviewNextWin(e.target.value)}
               className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none placeholder:text-zinc-600 focus:border-zinc-600"
             />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Most important action per domain</label>
+            {(["money", "body", "home", "capability"] as const).map((d) => (
+              <input
+                key={d}
+                value={reviewActions[d]}
+                onChange={(e) => setReviewActions((prev) => ({ ...prev, [d]: e.target.value }))}
+                placeholder={`${d.charAt(0).toUpperCase() + d.slice(1)}…`}
+                className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm capitalize outline-none placeholder:normal-case placeholder:text-zinc-600 focus:border-zinc-600"
+              />
+            ))}
           </div>
           <Button onClick={saveReview} disabled={reviewBusy}>
             {reviewSaved ? "Saved ✓" : "Save review"}

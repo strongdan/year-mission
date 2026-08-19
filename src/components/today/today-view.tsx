@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getDashboardAction, checkinAction, completeTaskAction, deferTaskAction } from "@/app/actions";
+import { getDashboardAction, checkinAction, completeTaskAction, deferTaskAction, logWorkoutAction } from "@/app/actions";
 import { Card, CardHeader } from "@/components/ui/card";
 import { MomentumRing, BigFourPill } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Sparkles, RotateCcw } from "lucide-react";
+import { Flag, Footprints, Check } from "lucide-react";
+import { WhatShouldIDo } from "./what-should-i-do";
 import type { DeferralReason } from "@/domain/constants";
 
 type DashboardData = Awaited<ReturnType<typeof getDashboardAction>>["data"];
@@ -25,6 +26,7 @@ export function TodayView() {
   const [loading, setLoading] = useState(true);
   const [deferringTask, setDeferringTask] = useState<string | null>(null);
   const [alcoholFree, setAlcoholFree] = useState<boolean | null>(null);
+  const [loggingWalk, setLoggingWalk] = useState(false);
 
   async function load() {
     const res = await getDashboardAction();
@@ -70,11 +72,20 @@ export function TodayView() {
 
   const primary = data.todayTasks[0];
   const remaining = data.todayTasks.slice(1);
+  const usefulActionDone = data.completedToday.length > 0;
 
   async function toggleAlcoholFree() {
     const next = !alcoholFree;
     setAlcoholFree(next);
     await checkinAction({ alcoholFree: next });
+  }
+
+  async function logWalk() {
+    if (loggingWalk || data?.walkToday) return;
+    setLoggingWalk(true);
+    await logWorkoutAction({ type: "walking", durationMinutes: 10 });
+    setLoggingWalk(false);
+    load();
   }
 
   return (
@@ -96,6 +107,26 @@ export function TodayView() {
         </button>
       </header>
 
+      {(data.season || data.monthlyFocus) && (
+        <Card className="py-3">
+          <div className="flex flex-col gap-2 text-sm">
+            {data.season && (
+              <p className="text-xs text-zinc-400">
+                <span className="font-medium text-zinc-200">{data.season.name}</span> season
+                {data.season.objective && <span className="text-zinc-500"> — {data.season.objective}</span>}
+              </p>
+            )}
+            {data.monthlyFocus && (
+              <p className="text-xs text-zinc-400">
+                This month&apos;s focus: <span className="font-medium text-zinc-200">{data.monthlyFocus.title}</span>
+              </p>
+            )}
+          </div>
+        </Card>
+      )}
+
+      <WhatShouldIDo onChange={load} />
+
       <div className="flex items-center gap-4">
         <MomentumRing score={data.momentum} />
         <div className="flex-1">
@@ -105,6 +136,13 @@ export function TodayView() {
           </p>
         </div>
       </div>
+
+      {data.weeklyWin && (
+        <Card className="border-amber-900/50">
+          <CardHeader title="Weekly Win" subtitle="The one high-impact thing you committed to this week" right={<Flag className="h-4 w-4 text-amber-400" />} />
+          <p className="text-sm font-medium text-amber-100">{data.weeklyWin.title}</p>
+        </Card>
+      )}
 
       <Card className={primary ? "border-zinc-700 bg-zinc-800/60" : undefined}>
         <CardHeader title="Today's primary action" />
@@ -189,16 +227,49 @@ export function TodayView() {
       </Card>
 
       <Card>
-        <CardHeader title="Minimum Day" subtitle="No alcohol · 10-minute walk · one useful action" right={<RotateCcw className="h-4 w-4 text-zinc-600" />} />
-        <p className="text-xs leading-relaxed text-zinc-500">
+        <CardHeader title="Minimum Day" subtitle="No alcohol · 10-minute walk · one useful action" />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-zinc-800/50 px-3 py-2.5">
+            <span className="text-sm text-zinc-300">No alcohol</span>
+            {alcoholFree ? (
+              <span className="inline-flex items-center gap-1 text-xs text-emerald-400">
+                <Check className="h-3.5 w-3.5" /> Done
+              </span>
+            ) : (
+              <Button size="sm" variant="secondary" onClick={toggleAlcoholFree}>
+                Mark
+              </Button>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-zinc-800/50 px-3 py-2.5">
+            <span className="flex items-center gap-2 text-sm text-zinc-300">
+              <Footprints className="h-4 w-4 text-zinc-500" /> 10-minute walk
+            </span>
+            {data.walkToday ? (
+              <span className="inline-flex items-center gap-1 text-xs text-emerald-400">
+                <Check className="h-3.5 w-3.5" /> Done
+              </span>
+            ) : (
+              <Button size="sm" variant="secondary" onClick={logWalk} disabled={loggingWalk}>
+                {loggingWalk ? "Logging…" : "Log walk"}
+              </Button>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-zinc-800/50 px-3 py-2.5">
+            <span className="text-sm text-zinc-300">One useful action</span>
+            {usefulActionDone ? (
+              <span className="inline-flex items-center gap-1 text-xs text-emerald-400">
+                <Check className="h-3.5 w-3.5" /> Done
+              </span>
+            ) : (
+              <span className="text-xs text-zinc-500">Complete one task</span>
+            )}
+          </div>
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-zinc-500">
           If today is overloaded or low-energy, the minimum day still counts as success. It is never a failure state.
         </p>
       </Card>
-
-      <Button variant="secondary" className="w-full" disabled>
-        <Sparkles className="h-4 w-4" />
-        WHAT SHOULD I DO?
-      </Button>
     </div>
   );
 }

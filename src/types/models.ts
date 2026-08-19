@@ -173,6 +173,9 @@ export interface WeeklyReview {
   overcommitted: boolean | null;
   avoided_what: string | null;
   uncomfortable_next: string | null;
+  stop_doing: Json;
+  next_weekly_win: string | null;
+  most_important_actions: Json;
   created_at: string;
 }
 

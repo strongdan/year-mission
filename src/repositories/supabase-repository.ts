@@ -142,6 +142,44 @@ export async function listTaskEvents(userId: string, taskId?: string, limit = 10
   return (data ?? []) as TaskEvent[];
 }
 
+/**
+ * Tasks that were marked blocked (or deferred with a "blocked" reason)
+ * within the window. Used to exclude blocked work from recommendations.
+ */
+export async function listBlockedTaskIds(userId: string, since: string): Promise<string[]> {
+  const supabase = await client();
+  const { data: events, error: eventsError } = await supabase
+    .from("task_events")
+    .select("task_id, event_type, event_data")
+    .eq("user_id", userId)
+    .gte("created_at", since);
+  if (eventsError) throw new RepositoryError(eventsError.message);
+
+  const { data: friction, error: frictionError } = await supabase
+    .from("friction_events")
+    .select("task_id")
+    .eq("user_id", userId)
+    .eq("reason", "blocked")
+    .gte("created_at", since);
+  if (frictionError) throw new RepositoryError(frictionError.message);
+
+  const ids = new Set<string>();
+  for (const event of events ?? []) {
+    if (event.event_type === "blocked") {
+      if (event.task_id) ids.add(event.task_id);
+      continue;
+    }
+    if (event.event_type === "deferred" || event.event_type === "avoidance_recorded") {
+      const reason = (event.event_data as { reason?: string } | null)?.reason;
+      if (reason === "blocked" && event.task_id) ids.add(event.task_id);
+    }
+  }
+  for (const f of friction ?? []) {
+    if (f.task_id) ids.add(f.task_id);
+  }
+  return [...ids];
+}
+
 export async function insertTaskEvent(event: {
   user_id: string;
   task_id: string | null;
@@ -184,6 +222,18 @@ export async function getDailyCheckin(userId: string, date: string): Promise<Dai
   return data as DailyCheckin | null;
 }
 
+export async function listDailyCheckins(userId: string, fromDate: string): Promise<DailyCheckin[]> {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from("daily_checkins")
+    .select("*")
+    .eq("user_id", userId)
+    .gte("date", fromDate)
+    .order("date", { ascending: false });
+  if (error) throw new RepositoryError(error.message);
+  return (data ?? []) as DailyCheckin[];
+}
+
 export async function upsertDailyCheckin(checkin: Partial<DailyCheckin> & { user_id: string; date: string }): Promise<void> {
   const supabase = await client();
   const { error } = await supabase.from("daily_checkins").upsert(checkin);
@@ -207,6 +257,18 @@ export async function upsertHouseProgress(progress: Partial<HouseProgress> & { u
   const supabase = await client();
   const { error } = await supabase.from("house_progress").upsert(progress);
   if (error) throw new RepositoryError(error.message);
+}
+
+export async function listHouseProgress(userId: string, limit = 1): Promise<HouseProgress[]> {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from("house_progress")
+    .select("*")
+    .eq("user_id", userId)
+    .order("date", { ascending: false })
+    .limit(limit);
+  if (error) throw new RepositoryError(error.message);
+  return (data ?? []) as HouseProgress[];
 }
 
 export async function upsertWeeklyMode(mode: Partial<WeeklyMode> & { user_id: string; week_start: string }): Promise<void> {

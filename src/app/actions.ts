@@ -33,10 +33,14 @@ import {
 import { coachService } from "@/services/coach/coach-service";
 import { metricsService } from "@/services/metrics-service";
 import { buildCoachContext } from "@/services/coach/context";
-import { listDomains, getActivePlan } from "@/repositories/supabase-repository";
-import { listTasks, listWorkouts, listFinancialSnapshots, listMilestones, listEvidence, getDailyCheckin as getTodayCheckin, listMomentumHistory, listIdeas, getWeeklyReview, upsertWeeklyReview } from "@/repositories/supabase-repository";
+import { listDomains, getActivePlan, listSeasons, getMonthlyFocus, listBlockedTaskIds } from "@/repositories/supabase-repository";
+import { sequenceTasks } from "@/domain/sequencing";
+import { getWeekMode } from "@/services/ai-action-service";
+import { listTasks, listWorkouts, listFinancialSnapshots, listMilestones, listEvidence, getDailyCheckin as getTodayCheckin, listMomentumHistory, listIdeas, getWeeklyReview, upsertWeeklyReview, listHouseProgress, listDailyCheckins } from "@/repositories/supabase-repository";
 import type { AiAction } from "@/domain/ai-actions";
 import { detectOvercommitment } from "@/domain/reliability";
+import { reliabilityInterpretation } from "@/domain/reliability";
+import { momentumLabel } from "@/domain/momentum";
 import { DEFERRAL_REASON_Z, FRICTION_REASON_Z, WEEK_MODE_Z } from "@/domain/constants";
 
 function pathToRevalidate() {
@@ -122,6 +126,61 @@ export async function completeTaskAction(taskId: string) {
   const result = await taskService.complete(user.id, taskId);
   revalidateAll();
   return result;
+}
+
+export async function startTaskAction(taskId: string) {
+  const { user } = await requireUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  const result = await taskService.start(user.id, taskId);
+  revalidateAll();
+  return result;
+}
+
+const WSID_INPUT_Z = z.object({
+  availableMinutes: z.number().int().min(5).max(480).nullable().optional(),
+  energy: z.enum(["low", "medium", "high"]).nullable().optional(),
+  excludeTaskId: z.string().nullable().optional(),
+});
+
+export async function whatShouldIDoAction(rawInput?: unknown) {
+  const { user } = await requireUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+
+  const parsed = WSID_INPUT_Z.safeParse(rawInput ?? {});
+  if (!parsed.success) return { ok: false, error: "Invalid input." };
+  const input = parsed.data;
+
+  const now = new Date();
+  const weekStart = mondayOf();
+  const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+
+  const [candidates, blockedIds, monthlyFocus, bigFour, weekMode] = await Promise.all([
+    listTasks(user.id, { status: ["today", "this_week", "in_progress"] }),
+    listBlockedTaskIds(user.id, since),
+    getMonthlyFocus(user.id, now.getFullYear(), now.getMonth() + 1),
+    metricsService.bigFourProgressThisWeek(user.id, weekStart),
+    getWeekMode(user.id),
+  ]);
+
+  const openSlugs = Object.entries(bigFour)
+    .filter(([, v]) => v.done < v.target)
+    .map(([slug]) => slug);
+
+  const result = sequenceTasks({
+    candidates,
+    now,
+    monthlyFocusDomainIds: monthlyFocus?.domain_id ? [monthlyFocus.domain_id] : [],
+    monthlyFocusTitle: monthlyFocus?.title ?? null,
+    bigFourOpenSlugs: openSlugs,
+    bigFourProgress: bigFour,
+    blockedTaskIds: blockedIds,
+    availableMinutes: input.availableMinutes ?? null,
+    energy: input.energy ?? null,
+    weekMode,
+    excludeTaskId: input.excludeTaskId ?? null,
+  });
+
+  return { ok: true, data: { result, weekMode } };
 }
 
 export async function deferTaskAction(taskId: string, reason: z.infer<typeof DEFERRAL_REASON_Z>, note?: string) {
@@ -251,8 +310,11 @@ export async function setWeekModeAction(mode: z.infer<typeof WEEK_MODE_Z>) {
 export async function saveWeeklyReviewAction(input: {
   wins: string[];
   difficulties: string[];
-  lessons: string[];
-  nextWeekFocus?: string;
+  why: string;
+  stopDoing: string[];
+  overcommitted: boolean | null;
+  nextWeeklyWin: string;
+  mostImportantActions: Record<string, string>;
 }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
@@ -263,8 +325,11 @@ export async function saveWeeklyReviewAction(input: {
     week_start: weekStart,
     wins: input.wins,
     difficulties: input.difficulties,
-    lessons: input.lessons,
-    next_week_focus: input.nextWeekFocus ?? null,
+    why_not: input.why || null,
+    stop_doing: input.stopDoing,
+    overcommitted: input.overcommitted,
+    next_weekly_win: input.nextWeeklyWin || null,
+    most_important_actions: input.mostImportantActions,
     ...(existing?.mode ? { mode: existing.mode } : {}),
   });
   revalidateAll();
@@ -524,7 +589,7 @@ export async function getDashboardAction() {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
   const weekStart = mondayOf();
-  const [domains, todayTasks, weeklyCommitments, completedTasks, workouts, financial, todayCheckin, promises, experiments, evidence, milestones, momentumHistory, ideas, weeklyReview] = await Promise.all([
+  const [domains, todayTasks, weeklyCommitments, completedTasks, workouts, financial, todayCheckin, promises, experiments, evidence, milestones, momentumHistory, ideas, weeklyReview, houseProgress, weekCheckins] = await Promise.all([
     listDomains(user.id),
     listTasks(user.id, { status: "today" }),
     listTasks(user.id, { status: "this_week" }),
@@ -539,12 +604,17 @@ export async function getDashboardAction() {
     listMomentumHistory(user.id, 30),
     listIdeas(user.id),
     getWeeklyReview(user.id, weekStart),
+    listHouseProgress(user.id, 1),
+    listDailyCheckins(user.id, weekStart),
   ]);
 
   const bigFour = await metricsService.bigFourProgressThisWeek(user.id, weekStart);
   const momentum = await metricsService.computeAndStoreMomentum(user.id, weekStart);
   const reliabilityRaw = await metricsService.reliability(user.id);
   const agency = await metricsService.agency(user.id);
+  const weekMode = await getWeekMode(user.id);
+
+  const [season, monthlyFocus] = await currentSeasonAndFocus(user.id);
 
   const outcomes = promises
     .filter((p) => p.status === "kept" || p.status === "renegotiated" || p.status === "missed")
@@ -569,15 +639,38 @@ export async function getDashboardAction() {
       ideas,
       weeklyReview,
       weeklyWins: completedTasks.filter((t) => t.weekly_win),
+      weeklyWin: weeklyCommitments.find((t) => t.weekly_win) ?? null,
+      season,
+      monthlyFocus,
+      walkToday: workouts.some((w) => w.date === todayISO() && w.type === "walking"),
+      houseReadiness: houseProgress[0]?.readiness_score ?? null,
+      houseReadinessDate: houseProgress[0]?.date ?? null,
+      alcoholFreeDays: weekCheckins.filter((c) => c.alcohol_free).length,
+      stepsToday: todayCheckin?.steps ?? null,
       bigFour,
       momentum,
-      momentumLabel: (await import("@/domain/momentum")).momentumLabel(momentum),
+      momentumLabel: momentumLabel(momentum),
       reliability: reliabilityRaw,
-      reliabilityInterpretation: reliabilityRaw === null ? "" : (await import("@/domain/reliability")).reliabilityInterpretation(reliabilityRaw),
+      reliabilityInterpretation: reliabilityRaw === null ? "" : reliabilityInterpretation(reliabilityRaw),
       agency,
       overcommit,
       weekStart,
-      weekMode: await (await import("@/services/ai-action-service")).getWeekMode(user.id),
+      weekMode,
     },
   };
+}
+
+async function currentSeasonAndFocus(userId: string): Promise<[{ name: string; objective: string | null } | null, { title: string; description: string | null } | null]> {
+  const plan = await getActivePlan(userId);
+  let season: { name: string; objective: string | null } | null = null;
+  if (plan) {
+    const seasons = await listSeasons(plan.id);
+    const today = todayISO();
+    const active = seasons.find((s) => s.start_date <= today && today <= s.end_date);
+    if (active) season = { name: active.name, objective: active.objective };
+  }
+  const now = new Date();
+  const focus = await getMonthlyFocus(userId, now.getFullYear(), now.getMonth() + 1);
+  const monthlyFocus = focus ? { title: focus.title, description: focus.description } : null;
+  return [season, monthlyFocus];
 }
