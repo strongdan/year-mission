@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import type { DeferralReason } from "@/domain/constants";
 import { taskWeight, sizeFromMinutes } from "@/domain/task-weight";
+import { GoogleTasksCard } from "./google-tasks-card";
 
 const DEFERRAL_REASONS: { value: DeferralReason; label: string }[] = [
   { value: "too_big", label: "Too big" },
@@ -178,6 +179,8 @@ export function TasksView() {
         </label>
         {error && <p className="text-xs text-red-400">{error}</p>}
       </div>
+
+      <GoogleTasksCard />
 
       {deferring && (
         <Card className="border-zinc-700">

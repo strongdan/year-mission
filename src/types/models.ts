@@ -353,3 +353,14 @@ export interface GoogleConnection {
   created_at: string;
   updated_at: string;
 }
+
+export interface GoogleTaskSync {
+  id: string;
+  task_id: string;
+  google_task_id: string | null;
+  google_tasklist_id: string | null;
+  local_updated_at: string | null;
+  google_updated_at: string | null;
+  sync_status: "pending" | "synced" | "conflict" | "error";
+  last_synced_at: string | null;
+}

@@ -22,6 +22,8 @@ import type {
   AiConversation,
   AiMessage,
   AiProposal,
+  GoogleConnection,
+  GoogleTaskSync,
 } from "@/types/models";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -517,4 +519,42 @@ export async function updateProposal(id: string, patch: Record<string, unknown>)
   const { data, error } = await supabase.from("ai_proposals").update(patch).eq("id", id).select("*").single();
   if (error) throw new RepositoryError(error.message);
   return data as AiProposal;
+}
+
+export async function getGoogleConnection(userId: string): Promise<GoogleConnection | null> {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from("google_connections")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new RepositoryError(error.message);
+  return data as GoogleConnection | null;
+}
+
+export async function upsertGoogleConnection(userId: string, patch: Partial<GoogleConnection>): Promise<void> {
+  const supabase = await client();
+  const { error } = await supabase
+    .from("google_connections")
+    .upsert({ user_id: userId, ...patch });
+  if (error) throw new RepositoryError(error.message);
+}
+
+export async function listGoogleSyncRecords(userId: string): Promise<GoogleTaskSync[]> {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from("google_task_sync")
+    .select("*, task:tasks!inner(user_id)")
+    .eq("task.user_id", userId);
+  if (error) throw new RepositoryError(error.message);
+  const records = (data ?? []) as (GoogleTaskSync & { task: { user_id: string } })[];
+  return records.filter((r) => r.task.user_id === userId);
+}
+
+export async function upsertGoogleSyncRecord(_userId: string, record: Partial<GoogleTaskSync> & { task_id: string }): Promise<void> {
+  const supabase = await client();
+  const { error } = await supabase
+    .from("google_task_sync")
+    .upsert(record);
+  if (error) throw new RepositoryError(error.message);
 }

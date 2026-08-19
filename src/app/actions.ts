@@ -674,3 +674,51 @@ async function currentSeasonAndFocus(userId: string): Promise<[{ name: string; o
   const monthlyFocus = focus ? { title: focus.title, description: focus.description } : null;
   return [season, monthlyFocus];
 }
+
+export async function getGoogleSyncStatusAction() {
+  const { user } = await requireUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  const { isGoogleTasksConfigured } = await import("@/services/google/config");
+  const { getGoogleConnection, listGoogleSyncRecords } = await import("@/repositories/supabase-repository");
+  const [connection, records] = await Promise.all([getGoogleConnection(user.id), listGoogleSyncRecords(user.id)]);
+  const lastSyncedAt = records.reduce((latest, r) => (r.last_synced_at && r.last_synced_at > latest ? r.last_synced_at : latest), "");
+  return {
+    ok: true,
+    data: {
+      configured: isGoogleTasksConfigured(),
+      connected: !!(connection?.refresh_token && connection.token_encrypted),
+      email: connection?.email ?? null,
+      lastSyncedAt: lastSyncedAt || null,
+    },
+  };
+}
+
+export async function connectGoogleTasksAction() {
+  const { user } = await requireUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  const { connectGoogleTasksUrl } = await import("@/services/google/sync-service");
+  const result = await connectGoogleTasksUrl(user.id);
+  if ("error" in result) return { ok: false, error: result.error };
+  return { ok: true, data: { url: result.url } };
+}
+
+export async function syncGoogleTasksAction() {
+  const { user } = await requireUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  const { syncGoogleTasks } = await import("@/services/google/sync-service");
+  const result = await syncGoogleTasks(user.id);
+  if (result.outcome === "not_configured") return { ok: false, error: "Google Tasks is not configured on the server." };
+  if (result.outcome === "not_connected") return { ok: false, error: "Connect Google Tasks first." };
+  if (result.outcome === "error") return { ok: false, error: result.error ?? "Google sync failed." };
+  revalidateAll();
+  return { ok: true, data: { summary: result.summary } };
+}
+
+export async function disconnectGoogleTasksAction() {
+  const { user } = await requireUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  const { disconnectGoogleTasks } = await import("@/services/google/sync-service");
+  await disconnectGoogleTasks(user.id);
+  revalidateAll();
+  return { ok: true };
+}
