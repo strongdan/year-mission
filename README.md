@@ -34,3 +34,38 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Production Deployment
+
+For a production build, run:
+```bash
+npm run build   # or `yarn build`
+```
+This compiles the application and generates the `.next` output folder.
+
+To start the production server locally:
+```bash
+npm start   # or `yarn start`
+```
+
+If you prefer Docker, you can use the following Dockerfile:
+```Dockerfile
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN npm ci && npm run build
+
+FROM node:18-alpine AS runner
+WORKDIR /app
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+Build and run the container:
+```bash
+docker build -t year-mission .
+docker run -p 3000:3000 year-mission
+```
+Make sure any required environment variables (e.g., Supabase keys) are provided to the container.
