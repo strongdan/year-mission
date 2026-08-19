@@ -36,7 +36,7 @@ import { buildCoachContext } from "@/services/coach/context";
 import { listDomains, getActivePlan, listSeasons, getMonthlyFocus, listBlockedTaskIds } from "@/repositories/supabase-repository";
 import { sequenceTasks } from "@/domain/sequencing";
 import { getWeekMode } from "@/services/ai-action-service";
-import { listTasks, listWorkouts, listFinancialSnapshots, listMilestones, listEvidence, getDailyCheckin as getTodayCheckin, listMomentumHistory, listIdeas, getWeeklyReview, upsertWeeklyReview, listHouseProgress, listDailyCheckins } from "@/repositories/supabase-repository";
+import { listTasks, listWorkouts, listFinancialSnapshots, listMilestones, listEvidence, getDailyCheckin as getTodayCheckin, listMomentumHistory, listIdeas, getWeeklyReview, upsertWeeklyReview, listHouseProgress, listDailyCheckins, listWeeklyReviews, listFrictionEvents } from "@/repositories/supabase-repository";
 import type { AiAction } from "@/domain/ai-actions";
 import { detectOvercommitment } from "@/domain/reliability";
 import { reliabilityInterpretation } from "@/domain/reliability";
@@ -374,6 +374,12 @@ export async function coachAction(message: string, conversationId?: string | nul
   const milestones = await listMilestones(user.id);
   const deferred = weeklyCommitments.filter((t) => t.defer_count > 0);
   const weeklyWins = completedTasks.filter((t) => t.weekly_win);
+  const [season, monthlyFocus] = await currentSeasonAndFocus(user.id);
+  const weekMode = await getWeekMode(user.id);
+  const houseReadiness = (await listHouseProgress(user.id, 1))[0]?.readiness_score ?? null;
+  const weeklyReviews = await listWeeklyReviews(user.id, 8);
+  const friction = await listFrictionEvents(user.id, 20);
+  const momentum = await metricsService.computeAndStoreMomentum(user.id, mondayOf());
 
   let resolvedConversationId = conversationId ?? null;
   if (!resolvedConversationId) {
@@ -390,26 +396,26 @@ export async function coachAction(message: string, conversationId?: string | nul
 
   const context = buildCoachContext({
     plan: plan ? { title: plan.title, start: plan.start_date, end: plan.end_date } : null,
-    season: null,
-    monthlyFocus: null,
-    weekMode: null,
+    season,
+    monthlyFocus,
+    weekMode,
     domains,
     weeklyCommitments,
     todayTasks,
     backlogCount: (await listTasks(user.id, { status: "backlog" })).length,
-    momentum: null,
+    momentum,
     todayCheckin,
     workoutsThisWeek: workouts.length,
     consumerDebt: financial[0]?.consumer_debt ?? null,
-    houseReadiness: null,
+    houseReadiness,
     deferredTasks: deferred,
     weeklyWins,
-    weeklyReviews: [],
+    weeklyReviews,
     milestones,
     evidence,
     experiments,
     promises,
-    friction: [],
+    friction,
     recentConversation: history,
   });
 

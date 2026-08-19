@@ -1,8 +1,6 @@
 import type {
   Task,
   Domain,
-  Season,
-  MonthlyFocus,
   WeeklyReview,
   Milestone,
   Evidence,
@@ -41,8 +39,8 @@ export interface CoachContextPacket {
 
 export interface ContextBuilderInputs {
   plan: { title: string; start: string; end: string } | null;
-  season: Season | null;
-  monthlyFocus: MonthlyFocus | null;
+  season: { name: string; objective: string | null } | null;
+  monthlyFocus: { title: string; description: string | null } | null;
   weekMode: string | null;
   domains: Domain[];
   weeklyCommitments: Task[];

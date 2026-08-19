@@ -24,6 +24,7 @@ import type {
   AiProposal,
   GoogleConnection,
   GoogleTaskSync,
+  FrictionEvent,
 } from "@/types/models";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -310,6 +311,30 @@ export async function getWeeklyReview(userId: string, weekStart: string): Promis
     .maybeSingle();
   if (error) throw new RepositoryError(error.message);
   return data as WeeklyReview | null;
+}
+
+export async function listWeeklyReviews(userId: string, limit = 8): Promise<WeeklyReview[]> {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from("weekly_reviews")
+    .select("*")
+    .eq("user_id", userId)
+    .order("week_start", { ascending: false })
+    .limit(limit);
+  if (error) throw new RepositoryError(error.message);
+  return (data ?? []) as WeeklyReview[];
+}
+
+export async function listFrictionEvents(userId: string, limit = 20): Promise<FrictionEvent[]> {
+  const supabase = await client();
+  const { data, error } = await supabase
+    .from("friction_events")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new RepositoryError(error.message);
+  return (data ?? []) as FrictionEvent[];
 }
 
 export async function upsertWeeklyReview(review: Partial<WeeklyReview> & { user_id: string; week_start: string }): Promise<void> {
