@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { createServerClientForMiddleware } from "@/integrations/supabase/server";
 import { hasSupabaseConfig } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth"];
+const PUBLIC_PATHS = ["/login", "/auth/callback"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

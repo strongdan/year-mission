@@ -1,71 +1,148 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Year Mission
 
-## Getting Started
+A small, private, mobile-first personal execution tool.
 
-First, run the development server:
+> Do the right things, in the right order, long enough for meaningful change to occur.
+
+The app helps you answer, in seconds:
+
+- What matters now?
+- What should I ignore?
+- What is the next physical action?
+- Why am I avoiding something?
+- Am I actually moving forward?
+
+## Stack
+
+- Next.js 16 (App Router) + React 19, TypeScript strict
+- Supabase (PostgreSQL, Auth, Row Level Security)
+- Serwist PWA with offline application shell
+- Server-driven AI coach (deterministic sequencing; AI never writes to the database directly)
+- Vitest for unit tests
+- Tailwind CSS
+
+Product decisions live in `SPEC.md`, `DECISIONS.md`, `VISION.md`, and `IDEAS.md`. `SPEC.md` is authoritative.
+
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm dev            # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Local Supabase (optional, for real data):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Production Deployment
-
-For a production build, run:
 ```bash
-npm run build   # or `yarn build`
+supabase start      # local stack on 127.0.0.1:54321
+supabase migration up
 ```
-This compiles the application and generates the `.next` output folder.
 
-To start the production server locally:
+Copy `.env.example` to `.env.local` and fill in the values. `NEXT_PUBLIC_*` values are safe for the browser; server-only keys (`SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, Google Tasks secrets) must never be exposed to the client.
+
+Useful commands:
+
 ```bash
-npm start   # or `yarn start`
+pnpm lint          # eslint (CI fails on warnings)
+pnpm typecheck     # tsc --noEmit
+pnpm test          # vitest run
+pnpm build         # production build
 ```
 
-If you prefer Docker, you can use the following Dockerfile:
-```Dockerfile
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN npm ci && npm run build
+## Product overview
 
-FROM node:18-alpine AS runner
-WORKDIR /app
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./
-EXPOSE 3000
-CMD ["node", "server.js"]
+Four primary screens (only these, per `SPEC.md`):
+
+- **Today** — current direction, the one recommended next action ("What Should I Do?"), Weekly Win, and an actionable Minimum Day floor.
+- **Tasks** — `Inbox → This Week → Today → Done`, with deferral reasons and Google Tasks sync.
+- **Progress** — momentum, reliability, key metrics, weekly review, career evidence, experiments.
+- **Coach** — AI assistant grounded in stored state; proposed mutations go through a reviewable proposal before applying.
+
+Today is intentionally capped at five tasks. Google Tasks is an interoperability layer only; Supabase stays canonical.
+
+## Deployment
+
+### 1. Vercel project
+
+The repo is already linked to a Vercel project (`.vercel/project.json`). Two ways to deploy:
+
+**Automatic (recommended):** push to `main`. `.github/workflows/ci.yml` runs lint (`--max-warnings=0`), typecheck, tests, build, image optimization, then `vercel deploy --prebuilt --prod`.
+
+The workflow needs three GitHub repository secrets:
+
+| Secret | Value |
+| --- | --- |
+| `VERCEL_TOKEN` | Vercel access token (Account → Settings → Tokens) |
+| `VERCEL_ORG_ID` | Team ID (`.vercel/project.json` → `orgId`) |
+| `VERCEL_PROJECT_ID` | Project ID (`.vercel/project.json` → `projectId`) |
+
+**Manual:** `vercel --prod` from the repo root.
+
+### 2. Environment variables
+
+Set these in Vercel (Project → Settings → Environment Variables):
+
+```text
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
+SUPABASE_SERVICE_ROLE_KEY=<service role key>        # server-only
+
+# App URL (used for auth redirects)
+NEXT_PUBLIC_APP_URL=https://<your-app>.vercel.app
+
+# AI (optional; app works in mock mode without OPENAI_API_KEY)
+OPENAI_API_KEY=sk-...
+AI_DAILY_BUDGET_USD=0.5
+AI_MONTHLY_BUDGET_USD=10
+AI_MOCK_MODE=auto        # auto | force
+
+# Google Tasks sync (optional)
+GOOGLE_TASKS_CLIENT_ID=...
+GOOGLE_TASKS_CLIENT_SECRET=...                      # server-only
+GOOGLE_TASKS_REDIRECT_URI=https://<your-app>.vercel.app/auth/google-tasks/callback
+GOOGLE_TOKEN_ENCRYPTION_KEY=<32 random bytes, base64>  # server-only
 ```
-Build and run the container:
+
+Generate the encryption key with:
+
 ```bash
-docker build -t year-mission .
-docker run -p 3000:3000 year-mission
+openssl rand -base64 32
 ```
-Make sure any required environment variables (e.g., Supabase keys) are provided to the container.
+
+### 3. Supabase hosted project
+
+```bash
+supabase link --project-ref <your-project-ref>
+supabase db push          # applies migrations 0001–0009
+```
+
+Then in the Supabase dashboard:
+
+- **Authentication → Providers → Google:** enable and enter your Google OAuth client ID/secret.
+- **Authentication → URL Configuration:** set Site URL to `https://<your-app>.vercel.app` and add `https://<your-app>.vercel.app/auth/callback` to Redirect URLs.
+- **Row Level Security:** enabled on all tables via migration `0007_rls.sql`. Verify `google_connections` and `google_task_sync` policies after linking.
+
+### 4. Google Cloud (for Tasks sync only)
+
+- Create an OAuth 2.0 **Web client** in Google Cloud Console.
+- Enable the `https://www.googleapis.com/auth/tasks` scope.
+- Add `https://<your-app>.vercel.app/auth/google-tasks/callback` as an authorized redirect URI.
+- Use those credentials for `GOOGLE_TASKS_CLIENT_ID/SECRET`.
+
+### 5. Verify after deploying
+
+- Sign in with Google.
+- Add an inbox task, promote it to This Week → Today, complete it, and confirm it persists after reload.
+- Visit `/tasks` — the Google Tasks card connects, syncs two ways, and reports conflicts.
+- Add to home screen on iPhone (standalone PWA) and check the offline shell (`/~offline`).
+
+## Production notes
+
+- Security headers (CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy) are set in `vercel.json`.
+- The `/auth/*` proxy only exempts `/login` and `/auth/callback`; every other path (including the Google Tasks OAuth routes) requires a session.
+- AI failure never mutates data: proposals are schema-validated and require approval before applying.
+- `supabase/.temp` and `supabase/.branches` are local CLI artifacts and gitignored.
+
+## Roadmap discipline
+
+After the core loop works, the project follows a 30-day feature freeze (`AGENTS.md` §33). Observations go into `OBSERVATIONS.md`; features are not built during the freeze. Future ideas are promoted only with real evidence of repeated use.
