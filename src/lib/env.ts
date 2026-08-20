@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const envSchema = z.object({
+const rawEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
@@ -12,6 +12,8 @@ const envSchema = z.object({
     .default("auto"),
 });
 
+export type AppEnv = z.infer<typeof rawEnvSchema>;
+
 const rawEnv = {
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -22,26 +24,43 @@ const rawEnv = {
   AI_MOCK_MODE: process.env.AI_MOCK_MODE,
 };
 
-const parsed = envSchema.safeParse(rawEnv);
+const fieldSchemas = rawEnvSchema.shape;
 
-if (!parsed.success) {
-  console.error(
-    "[env] Invalid environment:",
-    parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")
-  );
+const defaults = {
+  AI_DAILY_BUDGET_USD: 0.5,
+  AI_MONTHLY_BUDGET_USD: 10,
+  AI_MOCK_MODE: "auto",
+} as const;
+
+export function parseEnv(input: typeof rawEnv): { env: AppEnv; issues: string[] } {
+  const issues: string[] = [];
+  const parsed = {
+    NEXT_PUBLIC_SUPABASE_URL: undefined,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: undefined,
+    SUPABASE_SERVICE_ROLE_KEY: undefined,
+    OPENAI_API_KEY: undefined,
+    ...defaults,
+  } satisfies AppEnv;
+
+  for (const key of Object.keys(fieldSchemas) as Array<keyof typeof fieldSchemas>) {
+    const result = fieldSchemas[key].safeParse(input[key]);
+    if (result.success) {
+      Object.assign(parsed, { [key]: result.data });
+    } else {
+      issues.push(`${key}: ${result.error.issues.map((i) => i.message).join(", ")}`);
+    }
+  }
+
+  return { env: parsed, issues };
 }
 
-export const env = parsed.success
-  ? parsed.data
-  : {
-      NEXT_PUBLIC_SUPABASE_URL: undefined,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: undefined,
-      SUPABASE_SERVICE_ROLE_KEY: undefined,
-      OPENAI_API_KEY: undefined,
-      AI_DAILY_BUDGET_USD: 0.5,
-      AI_MONTHLY_BUDGET_USD: 10,
-      AI_MOCK_MODE: "auto",
-    } as const;
+const parsed = parseEnv(rawEnv);
+
+if (parsed.issues.length > 0) {
+  console.error("[env] Invalid environment:", parsed.issues.join("; "));
+}
+
+export const env = parsed.env;
 
 export const hasSupabaseConfig =
   Boolean(env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
