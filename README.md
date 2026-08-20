@@ -59,23 +59,52 @@ Four primary screens (only these, per `SPEC.md`):
 
 Today is intentionally capped at five tasks. Google Tasks is an interoperability layer only; Supabase stays canonical.
 
+## Current stopping point
+
+As of commit `d4f51da325a0f3a68b257156418c38fc8fae7cfa`, production auth has been aligned with the Supabase Next.js SSR cookie pattern:
+
+- Browser login uses `createBrowserClient` from `@supabase/ssr`.
+- The Next.js proxy uses a request-scoped SSR server client, refreshes via `auth.getClaims()`, and returns refreshed Supabase cookies/cache headers on the same response.
+- `/login` and `/auth/callback` remain unauthenticated routes.
+- `/auth/callback?code=...` exchanges the OAuth code and redirects to `/`.
+- Login is Google-only; password signup/reset infrastructure is intentionally not present.
+- Google Tasks OAuth was not changed.
+
+Validation completed:
+
+- Local: `pnpm lint`, `pnpm typecheck`, `pnpm test` (98 tests), `pnpm build`.
+- GitHub Actions: CI run `32408843560`, `validate` job succeeded for `d4f51da325a0f3a68b257156418c38fc8fae7cfa`.
+- Vercel Git deployment: `dpl_DYg8vkXQmFQq4ghyMnHPi9jm1njH`, `READY`.
+- Production URL: `https://year-mission.vercel.app`.
+- Production smoke: unauthenticated `/` redirects to `/login`, `/login` returns 200, `/auth/callback` remains public and surfaces a visible callback diagnostic when called without a code.
+
+Not completed in this environment:
+
+- Manual Google account sign-in verification. This requires an interactive browser/account session.
+
+Before considering normal Google login fully verified in production, confirm in Supabase:
+
+- Google provider is enabled.
+- Site URL is `https://year-mission.vercel.app`.
+- Redirect URL allowlist includes `https://year-mission.vercel.app/auth/callback` and any custom production-domain callback URL.
+
 ## Deployment
 
 ### 1. Vercel project
 
-The repo is already linked to a Vercel project (`.vercel/project.json`). Two ways to deploy:
+The repo is already linked to a Vercel project (`.vercel/project.json`).
 
-**Automatic (recommended):** push to `main`. `.github/workflows/ci.yml` runs lint (`--max-warnings=0`), typecheck, tests, build, image optimization, then `vercel deploy --prebuilt --prod`.
+Production deployment is owned by Vercel's native Git integration. Pushes to `main` create production deployments automatically through Vercel.
 
-The workflow needs three GitHub repository secrets:
+GitHub Actions is validation-only. `.github/workflows/ci.yml` runs:
 
-| Secret | Value |
-| --- | --- |
-| `VERCEL_TOKEN` | Vercel access token (Account → Settings → Tokens) |
-| `VERCEL_ORG_ID` | Team ID (`.vercel/project.json` → `orgId`) |
-| `VERCEL_PROJECT_ID` | Project ID (`.vercel/project.json` → `projectId`) |
+- install with `pnpm install --frozen-lockfile`
+- lint with zero warnings
+- typecheck
+- tests
+- production build
 
-**Manual:** `vercel --prod` from the repo root.
+Do not add `VERCEL_TOKEN`, `VERCEL_ORG_ID`, or `VERCEL_PROJECT_ID` as GitHub deployment secrets for this app unless the deployment ownership decision changes. Do not add replacement deployment credentials to GitHub Actions.
 
 ### 2. Environment variables
 
