@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { NextResponse, type NextRequest } from "next/server";
 import { env, hasSupabaseConfig } from "@/lib/env";
 
 export async function createServerClientForApp() {
@@ -27,42 +28,39 @@ export async function createServerClientForApp() {
   });
 }
 
-export function createServerClientForMiddleware(request: Request) {
+export function createServerClientForMiddleware(request: NextRequest) {
   if (!hasSupabaseConfig) {
     return null;
   }
   const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  const response = new Response();
+  let supabaseResponse = NextResponse.next({ request });
   const client = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
-        const cookieHeader = request.headers.get("cookie") ?? "";
-        return cookieHeader.split(";").map((pair) => {
-          const [name, ...rest] = pair.split("=");
-          return { name: name.trim(), value: rest.join("=").trim() };
-        });
+        return request.cookies.getAll();
       },
       setAll(cookiesToSet, headers) {
-        const setCookieHeaders = headers["Set-Cookie"] ?? headers["set-cookie"];
-        cookiesToSet.forEach(({ name, value, options }) => {
-          const cookie = `${name}=${value}`;
-          const attrs: string[] = [];
-          if (options?.maxAge !== undefined) attrs.push(`Max-Age=${options.maxAge}`);
-          if (options?.path) attrs.push(`Path=${options.path}`);
-          if (options?.httpOnly) attrs.push("HttpOnly");
-          if (options?.sameSite) attrs.push(`SameSite=${options.sameSite}`);
-          if (options?.secure) attrs.push("Secure");
-          response.headers.append("Set-Cookie", attrs.length ? `${cookie}; ${attrs.join("; ")}` : cookie);
+        cookiesToSet.forEach(({ name, value }) => {
+          request.cookies.set(name, value);
         });
-        if (setCookieHeaders) {
-          response.headers.set("Set-Cookie", String(setCookieHeaders));
-        }
+        supabaseResponse = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) => {
+          supabaseResponse.cookies.set(name, value, options);
+        });
+        Object.entries(headers).forEach(([key, value]) => {
+          supabaseResponse.headers.set(key, value);
+        });
       },
     },
   });
-  return { client, response };
+  return {
+    client,
+    get response() {
+      return supabaseResponse;
+    },
+  };
 }
 
 export async function createAdminClient() {

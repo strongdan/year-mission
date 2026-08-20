@@ -5,9 +5,23 @@ import { hasSupabaseConfig } from "@/lib/env";
 
 const PUBLIC_PATHS = ["/login", "/auth/callback"];
 
+function applySupabaseResponse(target: NextResponse, source: NextResponse) {
+  source.cookies.getAll().forEach((cookie) => {
+    target.cookies.set(cookie);
+  });
+
+  for (const header of ["cache-control", "expires", "pragma"]) {
+    const value = source.headers.get(header);
+    if (value) target.headers.set(header, value);
+  }
+
+  return target;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isCallback = pathname.startsWith("/auth/callback");
 
   if (!hasSupabaseConfig) {
     return NextResponse.next();
@@ -15,30 +29,26 @@ export async function proxy(request: NextRequest) {
 
   const created = createServerClientForMiddleware(request);
   if (!created) return NextResponse.next();
-  const { client, response } = created;
+  const { client } = created;
 
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const { data, error } = await client.auth.getClaims();
+  const isAuthenticated = !error && Boolean(data?.claims?.sub);
+  const sessionResponse = created.response;
 
-  const sessionResponse = response.headers.get("Set-Cookie")
-    ? new NextResponse(null, { headers: response.headers })
-    : null;
-
-  if (!user && !isPublic) {
+  if (!isAuthenticated && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(url);
+    return applySupabaseResponse(NextResponse.redirect(url), sessionResponse);
   }
 
-  if (user && isPublic) {
+  if (isAuthenticated && isPublic && !isCallback) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
-    return NextResponse.redirect(url);
+    return applySupabaseResponse(NextResponse.redirect(url), sessionResponse);
   }
 
-  return sessionResponse ?? NextResponse.next();
+  return sessionResponse;
 }
 
 export const config = {
