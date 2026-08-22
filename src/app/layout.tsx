@@ -21,6 +21,10 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Year Mission",
   },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
