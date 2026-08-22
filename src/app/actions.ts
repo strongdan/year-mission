@@ -238,6 +238,8 @@ export async function checkinAction(input: {
   energy?: number | null;
   sleepHours?: number | null;
   notes?: string;
+  eveningResetCompletion?: "target" | "floor" | "skipped" | null;
+  eveningResetVariant?: string | null;
 }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
@@ -253,6 +255,35 @@ export async function checkinAction(input: {
     energy: input.energy ?? existing?.energy ?? null,
     sleep_hours: input.sleepHours ?? existing?.sleep_hours ?? null,
     notes: input.notes ?? existing?.notes ?? null,
+    evening_reset_completion: input.eveningResetCompletion ?? existing?.evening_reset_completion ?? null,
+    evening_reset_variant: input.eveningResetVariant ?? existing?.evening_reset_variant ?? null,
+  });
+  revalidateAll();
+  return { ok: true };
+}
+
+const EVENING_RESET_Z = z.enum(["target", "floor", "skipped"]);
+
+export async function logEveningResetAction(input: { completion: z.infer<typeof EVENING_RESET_Z>; variant?: string | null }) {
+  const parsed = EVENING_RESET_Z.safeParse(input.completion);
+  if (!parsed.success) return { ok: false, error: "Invalid completion value." };
+  const { user } = await requireUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  const existing = await getDailyCheckin(user.id, todayISO());
+  const variant = input.variant ?? existing?.evening_reset_variant ?? null;
+  await upsertDailyCheckin({
+    user_id: user.id,
+    date: todayISO(),
+    alcohol_free: existing?.alcohol_free ?? false,
+    weight: existing?.weight ?? null,
+    steps: existing?.steps ?? null,
+    water: existing?.water ?? null,
+    mood: existing?.mood ?? null,
+    energy: existing?.energy ?? null,
+    sleep_hours: existing?.sleep_hours ?? null,
+    notes: existing?.notes ?? null,
+    evening_reset_completion: parsed.data,
+    evening_reset_variant: variant,
   });
   revalidateAll();
   return { ok: true };

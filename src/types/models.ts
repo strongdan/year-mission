@@ -118,6 +118,8 @@ export interface DailyCheckin {
   energy: number | null;
   sleep_hours: number | null;
   notes: string | null;
+  evening_reset_completion: string | null;
+  evening_reset_variant: string | null;
 }
 
 export interface Workout {

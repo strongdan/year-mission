@@ -7,6 +7,7 @@ import { MomentumRing, BigFourPill } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Flag, Footprints, Check } from "lucide-react";
 import { WhatShouldIDo } from "./what-should-i-do";
+import { EveningResetCard } from "./evening-reset-card";
 import type { DeferralReason } from "@/domain/constants";
 
 type DashboardData = Awaited<ReturnType<typeof getDashboardAction>>["data"];
@@ -225,6 +226,11 @@ export function TodayView() {
           ))}
         </div>
       </Card>
+
+      <EveningResetCard
+        completion={(data.todayCheckin?.evening_reset_completion as "target" | "floor" | "skipped" | null) ?? null}
+        onChange={load}
+      />
 
       <Card>
         <CardHeader title="Minimum Day" subtitle="No alcohol · 10-minute walk · one useful action" />
