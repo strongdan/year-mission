@@ -86,6 +86,10 @@ export async function getStoredApiStatus(): Promise<{
   gemini: { configured: boolean; hint: string | null };
   openai: { configured: boolean; hint: string | null };
 }> {
+  // Validate that the server has a usable encryption root even when no API-key
+  // cookie exists yet, so Settings can accurately report whether saving is available.
+  encryptionKey();
+
   const [preferred, gemini, openai] = await Promise.all([
     getPreferredAiProvider(),
     getStoredApiKey("gemini"),
