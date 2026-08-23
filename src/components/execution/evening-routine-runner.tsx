@@ -24,17 +24,18 @@ export function EveningRoutineRunner({ taskId }: { taskId?: string | null }) {
   const [completed, setCompleted] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const startedAt = useRef(Date.now());
+  const startedAt = useRef<number | null>(null);
 
   async function completeRoutine(finalCompleted: string[]) {
     if (saving) return;
     setSaving(true);
     const completion = finalCompleted.length === 3 ? "target" : finalCompleted.length > 0 ? "floor" : "skipped";
+    const startTime = startedAt.current ?? Date.now();
     const [execution, checkin] = await Promise.all([
       logExecutionAction({
         protocolId: "evening-reset",
         kind: "routine",
-        durationSeconds: Math.max(60, Math.round((Date.now() - startedAt.current) / 1000)),
+        durationSeconds: Math.max(60, Math.round((Date.now() - startTime) / 1000)),
         taskId: taskId ?? null,
         details: { completedSteps: finalCompleted, completion },
       }),
