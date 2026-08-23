@@ -41,18 +41,24 @@ export function WhatShouldIDo({ onChange }: { onChange?: () => void }) {
     setError(null);
     setShowWhy(false);
     setDeferring(false);
-    const res = await whatShouldIDoAction({
-      availableMinutes: minutes,
-      energy,
-      excludeTaskId: excludeTaskId ?? null,
-    });
-    setBusy(false);
-    if (!res.ok || !res.data) {
-      setError(res.error ?? "No recommendation available right now.");
-      setResult(null);
-      return;
+
+    try {
+      const res = await whatShouldIDoAction({
+        availableMinutes: minutes,
+        energy,
+        excludeTaskId: excludeTaskId ?? null,
+      });
+      if (!res.ok || !res.data) {
+        setError(res.error ?? "No recommendation available right now.");
+        if (!result) setResult(null);
+        return;
+      }
+      setResult(res.data);
+    } catch {
+      setError("Couldn't get another recommendation. Try again.");
+    } finally {
+      setBusy(false);
     }
-    setResult(res.data);
   }
 
   async function start() {
@@ -68,6 +74,13 @@ export function WhatShouldIDo({ onChange }: { onChange?: () => void }) {
     setResult(null);
     setDeferring(false);
     onChange?.();
+  }
+
+  function changeFilters() {
+    setResult(null);
+    setError(null);
+    setShowWhy(false);
+    setDeferring(false);
   }
 
   const recommendation = result?.result.kind === "task" ? result.result.task : null;
@@ -110,7 +123,6 @@ export function WhatShouldIDo({ onChange }: { onChange?: () => void }) {
             <Sparkles className="h-4 w-4" />
             {busy ? "Thinking…" : "Recommend"}
           </Button>
-          {error && <p className="text-xs text-red-400">{error}</p>}
         </div>
       )}
 
@@ -128,16 +140,16 @@ export function WhatShouldIDo({ onChange }: { onChange?: () => void }) {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={start}>
+            <Button size="sm" onClick={start} disabled={busy}>
               Start
             </Button>
             <Button size="sm" variant="secondary" onClick={() => ask(recommendation.task.id)} disabled={busy}>
-              Something else
+              {busy ? "Finding another…" : "Something else"}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setDeferring(true)}>
+            <Button size="sm" variant="ghost" onClick={() => setDeferring(true)} disabled={busy}>
               I don&apos;t want to do this
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setShowWhy(!showWhy)}>
+            <Button size="sm" variant="ghost" onClick={() => setShowWhy(!showWhy)} disabled={busy}>
               Why this?
             </Button>
           </div>
@@ -171,16 +183,22 @@ export function WhatShouldIDo({ onChange }: { onChange?: () => void }) {
         <div className="flex flex-col gap-3">
           <p className="text-base font-medium text-zinc-100">{result.result.label}</p>
           <p className="text-xs leading-relaxed text-zinc-400">{result.result.reason}</p>
-          <p className="text-[11px] text-zinc-500">A floor keeps the day moving without a full commitment.</p>
+          <p className="text-[11px] text-zinc-500">No other ranked task fits these constraints. Change the filters to broaden the recommendation.</p>
           <div className="flex gap-2">
             <Button size="sm" variant="secondary" onClick={() => setResult(null)}>
               Got it
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => ask()} disabled={busy}>
-              Something else
+            <Button size="sm" variant="ghost" onClick={changeFilters}>
+              Change filters
             </Button>
           </div>
         </div>
+      )}
+
+      {error && (
+        <p className="mt-3 text-xs text-red-400" role="status" aria-live="polite">
+          {error}
+        </p>
       )}
     </Card>
   );
