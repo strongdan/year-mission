@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { createServerClientForMiddleware } from "@/integrations/supabase/server";
 import { hasSupabaseConfig } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/google-tasks/callback"];
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/google-tasks/callback", "/api/notifications/cron"];
 
 function applySupabaseResponse(target: NextResponse, source: NextResponse) {
   source.cookies.getAll().forEach((cookie) => {
