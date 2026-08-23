@@ -1,5 +1,5 @@
-import { ProgressView } from "@/components/progress/progress-view";
+import { ProgressPageShell } from "@/components/progress/progress-page-shell";
 
 export default function ProgressPage() {
-  return <ProgressView />;
+  return <ProgressPageShell />;
 }
