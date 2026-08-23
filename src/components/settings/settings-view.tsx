@@ -99,11 +99,14 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
   }, []);
 
   useEffect(() => {
-    setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "Device local time");
-    const mediaStandalone = window.matchMedia("(display-mode: standalone)").matches;
-    const navigatorStandalone = Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
-    setStandalone(mediaStandalone || navigatorStandalone);
+    const frame = window.requestAnimationFrame(() => {
+      setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "Device local time");
+      const mediaStandalone = window.matchMedia("(display-mode: standalone)").matches;
+      const navigatorStandalone = Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
+      setStandalone(mediaStandalone || navigatorStandalone);
+    });
     void loadStatuses();
+    return () => window.cancelAnimationFrame(frame);
   }, [loadStatuses]);
 
   async function connectGoogle() {
