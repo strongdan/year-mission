@@ -102,10 +102,10 @@ export async function GET(request: Request) {
     }
 
     if (accepted > 0) {
-      await admin
-        .from("notification_preferences")
-        .update(morningDue ? { last_morning_sent_on: clock.date } : { last_evening_sent_on: clock.date })
-        .eq("user_id", preference.user_id);
+      const sentPatch: { last_morning_sent_on?: string; last_evening_sent_on?: string } = {};
+      if (morningDue) sentPatch.last_morning_sent_on = clock.date;
+      if (eveningDue) sentPatch.last_evening_sent_on = clock.date;
+      await admin.from("notification_preferences").update(sentPatch).eq("user_id", preference.user_id);
     }
   }
 
