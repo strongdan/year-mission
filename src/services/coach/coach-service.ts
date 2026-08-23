@@ -1,4 +1,4 @@
-import { getAiProvider } from "@/integrations/ai";
+import { getAiProviderForRequest } from "@/integrations/ai";
 import { COACH_SYSTEM_PROMPT } from "./prompt";
 import { serializeContext, type CoachContextPacket } from "./context";
 
@@ -18,7 +18,7 @@ export class CoachService {
     context: CoachContextPacket;
     history: { role: "user" | "assistant"; content: string }[];
   }): Promise<CoachChatResult> {
-    const provider = getAiProvider();
+    const provider = await getAiProviderForRequest();
     const context = serializeContext(params.context);
     const historyMessages = params.history.slice(-10);
 
