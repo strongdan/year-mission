@@ -17,7 +17,7 @@ export function FocusRunner({ taskId, initialMinutes = 5 }: { taskId: string; in
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const startedAt = useRef(Date.now());
+  const startedAt = useRef<number | null>(null);
   const timer = useCountdown(minutes * 60, () => {
     setTimerFinished(true);
     if ("vibrate" in navigator) navigator.vibrate?.([80, 60, 80]);
@@ -46,7 +46,8 @@ export function FocusRunner({ taskId, initialMinutes = 5 }: { taskId: string; in
     if (saving) return;
     setSaving(true);
     setError(null);
-    const elapsed = Math.max(30, Math.round((Date.now() - startedAt.current) / 1000));
+    const startTime = startedAt.current ?? Date.now();
+    const elapsed = Math.max(30, Math.round((Date.now() - startTime) / 1000));
     if (completedTask) {
       const complete = await completeTaskAction(taskId);
       if (!complete.ok) {
