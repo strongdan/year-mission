@@ -1,6 +1,6 @@
 import "server-only";
 import { googleConfig, GoogleConfigError } from "./config";
-import { GOOGLE_TASKS_SCOPE } from "@/domain/google-sync";
+import { GOOGLE_SCOPES } from "@/domain/google-sync";
 
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
@@ -17,7 +17,7 @@ export function buildAuthUrl(state: string): string {
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: "code",
-    scope: GOOGLE_TASKS_SCOPE,
+    scope: GOOGLE_SCOPES,
     access_type: "offline",
     prompt: "consent",
     include_granted_scopes: "true",
