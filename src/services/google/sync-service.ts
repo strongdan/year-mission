@@ -3,7 +3,17 @@ import { refreshAccessToken } from "./oauth";
 import { encryptToken, decryptToken } from "./encryption";
 import { isGoogleTasksConfigured } from "./config";
 import { findOrCreateYearMissionList, listGoogleTasks, createGoogleTask, updateGoogleTask, type GoogleTask } from "./tasks-api";
-import { fromGoogleTask, toGoogleTask, resolveSyncConflict, summarize, GOOGLE_TASKS_SOURCE, type LocalTaskLike, type SyncSummary } from "@/domain/google-sync";
+import { listPrimaryCalendarEvents, type GoogleCalendarEvent } from "./calendar-api";
+import {
+  fromGoogleTask,
+  toGoogleTask,
+  resolveSyncConflict,
+  summarize,
+  GOOGLE_TASKS_SOURCE,
+  GOOGLE_CALENDAR_SCOPE,
+  type LocalTaskLike,
+  type SyncSummary,
+} from "@/domain/google-sync";
 import { ACTIVE_STATUSES } from "@/domain/task-states";
 import { getGoogleConnection, upsertGoogleConnection, listGoogleSyncRecords, upsertGoogleSyncRecord, listTasks, updateTask, insertTask } from "@/repositories/supabase-repository";
 import type { GoogleTaskSync } from "@/types/models";
@@ -16,18 +26,69 @@ export interface SyncResult {
   summary?: SyncSummary;
 }
 
+export interface CalendarWeekResult {
+  outcome: SyncOutcome;
+  events: GoogleCalendarEvent[];
+  needsReconnect: boolean;
+  error?: string;
+}
+
+async function accessTokenForConnection(userId: string): Promise<{ accessToken: string; scope: string } | null> {
+  const connection = await getGoogleConnection(userId);
+  if (!connection?.refresh_token) return null;
+  const accessToken = await refreshAccessToken(decryptToken(connection.refresh_token));
+  return { accessToken, scope: connection.scope ?? "" };
+}
+
+export async function getGoogleCalendarWeek(userId: string, weekStart: string): Promise<CalendarWeekResult> {
+  if (!isGoogleTasksConfigured()) {
+    return { outcome: "not_configured", events: [], needsReconnect: false };
+  }
+
+  const connection = await getGoogleConnection(userId);
+  if (!connection?.refresh_token) {
+    return { outcome: "not_connected", events: [], needsReconnect: false };
+  }
+
+  if (!connection.scope?.includes(GOOGLE_CALENDAR_SCOPE)) {
+    return {
+      outcome: "error",
+      events: [],
+      needsReconnect: true,
+      error: "Reconnect Google once to add read-only Calendar access.",
+    };
+  }
+
+  try {
+    const accessToken = await refreshAccessToken(decryptToken(connection.refresh_token));
+    const start = new Date(`${weekStart}T00:00:00Z`);
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 7);
+    const events = await listPrimaryCalendarEvents(accessToken, start.toISOString(), end.toISOString());
+    return { outcome: "ok", events, needsReconnect: false };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Google Calendar could not be loaded.";
+    return {
+      outcome: "error",
+      events: [],
+      needsReconnect: message.toLowerCase().includes("reconnect") || message.toLowerCase().includes("permission"),
+      error: message,
+    };
+  }
+}
+
 export async function syncGoogleTasks(userId: string): Promise<SyncResult> {
   if (!isGoogleTasksConfigured()) return { outcome: "not_configured" };
 
-  const connection = await getGoogleConnection(userId);
-  if (!connection?.refresh_token) return { outcome: "not_connected" };
-
   let accessToken: string;
   try {
-    accessToken = await refreshAccessToken(decryptToken(connection.refresh_token));
+    const access = await accessTokenForConnection(userId);
+    if (!access) return { outcome: "not_connected" };
+    accessToken = access.accessToken;
   } catch (e) {
+    const connection = await getGoogleConnection(userId);
     const message = e instanceof Error ? e.message : "Failed to refresh Google token.";
-    if (connection.refresh_token && connection.token_encrypted && message.includes("invalid")) {
+    if (connection?.refresh_token && connection.token_encrypted && message.includes("invalid")) {
       await upsertGoogleConnection(userId, { refresh_token: null });
       return { outcome: "error", error: "Google connection expired. Reconnect." };
     }
@@ -173,13 +234,16 @@ export async function connectGoogleTasksUrl(userId: string): Promise<{ url: stri
   return { url: buildAuthUrl(userId) };
 }
 
-export async function storeGoogleConnection(userId: string, opts: { refreshToken: string; email: string; googleUserId: string }) {
+export async function storeGoogleConnection(
+  userId: string,
+  opts: { refreshToken: string; email: string; googleUserId: string; scope: string }
+) {
   await upsertGoogleConnection(userId, {
     refresh_token: encryptToken(opts.refreshToken),
     token_encrypted: true,
     email: opts.email,
     google_user_id: opts.googleUserId,
-    scope: "tasks",
+    scope: opts.scope,
   });
 }
 
