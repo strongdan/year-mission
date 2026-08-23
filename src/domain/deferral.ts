@@ -24,6 +24,7 @@ export const DEFERRAL_ACTION_MAP: Record<DeferralReason, InterventionAction[]> =
   too_big: ["break_down", "reduce_scope", "schedule_intentionally", "ask_coach", "drop_it"],
   dont_know_how: ["ask_coach", "research_subtask", "break_down"],
   no_energy: ["minimum_version", "start_10min", "schedule_intentionally"],
+  competing_priority: ["schedule_intentionally", "minimum_version"],
   not_important: ["drop_it", "reduce_scope"],
   blocked: ["blocker_task", "ask_coach"],
   just_avoiding: ["start_10min", "break_down", "ask_coach"],
@@ -51,6 +52,8 @@ export function avoidancePrompt(reason: DeferralReason): string {
       return "Ask the Coach or define a research step";
     case "no_energy":
       return "Do a minimum version instead";
+    case "competing_priority":
+      return "Renegotiate intentionally and protect the higher-priority commitment";
     case "not_important":
       return "Deprioritize or drop it";
     case "blocked":
