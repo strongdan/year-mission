@@ -16,7 +16,7 @@ export function MobilityRunner({ slug, taskId, onComplete }: { slug: string; tas
   const [finished, setFinished] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const startedAt = useRef(Date.now());
+  const startedAt = useRef<number | null>(null);
 
   const step = protocol?.steps[stepIndex];
   const timer = useCountdown(step?.durationSeconds ?? 0, () => {
@@ -36,10 +36,11 @@ export function MobilityRunner({ slug, taskId, onComplete }: { slug: string; tas
   async function finish() {
     if (saving || finished) return;
     setSaving(true);
+    const startTime = startedAt.current ?? Date.now();
     const result = await logExecutionAction({
       protocolId: protocol.slug,
       kind: "mobility",
-      durationSeconds: Math.max(30, Math.round((Date.now() - startedAt.current) / 1000)),
+      durationSeconds: Math.max(30, Math.round((Date.now() - startTime) / 1000)),
       taskId: taskId ?? null,
       details: { completedSteps: protocol.steps.length },
     });
@@ -103,7 +104,7 @@ export function MobilityRunner({ slug, taskId, onComplete }: { slug: string; tas
         <p className="mt-1 text-sm text-zinc-300">{protocol.steps[stepIndex + 1]?.title ?? "Finish"}</p>
       </div>
 
-      <button onClick={() => { setStepIndex(0); setStarted(false); timer.reset(protocol.steps[0].durationSeconds, false); startedAt.current = Date.now(); }} className="mx-auto inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-300"><RotateCcw className="h-3 w-3" /> Restart sequence</button>
+      <button onClick={() => { setStepIndex(0); setStarted(false); timer.reset(protocol.steps[0].durationSeconds, false); startedAt.current = null; }} className="mx-auto inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-300"><RotateCcw className="h-3 w-3" /> Restart sequence</button>
       {error && <p className="rounded-lg border border-red-900/50 bg-red-950/20 px-3 py-2 text-sm text-red-300">{error}</p>}
     </div>
   );
