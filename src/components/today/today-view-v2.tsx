@@ -104,7 +104,8 @@ export function TodayViewV2() {
   }
 
   async function logWalk() {
-    if (loggingWalk || data.walkToday) return;
+    const currentData = data;
+    if (!currentData || loggingWalk || currentData.walkToday) return;
     setLoggingWalk(true);
     await logWorkoutAction({ type: "walking", durationMinutes: 10 });
     setLoggingWalk(false);
