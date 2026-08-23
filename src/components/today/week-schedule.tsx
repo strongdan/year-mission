@@ -44,12 +44,14 @@ export function WeekSchedule() {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadedAt, setLoadedAt] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     getCalendarWeekAction().then((res) => {
       if (cancelled) return;
       setLoading(false);
+      setLoadedAt(Date.now());
       if (!res.ok || !res.data) {
         setError(res.error ?? "Calendar could not be loaded.");
         return;
@@ -64,12 +66,11 @@ export function WeekSchedule() {
 
   const visibleEvents = useMemo(() => {
     if (!data) return [];
-    const now = Date.now();
     return data.events
-      .filter((event) => event.allDay || new Date(event.end).getTime() >= now)
+      .filter((event) => event.allDay || loadedAt === null || new Date(event.end).getTime() >= loadedAt)
       .sort((a, b) => eventDate(a).getTime() - eventDate(b).getTime())
       .slice(0, 10);
-  }, [data]);
+  }, [data, loadedAt]);
 
   const groups = useMemo(() => {
     const result: Array<{ key: string; label: string; events: EventItem[] }> = [];
