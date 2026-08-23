@@ -79,7 +79,7 @@ export function ResistancePanel({ task, onChange, onClose }: { task: Task; onCha
           {reason === "not_important" && <div className="flex items-start gap-2 rounded-xl border border-zinc-800 bg-zinc-950/40 p-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" /><p className="text-xs leading-relaxed text-zinc-400">Removing work that no longer matters is better than rehearsing avoidance every day.</p></div>}
 
           <div className="flex flex-wrap gap-2">
-            {reason === "not_important" ? <Button variant="danger" size="sm" onClick={drop} disabled={busy}>Drop task</Button> : <Button variant={startFirst ? "secondary" : "default"} size="sm" onClick={defer} disabled={busy}>{reason === "competing_priority" ? "Defer deliberately" : reason === "blocked" ? "Record blocker & defer" : "Defer anyway"}</Button>}
+            {reason === "not_important" ? <Button variant="danger" size="sm" onClick={drop} disabled={busy}>Drop task</Button> : <Button variant={startFirst ? "secondary" : "primary"} size="sm" onClick={defer} disabled={busy}>{reason === "competing_priority" ? "Defer deliberately" : reason === "blocked" ? "Record blocker & defer" : "Defer anyway"}</Button>}
             {reason === "not_important" && <Button variant="secondary" size="sm" onClick={defer} disabled={busy}>Keep for This Week</Button>}
             <Button variant="ghost" size="sm" onClick={() => setReason(null)} disabled={busy}>Back</Button>
           </div>
