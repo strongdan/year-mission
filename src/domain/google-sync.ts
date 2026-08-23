@@ -1,4 +1,7 @@
 export const GOOGLE_TASKS_SCOPE = "https://www.googleapis.com/auth/tasks";
+export const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+export const GOOGLE_IDENTITY_SCOPES = ["openid", "email"] as const;
+export const GOOGLE_SCOPES = [...GOOGLE_IDENTITY_SCOPES, GOOGLE_TASKS_SCOPE, GOOGLE_CALENDAR_SCOPE].join(" ");
 export const YEAR_MISSION_TASKLIST = "Year Mission";
 export const GOOGLE_TASKS_SOURCE = "google_tasks";
 export const NOTES_MARKER = "[Year Mission]";
