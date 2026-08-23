@@ -35,6 +35,72 @@ export function getAiProvider(): AiProvider {
   return cachedProvider;
 }
 
+/**
+ * Request-scoped provider selection. A key entered in Settings takes precedence
+ * over deployment-wide environment keys. The stored key is only available on
+ * the server through an encrypted HttpOnly cookie.
+ */
+export async function getAiProviderForRequest(): Promise<AiProvider> {
+  if (aiMockMode === "force") return createMockProvider(getModelConfig());
+
+  try {
+    const { getPreferredAiProvider, getStoredApiKey } = await import("@/services/integrations/api-key-store");
+    const preferred = await getPreferredAiProvider();
+    const geminiKey = await getStoredApiKey("gemini");
+    const openaiKey = await getStoredApiKey("openai");
+
+    if (preferred === "gemini" && geminiKey) {
+      return createGeminiProvider({ apiKey: geminiKey, modelConfig: GEMINI_MODELS });
+    }
+    if (preferred === "openai" && openaiKey) {
+      return createOpenAiProvider({ apiKey: openaiKey, modelConfig: OPENAI_MODELS });
+    }
+    if (geminiKey) return createGeminiProvider({ apiKey: geminiKey, modelConfig: GEMINI_MODELS });
+    if (openaiKey) return createOpenAiProvider({ apiKey: openaiKey, modelConfig: OPENAI_MODELS });
+  } catch {
+    // If per-device secret storage is unavailable, deployment-level AI still works.
+  }
+
+  return getAiProvider();
+}
+
+export async function getAiConnectionStatus() {
+  const provider = await getAiProviderForRequest();
+  let stored = {
+    preferred: null as "gemini" | "openai" | null,
+    gemini: { configured: false, hint: null as string | null },
+    openai: { configured: false, hint: null as string | null },
+  };
+  let storageAvailable = true;
+
+  try {
+    const { getStoredApiStatus } = await import("@/services/integrations/api-key-store");
+    stored = await getStoredApiStatus();
+  } catch {
+    storageAvailable = false;
+  }
+
+  const model = provider.name === "gemini" ? GEMINI_MODELS.coach : provider.name === "openai" ? OPENAI_MODELS.coach : getModelConfig().coach;
+  return {
+    provider: provider.name,
+    model,
+    mock: provider.name === "mock",
+    freeTier: provider.name === "gemini",
+    storageAvailable,
+    stored,
+    environment: {
+      gemini: Boolean(env.GEMINI_API_KEY),
+      openai: Boolean(env.OPENAI_API_KEY),
+    },
+  };
+}
+
+export function createAiProviderFromKey(provider: "gemini" | "openai", apiKey: string): AiProvider {
+  return provider === "gemini"
+    ? createGeminiProvider({ apiKey, modelConfig: GEMINI_MODELS })
+    : createOpenAiProvider({ apiKey, modelConfig: OPENAI_MODELS });
+}
+
 export function isMockMode(): boolean {
   return getAiProvider().name === "mock";
 }
