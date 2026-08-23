@@ -24,13 +24,14 @@ export function MeditationRunner({ initialMinutes = 5, taskId, onComplete }: { i
   const [finished, setFinished] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const startedAt = useRef(Date.now());
+  const startedAt = useRef<number | null>(null);
   const timer = useCountdown(minutes * 60, () => void finish(true));
 
   async function finish(completedTimer = false) {
     if (saving || finished) return;
     setSaving(true);
-    const elapsed = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
+    const startTime = startedAt.current ?? Date.now();
+    const elapsed = Math.max(1, Math.round((Date.now() - startTime) / 1000));
     const result = await logExecutionAction({
       protocolId: `meditation-${minutes}`,
       kind: "meditation",
@@ -97,7 +98,7 @@ export function MeditationRunner({ initialMinutes = 5, taskId, onComplete }: { i
         </div>
       )}
 
-      {started && <button onClick={() => { setStarted(false); timer.reset(minutes * 60, false); startedAt.current = Date.now(); }} className="mx-auto inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-300"><RotateCcw className="h-3 w-3" /> Restart</button>}
+      {started && <button onClick={() => { setStarted(false); timer.reset(minutes * 60, false); startedAt.current = null; }} className="mx-auto inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-300"><RotateCcw className="h-3 w-3" /> Restart</button>}
       {error && <p className="rounded-lg border border-red-900/50 bg-red-950/20 px-3 py-2 text-sm text-red-300">{error}</p>}
     </div>
   );
