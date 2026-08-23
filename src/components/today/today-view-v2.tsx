@@ -9,7 +9,6 @@ import {
   getDashboardAction,
   logWorkoutAction,
 } from "@/app/actions";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { EveningResetCompletion } from "@/domain/evening-reset";
 import { executionLaunchForTask } from "@/domain/execution-protocols";
