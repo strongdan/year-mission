@@ -42,6 +42,12 @@ const LOG_Z = z.object({
   details: z.record(z.string(), z.unknown()).optional(),
 });
 
+const FOCUS_Z = z.object({
+  taskId: z.string().uuid(),
+  durationSeconds: z.number().int().min(30).max(60 * 60),
+  completedTask: z.boolean().default(false),
+});
+
 export interface HypnosisMediaItem {
   id: string;
   title: string;
@@ -149,6 +155,33 @@ export async function logExecutionAction(input: z.infer<typeof LOG_Z>) {
   revalidatePath("/");
   revalidatePath("/progress");
   revalidatePath("/tasks");
+  return { ok: true } as const;
+}
+
+export async function logFocusSessionAction(input: z.infer<typeof FOCUS_Z>) {
+  const parsed = FOCUS_Z.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Focus session is invalid." } as const;
+  const { user } = await requireUser();
+  if (!user) return { ok: false, error: "Not signed in." } as const;
+
+  await insertTaskEvent({
+    user_id: user.id,
+    task_id: parsed.data.taskId,
+    event_type: "starter_session",
+    event_data: {
+      durationSeconds: parsed.data.durationSeconds,
+      completedTask: parsed.data.completedTask,
+    },
+  });
+
+  if (parsed.data.completedTask) {
+    const result = await taskService.complete(user.id, parsed.data.taskId);
+    if (!result.ok) return result;
+  }
+
+  revalidatePath("/");
+  revalidatePath("/tasks");
+  revalidatePath("/progress");
   return { ok: true } as const;
 }
 
