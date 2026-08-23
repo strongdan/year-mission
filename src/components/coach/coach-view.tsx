@@ -5,7 +5,7 @@ import { coachAction, listProposalsAction, resolveProposalAction } from "@/app/a
 import { getAiStatusAction } from "@/app/ai-status-actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Send } from "lucide-react";
+import { ExternalLink, Send } from "lucide-react";
 import type { AiProposal } from "@/types/models";
 import { ProposalCard } from "./proposal-card";
 
@@ -17,6 +17,7 @@ interface Message {
 type AiStatus = NonNullable<Awaited<ReturnType<typeof getAiStatusAction>>["data"]>;
 
 const SUGGESTED = ["Plan my week", "What should I do now?", "Analyze my deferrals", "Break this task down"];
+const CHATGPT_URL = process.env.NEXT_PUBLIC_YEAR_MISSION_GPT_URL;
 
 export function CoachView() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -104,6 +105,17 @@ export function CoachView() {
               ? "AI not configured — using the built-in mock coach"
               : `${aiStatus.provider === "gemini" ? "Gemini free tier" : "OpenAI"} · ${aiStatus.model}`}
           </p>
+        )}
+        {CHATGPT_URL && (
+          <a
+            href={CHATGPT_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-medium text-zinc-200 transition hover:border-zinc-500 hover:bg-zinc-800"
+          >
+            Open in ChatGPT
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         )}
       </header>
 
