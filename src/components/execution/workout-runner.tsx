@@ -116,7 +116,7 @@ export function WorkoutRunner({ slug, taskId }: { slug: string; taskId?: string 
   }
 
   async function completeSet() {
-    if (saving) return;
+    if (saving || !exercise || !selected) return;
     markStarted();
     const entry: SetEntry = { reps: reps.trim() || selected.reps, weight: weight.trim() };
     const nextEntries = {
