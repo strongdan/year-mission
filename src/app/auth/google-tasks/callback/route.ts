@@ -18,7 +18,12 @@ export async function GET(request: Request) {
     const token = await exchangeCode(code);
     if (!token.refreshToken) return NextResponse.redirect(new URL("/tasks?error=google_no_refresh", base));
     const info = await getTokenInfo(token.accessToken);
-    await storeGoogleConnection(user.id, { refreshToken: token.refreshToken, email: info.email, googleUserId: info.userId });
+    await storeGoogleConnection(user.id, {
+      refreshToken: token.refreshToken,
+      email: info.email,
+      googleUserId: info.userId,
+      scope: token.scope,
+    });
   } catch {
     return NextResponse.redirect(new URL("/tasks?error=google_callback", base));
   }
