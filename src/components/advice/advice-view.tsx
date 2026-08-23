@@ -5,6 +5,7 @@ import { Shuffle } from "lucide-react";
 import {
   ADVICE_CATEGORY_LABELS,
   ADVICE_ITEMS,
+  adviceForCategory,
   randomAdvice,
   type AdviceCategory,
   type AdviceItem,
@@ -14,9 +15,13 @@ import { Card } from "@/components/ui/card";
 
 const CATEGORIES = Object.keys(ADVICE_CATEGORY_LABELS) as AdviceCategory[];
 
+function firstAdvice(category?: AdviceCategory | null): AdviceItem {
+  return category ? adviceForCategory(category)[0] ?? ADVICE_ITEMS[0] : ADVICE_ITEMS[0];
+}
+
 export function AdviceView({ initialCategory }: { initialCategory?: AdviceCategory | null }) {
   const [category, setCategory] = useState<AdviceCategory | "all">(initialCategory ?? "all");
-  const [advice, setAdvice] = useState<AdviceItem>(() => randomAdvice(initialCategory ?? undefined));
+  const [advice, setAdvice] = useState<AdviceItem>(() => firstAdvice(initialCategory));
 
   const count = useMemo(
     () => (category === "all" ? ADVICE_ITEMS.length : ADVICE_ITEMS.filter((item) => item.category === category).length),
@@ -29,7 +34,7 @@ export function AdviceView({ initialCategory }: { initialCategory?: AdviceCatego
 
   function chooseCategory(next: AdviceCategory | "all") {
     setCategory(next);
-    setAdvice(randomAdvice(next === "all" ? undefined : next));
+    setAdvice(firstAdvice(next === "all" ? null : next));
   }
 
   return (
