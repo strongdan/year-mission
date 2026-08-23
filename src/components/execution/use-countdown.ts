@@ -14,16 +14,19 @@ export function useCountdown(initialSeconds: number, onComplete?: () => void) {
   }, [initialSeconds]);
 
   useEffect(() => {
-    if (!running) return;
-    if (secondsLeft <= 0) {
-      setRunning(false);
-      if (!completedRef.current) {
-        completedRef.current = true;
-        onComplete?.();
+    if (!running || secondsLeft <= 0) return;
+    const id = window.setTimeout(() => {
+      if (secondsLeft <= 1) {
+        setSecondsLeft(0);
+        setRunning(false);
+        if (!completedRef.current) {
+          completedRef.current = true;
+          onComplete?.();
+        }
+      } else {
+        setSecondsLeft(secondsLeft - 1);
       }
-      return;
-    }
-    const id = window.setTimeout(() => setSecondsLeft((current) => Math.max(0, current - 1)), 1000);
+    }, 1000);
     return () => window.clearTimeout(id);
   }, [onComplete, running, secondsLeft]);
 
