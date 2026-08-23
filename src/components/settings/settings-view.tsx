@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  Bot,
   CalendarDays,
   CheckCircle2,
   CircleAlert,
