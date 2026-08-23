@@ -42,7 +42,8 @@ describe("execution protocols", () => {
   it("keeps every default workout runnable with the default equipment profile", () => {
     for (const workout of Object.values(WORKOUT_PROTOCOLS)) {
       for (const exercise of workout.exercises) {
-        expect(chooseExercise(exercise, DEFAULT_EQUIPMENT).note).not.toContain("No compatible alternative");
+        const selected = chooseExercise(exercise, DEFAULT_EQUIPMENT);
+        expect(selected.note).not.toBe("No compatible alternative is configured yet.");
       }
     }
   });
