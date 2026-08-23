@@ -12,6 +12,9 @@ export interface CoachChatResult {
   provider: string;
 }
 
+export const COACH_PROVIDER_UNAVAILABLE_MESSAGE =
+  "Coach could not reach the selected AI provider. Open Settings → AI, test the connection, and replace the key if needed. Your Year Mission data is still available; only this Coach reply failed.";
+
 export class CoachService {
   async chat(params: {
     message: string;
@@ -29,21 +32,36 @@ export class CoachService {
       { role: "user" as const, content: params.message },
     ];
 
-    const result = await provider.complete({
-      messages,
-      modelKind: "coach",
-      maxTokens: 700,
-    });
+    try {
+      const result = await provider.complete({
+        messages,
+        modelKind: "coach",
+        maxTokens: 700,
+      });
 
-    return {
-      content: result.content,
-      model: result.model,
-      inputTokens: result.inputTokens,
-      outputTokens: result.outputTokens,
-      estimatedCost: result.estimatedCost,
-      latencyMs: result.latencyMs,
-      provider: result.provider,
-    };
+      return {
+        content: result.content,
+        model: result.model,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
+        estimatedCost: result.estimatedCost,
+        latencyMs: result.latencyMs,
+        provider: result.provider,
+      };
+    } catch {
+      // Provider errors can contain credential/provider response details. Do not
+      // echo or log the raw exception; surface an actionable, non-secret state.
+      console.error("Coach AI provider request failed.");
+      return {
+        content: COACH_PROVIDER_UNAVAILABLE_MESSAGE,
+        model: "unavailable",
+        inputTokens: 0,
+        outputTokens: 0,
+        estimatedCost: 0,
+        latencyMs: 0,
+        provider: "unavailable",
+      };
+    }
   }
 }
 

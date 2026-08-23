@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/integrations/supabase/server";
+import { localClock, reminderWindowsDue } from "@/domain/notification-schedule";
 import { isWebPushConfigured, sendEmptyWebPush } from "@/services/notifications/web-push";
 
 interface PreferenceRow {
@@ -11,30 +12,6 @@ interface PreferenceRow {
   timezone: string;
   last_morning_sent_on: string | null;
   last_evening_sent_on: string | null;
-}
-
-function localClock(now: Date, timeZone: string) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(now);
-  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
-  return {
-    date: `${get("year")}-${get("month")}-${get("day")}`,
-    hour: Number(get("hour")),
-    minute: Number(get("minute")),
-  };
-}
-
-function dueWithinWindow(target: string, hour: number, minute: number): boolean {
-  const [targetHour, targetMinute] = target.slice(0, 5).split(":").map(Number);
-  const delta = hour * 60 + minute - (targetHour * 60 + targetMinute);
-  return delta >= 0 && delta < 20;
 }
 
 export async function GET(request: Request) {
@@ -68,15 +45,7 @@ export async function GET(request: Request) {
       continue;
     }
 
-    const morningDue =
-      preference.morning_enabled &&
-      preference.last_morning_sent_on !== clock.date &&
-      dueWithinWindow(preference.morning_time, clock.hour, clock.minute);
-    const eveningDue =
-      preference.evening_enabled &&
-      preference.last_evening_sent_on !== clock.date &&
-      dueWithinWindow(preference.evening_time, clock.hour, clock.minute);
-
+    const { morningDue, eveningDue } = reminderWindowsDue(preference, clock);
     if (!morningDue && !eveningDue) continue;
 
     const { data: subscriptions } = await admin

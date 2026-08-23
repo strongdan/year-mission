@@ -239,7 +239,7 @@ export async function listDailyCheckins(userId: string, fromDate: string): Promi
 
 export async function upsertDailyCheckin(checkin: Partial<DailyCheckin> & { user_id: string; date: string }): Promise<void> {
   const supabase = await client();
-  const { error } = await supabase.from("daily_checkins").upsert(checkin);
+  const { error } = await supabase.from("daily_checkins").upsert(checkin, { onConflict: "user_id,date" });
   if (error) throw new RepositoryError(error.message);
 }
 
@@ -252,13 +252,13 @@ export async function insertWorkout(workout: Partial<Workout> & { user_id: strin
 
 export async function upsertFinancialSnapshot(snapshot: Partial<FinancialSnapshot> & { user_id: string; date: string }): Promise<void> {
   const supabase = await client();
-  const { error } = await supabase.from("financial_snapshots").upsert(snapshot);
+  const { error } = await supabase.from("financial_snapshots").upsert(snapshot, { onConflict: "user_id,date" });
   if (error) throw new RepositoryError(error.message);
 }
 
 export async function upsertHouseProgress(progress: Partial<HouseProgress> & { user_id: string; date: string }): Promise<void> {
   const supabase = await client();
-  const { error } = await supabase.from("house_progress").upsert(progress);
+  const { error } = await supabase.from("house_progress").upsert(progress, { onConflict: "user_id,date" });
   if (error) throw new RepositoryError(error.message);
 }
 
@@ -276,7 +276,7 @@ export async function listHouseProgress(userId: string, limit = 1): Promise<Hous
 
 export async function upsertWeeklyMode(mode: Partial<WeeklyMode> & { user_id: string; week_start: string }): Promise<void> {
   const supabase = await client();
-  const { error } = await supabase.from("weekly_modes").upsert(mode);
+  const { error } = await supabase.from("weekly_modes").upsert(mode, { onConflict: "user_id,week_start" });
   if (error) throw new RepositoryError(error.message);
 }
 
@@ -339,7 +339,7 @@ export async function listFrictionEvents(userId: string, limit = 20): Promise<Fr
 
 export async function upsertWeeklyReview(review: Partial<WeeklyReview> & { user_id: string; week_start: string }): Promise<void> {
   const supabase = await client();
-  const { error } = await supabase.from("weekly_reviews").upsert(review);
+  const { error } = await supabase.from("weekly_reviews").upsert(review, { onConflict: "user_id,week_start" });
   if (error) throw new RepositoryError(error.message);
 }
 
@@ -375,7 +375,7 @@ export async function listMomentumHistory(userId: string, days = 30): Promise<Mo
 
 export async function insertMomentumHistory(m: Partial<MomentumHistory> & { user_id: string; date: string; overall_score: number }): Promise<void> {
   const supabase = await client();
-  const { error } = await supabase.from("momentum_history").upsert(m);
+  const { error } = await supabase.from("momentum_history").upsert(m, { onConflict: "user_id,date" });
   if (error) throw new RepositoryError(error.message);
 }
 
