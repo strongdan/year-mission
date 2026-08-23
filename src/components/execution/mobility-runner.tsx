@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowLeft, Check, ChevronRight, Pause, Play, RotateCcw } from "lucide-react";
 import { logExecutionAction } from "@/app/execution-actions";
 import { MOBILITY_PROTOCOLS } from "@/domain/execution-protocols";
@@ -17,13 +17,6 @@ export function MobilityRunner({ slug, taskId, onComplete }: { slug: string; tas
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const startedAt = useRef(Date.now());
-
-  const advance = useCallback(() => {
-    if (!protocol) return;
-    if (stepIndex >= protocol.steps.length - 1) return;
-    const nextIndex = stepIndex + 1;
-    setStepIndex(nextIndex);
-  }, [protocol, stepIndex]);
 
   const step = protocol?.steps[stepIndex];
   const timer = useCountdown(step?.durationSeconds ?? 0, () => {
@@ -74,7 +67,6 @@ export function MobilityRunner({ slug, taskId, onComplete }: { slug: string; tas
     const nextIndex = stepIndex + 1;
     setStepIndex(nextIndex);
     timer.reset(protocol.steps[nextIndex].durationSeconds, started);
-    advance();
   }
 
   if (finished) {
