@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { coachAction, listProposalsAction, resolveProposalAction } from "@/app/actions";
+import { getAiStatusAction } from "@/app/ai-status-actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Send } from "lucide-react";
@@ -13,6 +14,8 @@ interface Message {
   content: string;
 }
 
+type AiStatus = NonNullable<Awaited<ReturnType<typeof getAiStatusAction>>["data"]>;
+
 const SUGGESTED = ["Plan my week", "What should I do now?", "Analyze my deferrals", "Break this task down"];
 
 export function CoachView() {
@@ -23,6 +26,7 @@ export function CoachView() {
   const [proposals, setProposals] = useState<AiProposal[]>([]);
   const [proposalBusy, setProposalBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   async function loadProposals() {
@@ -32,9 +36,10 @@ export function CoachView() {
 
   useEffect(() => {
     let cancelled = false;
-    listProposalsAction().then((res) => {
+    Promise.all([listProposalsAction(), getAiStatusAction()]).then(([proposalRes, statusRes]) => {
       if (cancelled) return;
-      if (res.ok && res.data) setProposals(res.data);
+      if (proposalRes.ok && proposalRes.data) setProposals(proposalRes.data);
+      if (statusRes.ok && statusRes.data) setAiStatus(statusRes.data);
     });
     return () => {
       cancelled = true;
@@ -93,6 +98,13 @@ export function CoachView() {
       <header>
         <h1 className="text-xl font-semibold">Coach</h1>
         <p className="text-xs text-zinc-500">Grounds advice in your current state. Application code stays in charge.</p>
+        {aiStatus && (
+          <p className={`mt-1.5 text-[11px] ${aiStatus.mock ? "text-amber-400/80" : "text-emerald-400/80"}`}>
+            {aiStatus.mock
+              ? "AI not configured — using the built-in mock coach"
+              : `${aiStatus.provider === "gemini" ? "Gemini free tier" : "OpenAI"} · ${aiStatus.model}`}
+          </p>
+        )}
       </header>
 
       {proposals.length > 0 && (
@@ -118,13 +130,16 @@ export function CoachView() {
 
       <div className="flex flex-col gap-3">
         {messages.map((m, i) => (
-          <div key={i} className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${m.role === "user" ? "self-end bg-zinc-100 text-zinc-950" : "self-start bg-zinc-900 text-zinc-200"}`}>
+          <div
+            key={i}
+            className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
+              m.role === "user" ? "self-end bg-zinc-100 text-zinc-950" : "self-start bg-zinc-900 text-zinc-200"
+            }`}
+          >
             {m.content}
           </div>
         ))}
-        {busy && (
-          <div className="self-start rounded-2xl bg-zinc-900 px-4 py-3 text-sm text-zinc-400">Thinking…</div>
-        )}
+        {busy && <div className="self-start rounded-2xl bg-zinc-900 px-4 py-3 text-sm text-zinc-400">Thinking…</div>}
         <div ref={bottomRef} />
       </div>
 
