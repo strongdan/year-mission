@@ -42,3 +42,15 @@ export const OPENAI_MODELS: ModelConfig = {
   coachCostPer1kIn: 0.0004,
   coachCostPer1kOut: 0.0016,
 };
+
+// These models currently have a Gemini Developer API free tier. Keep costs at
+// zero for the intended free-tier deployment; if billing is enabled later,
+// revisit cost accounting rather than silently assuming requests are free.
+export const GEMINI_MODELS: ModelConfig = {
+  cheap: "gemini-3.5-flash-lite",
+  coach: "gemini-3.6-flash",
+  cheapCostPer1kIn: 0,
+  cheapCostPer1kOut: 0,
+  coachCostPer1kIn: 0,
+  coachCostPer1kOut: 0,
+};
