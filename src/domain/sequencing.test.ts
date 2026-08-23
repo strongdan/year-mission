@@ -262,4 +262,14 @@ describe("exclude task", () => {
     expect(result.kind).toBe("task");
     if (result.kind === "task") expect(result.task.task.id).toBe("b");
   });
+
+  it("returns an explicit floor when the excluded task was the only actionable option", () => {
+    const only = task({ id: "only", title: "Only option" });
+    const result = sequenceTasks({ candidates: [only], now, excludeTaskId: "only", bigFourOpenSlugs: ["body"] });
+    expect(result.kind).toBe("floor");
+    if (result.kind === "floor") {
+      expect(result.label).toMatch(/10-minute walk/);
+      expect(result.reason).toMatch(/No active task is actionable/);
+    }
+  });
 });
