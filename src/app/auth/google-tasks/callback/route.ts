@@ -1,32 +1,75 @@
-import { requireUser } from "@/lib/auth";
+import { createAdminClient } from "@/integrations/supabase/server";
+import { encryptToken } from "@/services/google/encryption";
 import { exchangeCode, getTokenInfo } from "@/services/google/oauth";
-import { storeGoogleConnection } from "@/services/google/sync-service";
+import { verifyGoogleOAuthState } from "@/services/google/oauth-state";
 import { NextResponse } from "next/server";
+
+function redirectToSettings(request: Request, params: Record<string, string>) {
+  const url = new URL("/settings", request.url);
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  return NextResponse.redirect(url);
+}
+
+function safeErrorMessage(error: unknown): string {
+  const value = error instanceof Error ? error.message : "Google connection failed.";
+  return value.replace(/[^\w .,:;!?@/\-{}\[\]"]/g, "").slice(0, 220);
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state");
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const fail = () => NextResponse.redirect(new URL("/tasks?error=google_callback", base));
+  const oauthError = url.searchParams.get("error");
+  const state = verifyGoogleOAuthState(url.searchParams.get("state"));
 
-  const { user } = await requireUser();
-  if (!user || !state || state !== user.id) return fail();
-  if (!code) return fail();
+  if (oauthError) {
+    return redirectToSettings(request, {
+      google: "error",
+      message: oauthError === "access_denied" ? "Google connection was cancelled." : "Google authorization failed.",
+    });
+  }
+
+  if (!state) {
+    return redirectToSettings(request, {
+      google: "error",
+      message: "Google authorization expired or could not be verified. Try Connect Google again.",
+    });
+  }
+
+  if (!code) {
+    return redirectToSettings(request, { google: "error", message: "Google returned no authorization code." });
+  }
 
   try {
     const token = await exchangeCode(code);
-    if (!token.refreshToken) return NextResponse.redirect(new URL("/tasks?error=google_no_refresh", base));
+    if (!token.refreshToken) {
+      return redirectToSettings(request, {
+        google: "error",
+        message: "Google did not return offline access. Reconnect and approve access when prompted.",
+      });
+    }
+
     const info = await getTokenInfo(token.accessToken);
-    await storeGoogleConnection(user.id, {
-      refreshToken: token.refreshToken,
-      email: info.email,
-      googleUserId: info.userId,
-      scope: token.scope,
-    });
-  } catch {
-    return NextResponse.redirect(new URL("/tasks?error=google_callback", base));
+    const admin = await createAdminClient();
+    if (!admin) throw new Error("Server database access is not configured.");
+
+    const { data: userRecord, error: userError } = await admin.auth.admin.getUserById(state.userId);
+    if (userError || !userRecord.user) throw new Error("The Year Mission account that started this connection no longer exists.");
+
+    const { error: saveError } = await admin.from("google_connections").upsert(
+      {
+        user_id: state.userId,
+        refresh_token: encryptToken(token.refreshToken),
+        token_encrypted: true,
+        email: info.email,
+        google_user_id: info.userId,
+        scope: token.scope,
+      },
+      { onConflict: "user_id" }
+    );
+    if (saveError) throw new Error(`Could not save Google connection: ${saveError.message}`);
+  } catch (error) {
+    return redirectToSettings(request, { google: "error", message: safeErrorMessage(error) });
   }
 
-  return NextResponse.redirect(new URL("/tasks?sync=connected", base));
+  return redirectToSettings(request, { google: "connected" });
 }

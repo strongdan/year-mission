@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { createServerClientForMiddleware } from "@/integrations/supabase/server";
 import { hasSupabaseConfig } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback"];
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/google-tasks/callback"];
 
 function applySupabaseResponse(target: NextResponse, source: NextResponse) {
   source.cookies.getAll().forEach((cookie) => {
@@ -21,7 +21,9 @@ function applySupabaseResponse(target: NextResponse, source: NextResponse) {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
-  const isCallback = pathname.startsWith("/auth/callback");
+  const isAuthCallback = pathname.startsWith("/auth/callback");
+  const isGoogleServiceCallback = pathname.startsWith("/auth/google-tasks/callback");
+  const isCallback = isAuthCallback || isGoogleServiceCallback;
 
   if (!hasSupabaseConfig) {
     return NextResponse.next();

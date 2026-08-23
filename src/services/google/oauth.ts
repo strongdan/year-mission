@@ -1,5 +1,6 @@
 import "server-only";
 import { googleConfig, GoogleConfigError } from "./config";
+import { createGoogleOAuthState } from "./oauth-state";
 import { GOOGLE_SCOPES } from "@/domain/google-sync";
 
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
@@ -11,7 +12,7 @@ export interface TokenResult {
   scope: string;
 }
 
-export function buildAuthUrl(state: string): string {
+export function buildAuthUrl(userId: string): string {
   const { clientId, redirectUri } = googleConfig();
   const params = new URLSearchParams({
     client_id: clientId,
@@ -21,7 +22,7 @@ export function buildAuthUrl(state: string): string {
     access_type: "offline",
     prompt: "consent",
     include_granted_scopes: "true",
-    state,
+    state: createGoogleOAuthState(userId, "/settings"),
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
@@ -36,7 +37,9 @@ async function tokenRequest(form: URLSearchParams): Promise<TokenResult> {
     body: form.toString(),
   });
   if (!res.ok) {
-    throw new GoogleConfigError(`Google token exchange failed (${res.status}).`);
+    const detail = await res.text().catch(() => "");
+    const safeDetail = detail.replace(/[^\w .,:;!?@/\-{}\[\]"]/g, "").slice(0, 180);
+    throw new GoogleConfigError(`Google token exchange failed (${res.status})${safeDetail ? `: ${safeDetail}` : "."}`);
   }
   const data = (await res.json()) as {
     access_token?: string;
