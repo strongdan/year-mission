@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { SettingsView } from "@/components/settings/settings-view";
+import { NotificationSettingsCard } from "@/components/settings/notification-settings-card";
 import { TimelineSettingsCard } from "@/components/settings/timeline-settings-card";
 
 export default async function SettingsPage() {
@@ -13,6 +14,7 @@ export default async function SettingsPage() {
   return (
     <>
       <SettingsView environment={environment} buildSha={buildSha} />
+      <NotificationSettingsCard />
       <TimelineSettingsCard />
     </>
   );
