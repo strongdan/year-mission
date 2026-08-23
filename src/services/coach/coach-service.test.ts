@@ -50,7 +50,7 @@ describe("CoachService", () => {
         latencyMs: 12,
         provider: "test",
       }),
-    } as Awaited<ReturnType<typeof getAiProviderForRequest>>);
+    } as unknown as Awaited<ReturnType<typeof getAiProviderForRequest>>);
 
     const result = await new CoachService().chat({ message: "What now?", context: EMPTY_CONTEXT, history: [] });
     expect(result.content).toBe("Do the next useful thing.");
