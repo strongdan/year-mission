@@ -37,7 +37,7 @@ export function WorkoutRunner({ slug, taskId }: { slug: string; taskId?: string 
   const [finished, setFinished] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const startedAt = useRef(Date.now());
+  const startedAt = useRef<number | null>(null);
   const rest = useCountdown(0, () => {
     if ("vibrate" in navigator) navigator.vibrate?.(120);
   });
@@ -84,10 +84,15 @@ export function WorkoutRunner({ slug, taskId }: { slug: string; taskId?: string 
   const totalSets = protocol.exercises.reduce((sum, item) => sum + item.sets, 0);
   const progressPercent = Math.round((progressDone / totalSets) * 100);
 
+  function markStarted() {
+    if (startedAt.current === null) startedAt.current = Date.now();
+  }
+
   async function finishWorkout(nextEntries: Record<string, SetEntry[]>) {
     setSaving(true);
     setError(null);
-    const durationSeconds = Math.max(60, Math.round((Date.now() - startedAt.current) / 1000));
+    const startTime = startedAt.current ?? Date.now();
+    const durationSeconds = Math.max(60, Math.round((Date.now() - startTime) / 1000));
     const result = await logExecutionAction({
       protocolId: protocol.slug,
       kind: "strength",
@@ -112,6 +117,7 @@ export function WorkoutRunner({ slug, taskId }: { slug: string; taskId?: string 
 
   async function completeSet() {
     if (saving) return;
+    markStarted();
     const entry: SetEntry = { reps: reps.trim() || selected.reps, weight: weight.trim() };
     const nextEntries = {
       ...entries,
@@ -166,8 +172,8 @@ export function WorkoutRunner({ slug, taskId }: { slug: string; taskId?: string 
         {!baseCompatible && selected.title !== exercise.title && <p className="mt-2 text-xs text-emerald-400">Substituted automatically for your available equipment.</p>}
 
         <div className="mt-5 grid grid-cols-2 gap-3">
-          <label className="text-xs text-zinc-500">Reps<input value={reps} onChange={(event) => setReps(event.target.value)} inputMode="numeric" placeholder={selected.reps} className="mt-1.5 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-base text-zinc-100 outline-none focus:border-sky-700" /></label>
-          <label className="text-xs text-zinc-500">Weight <span className="text-zinc-700">optional</span><input value={weight} onChange={(event) => setWeight(event.target.value)} inputMode="decimal" placeholder="lb" className="mt-1.5 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-base text-zinc-100 outline-none focus:border-sky-700" /></label>
+          <label className="text-xs text-zinc-500">Reps<input value={reps} onFocus={markStarted} onChange={(event) => setReps(event.target.value)} inputMode="numeric" placeholder={selected.reps} className="mt-1.5 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-base text-zinc-100 outline-none focus:border-sky-700" /></label>
+          <label className="text-xs text-zinc-500">Weight <span className="text-zinc-700">optional</span><input value={weight} onFocus={markStarted} onChange={(event) => setWeight(event.target.value)} inputMode="decimal" placeholder="lb" className="mt-1.5 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-base text-zinc-100 outline-none focus:border-sky-700" /></label>
         </div>
         <Button className="mt-4 w-full" onClick={completeSet} disabled={saving}>{saving ? "Saving…" : setIndex === exercise.sets - 1 && exerciseIndex === protocol.exercises.length - 1 ? "Complete workout" : "Complete set"}</Button>
       </Card>
@@ -185,7 +191,7 @@ export function WorkoutRunner({ slug, taskId }: { slug: string; taskId?: string 
         <a href={settings.pumpClubUrl} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-xl border border-zinc-800 px-3 py-3 text-sm text-zinc-400 hover:border-zinc-700 hover:text-zinc-100"><span>Prefer your lifting app?</span><span className="inline-flex items-center gap-1.5 text-zinc-300">Open Pump Club <ExternalLink className="h-3.5 w-3.5" /></span></a>
       )}
 
-      <div className="flex items-center justify-between text-xs text-zinc-600"><span>{protocol.estimatedMinutes} min planned</span><button onClick={() => { setExerciseIndex(0); setSetIndex(0); setEntries({}); setReps(""); setWeight(""); rest.reset(0, false); startedAt.current = Date.now(); }} className="inline-flex items-center gap-1 hover:text-zinc-300"><RotateCcw className="h-3 w-3" /> Restart</button></div>
+      <div className="flex items-center justify-between text-xs text-zinc-600"><span>{protocol.estimatedMinutes} min planned</span><button onClick={() => { setExerciseIndex(0); setSetIndex(0); setEntries({}); setReps(""); setWeight(""); rest.reset(0, false); startedAt.current = null; }} className="inline-flex items-center gap-1 hover:text-zinc-300"><RotateCcw className="h-3 w-3" /> Restart</button></div>
       {error && <p className="rounded-lg border border-red-900/50 bg-red-950/20 px-3 py-2 text-sm text-red-300">{error}</p>}
     </div>
   );
