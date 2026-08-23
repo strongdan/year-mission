@@ -16,9 +16,11 @@ Set three server-only environment variables in Vercel:
 - `YEAR_MISSION_HEALTH_SYNC_TOKEN`: a long random bearer token used only by the iOS HealthKit bridge.
 - `YEAR_MISSION_CHATGPT_TOKEN`: a different long random bearer token used only by ChatGPT/GPT Actions/MCP.
 
-`SUPABASE_SERVICE_ROLE_KEY` must already be configured. Never expose any of these values through `NEXT_PUBLIC_*` variables.
+`SUPABASE_SERVICE_ROLE_KEY` must already be configured. Never expose any of the server-only values through `NEXT_PUBLIC_*` variables.
 
-Generate tokens with a password manager or `openssl rand -hex 32`.
+Optionally set `NEXT_PUBLIC_YEAR_MISSION_GPT_URL` to the URL of the private Year Mission Custom GPT. This value is intentionally public and only controls the Coach page's **Open in ChatGPT** link; it is not an authentication secret.
+
+Generate bearer tokens with a password manager or `openssl rand -hex 32`.
 
 ## Phase 1 — Apple Health sync
 
@@ -63,6 +65,8 @@ A ChatGPT subscription does not pay for OpenAI API calls made by Year Mission. T
 - `POST /api/integrations/chatgpt/proposals`
 
 Copy `docs/chatgpt-actions-openapi.yaml`, replace `https://YOUR_YEAR_MISSION_HOST` with the deployed Year Mission origin, and configure the GPT Action authentication as an API key/Bearer token using `YEAR_MISSION_CHATGPT_TOKEN`. Keep the GPT private because this is a single-owner integration.
+
+After the private GPT exists, set `NEXT_PUBLIC_YEAR_MISSION_GPT_URL` to its ChatGPT URL. The Coach screen will display **Open in ChatGPT**, providing a one-tap handoff without embedding or invoking the OpenAI API from Year Mission.
 
 This design causes no OpenAI model API calls from the Year Mission server. Normal hosting/database usage still applies, and ChatGPT plan limits/policies can change.
 
