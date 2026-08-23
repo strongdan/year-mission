@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { ArrowLeft, Check, ChevronRight, Moon } from "lucide-react";
+import { checkinAction } from "@/app/actions";
 import { logExecutionAction } from "@/app/execution-actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -28,15 +29,19 @@ export function EveningRoutineRunner({ taskId }: { taskId?: string | null }) {
   async function completeRoutine(finalCompleted: string[]) {
     if (saving) return;
     setSaving(true);
-    const result = await logExecutionAction({
-      protocolId: "evening-reset",
-      kind: "routine",
-      durationSeconds: Math.max(60, Math.round((Date.now() - startedAt.current) / 1000)),
-      taskId: taskId ?? null,
-      details: { completedSteps: finalCompleted },
-    });
-    if (!result.ok) {
-      setError(result.error ?? "Could not save evening routine.");
+    const completion = finalCompleted.length === 3 ? "target" : finalCompleted.length > 0 ? "floor" : "skipped";
+    const [execution, checkin] = await Promise.all([
+      logExecutionAction({
+        protocolId: "evening-reset",
+        kind: "routine",
+        durationSeconds: Math.max(60, Math.round((Date.now() - startedAt.current) / 1000)),
+        taskId: taskId ?? null,
+        details: { completedSteps: finalCompleted, completion },
+      }),
+      checkinAction({ eveningResetCompletion: completion, eveningResetVariant: "guided_v2" }),
+    ]);
+    if (!execution.ok || !checkin.ok) {
+      setError(execution.error ?? checkin.error ?? "Could not save evening routine.");
       setSaving(false);
       return;
     }
@@ -56,7 +61,7 @@ export function EveningRoutineRunner({ taskId }: { taskId?: string | null }) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 p-6 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-950 text-emerald-300"><Check className="h-7 w-7" /></div>
-        <div><h1 className="text-2xl font-semibold text-zinc-100">Day closed</h1><p className="mt-1 text-sm text-zinc-500">{completed.length} of 3 reset steps completed. That is enough.</p></div>
+        <div><h1 className="text-2xl font-semibold text-zinc-100">Day closed</h1><p className="mt-1 text-sm text-zinc-500">{completed.length} of 3 reset steps completed. {completed.length === 3 ? "Target complete." : "Floor counted."}</p></div>
         <Link href="/"><Button>Back to Today</Button></Link>
       </div>
     );
@@ -78,7 +83,7 @@ export function EveningRoutineRunner({ taskId }: { taskId?: string | null }) {
       </Card>
 
       <Button className="w-full" onClick={() => { startedAt.current = Date.now(); setPhase("mobility"); }}>Start tonight</Button>
-      <p className="text-center text-xs leading-relaxed text-zinc-600">If the night is chaotic, you can skip a step without turning the whole routine into a miss.</p>
+      <p className="text-center text-xs leading-relaxed text-zinc-600">If the night is chaotic, complete what fits. A partial reset counts as the Floor instead of becoming a failed night.</p>
       {error && <p className="rounded-lg border border-red-900/50 bg-red-950/20 px-3 py-2 text-sm text-red-300">{error}</p>}
     </div>
   );
