@@ -104,8 +104,8 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
       const mediaStandalone = window.matchMedia("(display-mode: standalone)").matches;
       const navigatorStandalone = Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
       setStandalone(mediaStandalone || navigatorStandalone);
+      void loadStatuses();
     });
-    void loadStatuses();
     return () => window.cancelAnimationFrame(frame);
   }, [loadStatuses]);
 
