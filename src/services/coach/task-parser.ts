@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getAiProvider } from "@/integrations/ai";
+import { getAiProviderForRequest } from "@/integrations/ai";
 import { DEFERRAL_REASON_Z, type DeferralReason } from "@/domain/constants";
 
 const PARSED_TASK_Z = z.object({
@@ -25,7 +25,7 @@ const CATEGORIZED_FRICTION_Z = z.object({
  */
 export class TaskAiParser {
   async parseTask(rawInput: string, today: string): Promise<ParsedTask> {
-    const provider = getAiProvider();
+    const provider = await getAiProviderForRequest();
 
     if (provider.name === "mock") {
       return this.fallbackParse(rawInput);
@@ -57,7 +57,7 @@ Raw input: ${rawInput}`;
   }
 
   async categorizeFriction(note: string | null): Promise<{ reason: DeferralReason; note: string | null }> {
-    const provider = getAiProvider();
+    const provider = await getAiProviderForRequest();
     if (provider.name === "mock") {
       return { reason: "just_avoiding", note: note ?? null };
     }
