@@ -1,4 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/integrations/ai", () => ({
+  getAiProviderForRequest: async () => ({ name: "mock" }),
+}));
+
 import { organizeIdea } from "@/services/ideas/idea-organizer";
 
 describe("idea organizer", () => {
