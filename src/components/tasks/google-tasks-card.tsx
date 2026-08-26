@@ -46,6 +46,7 @@ function taskKey(task: Pick<HubTask, "tasklistId" | "id">) {
 }
 
 function loadHidden(): Set<string> {
+  if (typeof window === "undefined") return new Set();
   try {
     const parsed = JSON.parse(window.localStorage.getItem(HIDDEN_KEY) ?? "[]") as unknown;
     return new Set(Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string") : []);
@@ -72,7 +73,7 @@ function formatDue(value?: string | null) {
 export function GoogleTasksCard() {
   const [status, setStatus] = useState<Status | null>(null);
   const [hub, setHub] = useState<HubData | null>(null);
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const [hidden, setHidden] = useState<Set<string>>(() => loadHidden());
   const [showHidden, setShowHidden] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const [query, setQuery] = useState("");
@@ -104,7 +105,6 @@ export function GoogleTasksCard() {
   }
 
   useEffect(() => {
-    setHidden(loadHidden());
     let cancelled = false;
     (async () => {
       const res = await getGoogleSyncStatusAction();
@@ -133,209 +133,137 @@ export function GoogleTasksCard() {
       const isHidden = hidden.has(taskKey(task));
       if (isHidden !== showHidden) return false;
       if (!showCompleted && task.status === "completed") return false;
-      if (!needle) return true;
-      return `${task.title} ${task.tasklistTitle} ${task.notes ?? ""}`.toLowerCase().includes(needle);
+      if (needle && !`${task.title} ${task.notes ?? ""} ${task.tasklistTitle}`.toLowerCase().includes(needle)) return false;
+      return true;
     });
-  }, [hub, hidden, query, showCompleted, showHidden]);
-
-  const hiddenCount = hub?.tasks.filter((task) => hidden.has(taskKey(task))).length ?? 0;
-  const activeCount = hub?.tasks.filter((task) => task.status !== "completed").length ?? 0;
+  }, [hub, hidden, showHidden, showCompleted, query]);
 
   async function connect() {
     setError(null);
-    const res = await connectGoogleTasksAction();
-    if (res.ok && res.data?.url) window.location.href = res.data.url;
-    else setError(res.error ?? "Failed to connect.");
+    const result = await connectGoogleTasksAction();
+    if (result.ok && result.data?.url) window.location.href = result.data.url;
+    else setError(result.error ?? "Could not connect Google Tasks.");
   }
 
   async function sync() {
-    if (syncing) return;
     setSyncing(true);
-    setMessage(null);
     setError(null);
-    const res = await syncGoogleTasksAction();
-    if (res.ok && res.data?.summary) {
-      const s = res.data.summary;
-      setMessage(`${s.pulled} pulled · ${s.pushed} pushed · ${s.updated} updated${s.conflicts ? ` · ${s.conflicts} conflicts` : ""}`);
-      await loadHub();
+    setMessage(null);
+    const result = await syncGoogleTasksAction();
+    if (result.ok) {
+      setMessage("Google Tasks synced.");
+      await Promise.all([loadStatus(), loadHub()]);
     } else {
-      setError(res.error ?? "Sync failed.");
+      setError(result.error ?? "Google Tasks sync failed.");
     }
     setSyncing(false);
   }
 
-  function toggleHidden(task: HubTask) {
-    const next = new Set(hidden);
-    const key = taskKey(task);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    setHidden(next);
-    saveHidden(next);
+  async function disconnect() {
+    setError(null);
+    const result = await disconnectGoogleTasksAction();
+    if (result.ok) {
+      setStatus((current) => current ? { ...current, connected: false, email: null } : current);
+      setHub(null);
+      setMessage("Google Tasks disconnected.");
+    } else {
+      setError(result.error ?? "Could not disconnect Google Tasks.");
+    }
   }
 
   async function addTask() {
-    const title = newTask.trim();
-    if (!title || !selectedList || adding) return;
+    if (!selectedList || !newTask.trim() || adding) return;
     setAdding(true);
     setError(null);
-    const res = await addGoogleTaskAction({ tasklistId: selectedList, title });
-    setAdding(false);
-    if (!res.ok) {
-      setError(res.error ?? "Google task could not be added.");
-      return;
+    setMessage(null);
+    const result = await addGoogleTaskAction({ tasklistId: selectedList, title: newTask.trim() });
+    if (result.ok) {
+      setNewTask("");
+      setMessage("Added to Google Tasks.");
+      await loadHub();
+    } else {
+      setError(result.error ?? "Could not add Google Task.");
     }
-    setNewTask("");
-    setMessage("Google task added.");
-    await loadHub();
+    setAdding(false);
   }
 
   async function removeTask(task: HubTask) {
-    if (!window.confirm(`Delete “${task.title}” from Google Tasks?`)) return;
-    const key = taskKey(task);
-    setRemoving(key);
+    if (removing) return;
+    setRemoving(taskKey(task));
     setError(null);
-    const res = await removeGoogleTaskAction({ tasklistId: task.tasklistId, taskId: task.id });
-    setRemoving(null);
-    if (!res.ok) {
-      setError(res.error ?? "Google task could not be removed.");
-      return;
+    const result = await removeGoogleTaskAction({ tasklistId: task.tasklistId, taskId: task.id });
+    if (result.ok) {
+      setHub((current) => current ? { ...current, tasks: current.tasks.filter((candidate) => taskKey(candidate) !== taskKey(task)) } : current);
+    } else {
+      setError(result.error ?? "Could not remove Google Task.");
     }
-    const next = new Set(hidden);
-    next.delete(key);
-    setHidden(next);
-    saveHidden(next);
-    setHub((current) => current ? { ...current, tasks: current.tasks.filter((item) => taskKey(item) !== key) } : current);
-    setMessage("Removed from Google Tasks.");
+    setRemoving(null);
   }
 
-  if (!status?.configured) {
-    return (
-      <Card>
-        <CardHeader title="Google Tasks" subtitle="All of your Google task lists in one place." />
-        <p className="text-xs text-zinc-500">Not configured on the server.</p>
-      </Card>
-    );
-  }
-
-  if (!status.connected) {
-    return (
-      <Card>
-        <CardHeader title="Google Tasks" subtitle="See and manage every Google task list inside Year Mission." />
-        <div className="flex flex-col gap-2">
-          <p className="text-xs text-zinc-400">Connect Google to view all lists, add tasks, hide clutter in this app, or delete tasks from Google.</p>
-          <div><Button size="sm" onClick={connect}>Connect Google</Button></div>
-          {error && <p className="text-xs text-red-400">{error}</p>}
-        </div>
-      </Card>
-    );
+  function toggleHidden(task: HubTask) {
+    setHidden((current) => {
+      const next = new Set(current);
+      const key = taskKey(task);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      saveHidden(next);
+      return next;
+    });
   }
 
   return (
     <Card>
-      <CardHeader
-        title="Google Tasks"
-        subtitle={status.email ? `${activeCount} open across ${hub?.lists.length ?? 0} lists · ${status.email}` : "All Google lists"}
-        right={
-          <button onClick={loadHub} disabled={loadingHub} aria-label="Refresh Google tasks" className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-40">
-            <RefreshCw className={`h-4 w-4 ${loadingHub ? "animate-spin" : ""}`} />
-          </button>
-        }
-      />
-
-      <div className="flex flex-col gap-3">
-        <div className="flex gap-2">
-          <input
-            value={newTask}
-            onChange={(event) => setNewTask(event.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && void addTask()}
-            placeholder="Add Google task…"
-            className="min-w-0 flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none placeholder:text-zinc-600 focus:border-zinc-600"
-          />
-          <select
-            value={selectedList}
-            onChange={(event) => setSelectedList(event.target.value)}
-            aria-label="Google task list"
-            className="max-w-[42%] rounded-xl border border-zinc-800 bg-zinc-950 px-2 py-2 text-xs text-zinc-300 outline-none"
-          >
-            {(hub?.lists ?? []).map((list) => <option key={list.id} value={list.id}>{list.title}</option>)}
-          </select>
-          <Button size="sm" onClick={addTask} disabled={adding || !newTask.trim() || !selectedList}>
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
+      <CardHeader title="Google Tasks" subtitle="Manage every Google task list without turning them all into Year Mission commitments." />
+      {!status ? (
+        <p className="text-sm text-zinc-500">Checking Google Tasks…</p>
+      ) : !status.configured ? (
+        <p className="text-sm text-zinc-500">Google Tasks is not configured.</p>
+      ) : !status.connected ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-zinc-400">Connect Google to view and manage all of your task lists here.</p>
+          <div><Button size="sm" onClick={connect}>Connect Google</Button></div>
         </div>
-
-        <div className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2">
-          <Search className="h-3.5 w-3.5 text-zinc-600" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search all Google tasks"
-            className="min-w-0 flex-1 bg-transparent text-xs text-zinc-300 outline-none placeholder:text-zinc-600"
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-2 text-[11px]">
-          <button onClick={() => setShowCompleted((value) => !value)} className={`rounded-full border px-2.5 py-1 ${showCompleted ? "border-zinc-600 text-zinc-200" : "border-zinc-800 text-zinc-500"}`}>
-            {showCompleted ? "Hide completed" : "Show completed"}
-          </button>
-          <button onClick={() => setShowHidden((value) => !value)} className={`rounded-full border px-2.5 py-1 ${showHidden ? "border-zinc-600 text-zinc-200" : "border-zinc-800 text-zinc-500"}`}>
-            {showHidden ? "Back to visible" : `Hidden${hiddenCount ? ` (${hiddenCount})` : ""}`}
-          </button>
-        </div>
-
-        {message && <p className="text-xs text-emerald-400">{message}</p>}
-        {error && <p className="text-xs text-red-400">{error}</p>}
-
-        {loadingHub && !hub ? (
-          <p className="text-sm text-zinc-500">Loading Google Tasks…</p>
-        ) : visibleTasks.length > 0 ? (
-          <div className="max-h-[28rem] space-y-2 overflow-y-auto pr-1">
-            {visibleTasks.map((task) => {
-              const key = taskKey(task);
-              const due = formatDue(task.due);
-              const isDone = task.status === "completed";
-              return (
-                <div key={key} className="rounded-xl border border-zinc-800 bg-zinc-950/35 px-3 py-2.5">
-                  <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className={`text-sm leading-snug ${isDone ? "text-zinc-600 line-through" : "text-zinc-200"}`}>{task.title}</p>
-                      <div className="mt-1 flex flex-wrap gap-2 text-[10px] text-zinc-600">
-                        <span>{task.tasklistTitle}</span>
-                        {due && <span>Due {due}</span>}
-                        {isDone && <span>Completed</span>}
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <button onClick={() => toggleHidden(task)} title={showHidden ? "Show in Year Mission" : "Hide in Year Mission"} className="rounded-lg p-1.5 text-zinc-600 hover:bg-zinc-800 hover:text-zinc-200">
-                        {showHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                      </button>
-                      <button onClick={() => void removeTask(task)} disabled={removing === key} title="Delete from Google Tasks" className="rounded-lg p-1.5 text-zinc-600 hover:bg-red-950/50 hover:text-red-300 disabled:opacity-40">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+      ) : (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={sync} disabled={syncing || loadingHub}><RefreshCw className={`h-3.5 w-3.5 ${syncing || loadingHub ? "animate-spin" : ""}`} />{syncing ? "Syncing…" : "Sync"}</Button>
+            <Button size="sm" variant="ghost" onClick={disconnect}>Disconnect</Button>
           </div>
-        ) : (
-          <p className="text-sm text-zinc-500">{showHidden ? "No hidden Google tasks." : "No matching Google tasks."}</p>
-        )}
 
-        <div className="flex flex-wrap gap-2 border-t border-zinc-800 pt-3">
-          <Button size="sm" variant="secondary" onClick={sync} disabled={syncing}>
-            <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing…" : "Sync Year Mission list"}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={async () => { await disconnectGoogleTasksAction(); await loadStatus(); setHub(null); }}>
-            Disconnect
-          </Button>
+          {hub && (
+            <>
+              <div className="flex gap-2">
+                <select value={selectedList} onChange={(event) => setSelectedList(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-zinc-800 bg-zinc-950 px-2.5 py-2 text-xs text-zinc-200">
+                  {hub.lists.map((list) => <option key={list.id} value={list.id}>{list.title}</option>)}
+                </select>
+                <input value={newTask} onChange={(event) => setNewTask(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void addTask(); }} placeholder="Add task" className="min-w-0 flex-1 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700" />
+                <Button size="sm" onClick={addTask} disabled={!selectedList || !newTask.trim() || adding}><Plus className="h-3.5 w-3.5" />{adding ? "Adding…" : "Add"}</Button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="relative min-w-0 flex-1"><Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-600" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search all lists" className="w-full rounded-lg border border-zinc-800 bg-zinc-950 py-2 pl-8 pr-3 text-xs text-zinc-200 outline-none focus:border-zinc-700" /></label>
+                <Button size="sm" variant="ghost" onClick={() => setShowCompleted((value) => !value)}>{showCompleted ? "Hide completed" : "Show completed"}</Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowHidden((value) => !value)}>{showHidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}{showHidden ? "Visible" : "Hidden"}</Button>
+              </div>
+
+              <div className="flex max-h-96 flex-col divide-y divide-zinc-800/80 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950/30">
+                {visibleTasks.length === 0 ? <p className="p-3 text-xs text-zinc-600">No matching Google tasks.</p> : visibleTasks.map((task) => (
+                  <div key={taskKey(task)} className="flex items-start gap-2 p-3">
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm ${task.status === "completed" ? "text-zinc-600 line-through" : "text-zinc-200"}`}>{task.title}</p>
+                      <p className="mt-0.5 text-[11px] text-zinc-600">{task.tasklistTitle}{formatDue(task.due) ? ` · ${formatDue(task.due)}` : ""}</p>
+                    </div>
+                    <button type="button" onClick={() => toggleHidden(task)} className="rounded p-1 text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300" aria-label={hidden.has(taskKey(task)) ? "Show task" : "Hide task"}>{hidden.has(taskKey(task)) ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}</button>
+                    <button type="button" onClick={() => void removeTask(task)} disabled={Boolean(removing)} className="rounded p-1 text-zinc-600 hover:bg-zinc-800 hover:text-red-300 disabled:opacity-40" aria-label="Delete Google task"><Trash2 className="h-3.5 w-3.5" /></button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
-
-        <p className="text-[10px] leading-relaxed text-zinc-600">
-          Hide only affects this device&apos;s Year Mission view. Delete removes the task from Google. Existing two-way Year Mission sync remains limited to the dedicated Year Mission Google list.
-        </p>
-      </div>
+      )}
+      {message && <p className="mt-3 text-xs text-emerald-400">{message}</p>}
+      {error && <p className="mt-3 text-xs text-amber-300">{error}</p>}
     </Card>
   );
 }
