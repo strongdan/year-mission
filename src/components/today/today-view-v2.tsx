@@ -98,7 +98,10 @@ export function TodayViewV2() {
   }
 
   useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   if (loading) return <div className="p-4 text-sm text-zinc-500">Loading…</div>;
