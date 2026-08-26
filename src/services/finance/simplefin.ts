@@ -90,18 +90,21 @@ function simpleFinRequest(accessUrl: string, days: number): { url: URL; authoriz
   base.username = "";
   base.password = "";
 
-  const start = Math.floor(Date.now() / 1000) - Math.max(7, Math.min(days, 365)) * 86_400;
+  const windowDays = Math.max(7, Math.min(days, 90));
+  const end = Math.floor(Date.now() / 1000);
+  const start = end - windowDays * 86_400;
   const url = new URL(`${base.toString().replace(/\/$/, "")}/accounts`);
   url.searchParams.set("version", "2");
   url.searchParams.set("pending", "1");
   url.searchParams.set("start-date", String(start));
+  url.searchParams.set("end-date", String(end));
   return {
     url,
     authorization: `Basic ${Buffer.from(`${username}:${password}`, "utf8").toString("base64")}`,
   };
 }
 
-export async function fetchSimpleFinImport(accessUrl: string, days = 95): Promise<FinanceImport> {
+export async function fetchSimpleFinImport(accessUrl: string, days = 90): Promise<FinanceImport> {
   const request = simpleFinRequest(accessUrl, days);
   const response = await fetch(request.url, {
     method: "GET",
