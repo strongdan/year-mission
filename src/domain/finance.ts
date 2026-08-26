@@ -90,7 +90,7 @@ export function summarizeFinance(input: FinanceSummaryInput, today = new Date())
   const cutoffDate = cutoff.toISOString().slice(0, 10);
   const trailing30DayOutflow = input.transactions.reduce((sum, transaction) => {
     if (transaction.pending || transaction.postedDate < cutoffDate) return sum;
-    return transaction.amount > 0 ? sum + transaction.amount : sum;
+    return transaction.amount < 0 ? sum + Math.abs(transaction.amount) : sum;
   }, 0);
 
   const totalDebt = creditCardDebt + studentLoanDebt + otherDebt;
