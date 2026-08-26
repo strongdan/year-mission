@@ -18,7 +18,7 @@ const DOMAIN_ORDER = ["body", "capability", "home", "money"] as const;
 const LABELS: Record<(typeof DOMAIN_ORDER)[number], string> = {
   body: "Body",
   capability: "Career",
-  home: "Home",
+  home: "Self",
   money: "Money",
 };
 
@@ -88,13 +88,13 @@ function BalanceRadar({ bigFour }: { bigFour: Record<string, WeeklyValue> }) {
     <div>
       <svg viewBox="0 0 180 180" role="img" aria-label="This week's Big Four balance" className="mx-auto w-full max-w-[230px]">
         {guide.map((points, index) => <polygon key={points} points={points} className="fill-none stroke-zinc-800" strokeWidth={index === 0 ? 1 : 1.5} />)}
-        <line x1={cx} y1={30} x2={cx} y2={146} className="stroke-zinc-800" strokeWidth="1" />
-        <line x1={32} y1={cy} x2={148} y2={cy} className="stroke-zinc-800" strokeWidth="1" />
+        <line x1={cx} y1="30" x2={cx} y2="146" className="stroke-zinc-800" strokeWidth="1" />
+        <line x1="32" y1={cy} x2="148" y2={cy} className="stroke-zinc-800" strokeWidth="1" />
         <polygon points={polygon} className="fill-sky-500/15 stroke-sky-400" strokeWidth="2" strokeLinejoin="round" />
         {coordinates.map(([x, y], index) => <circle key={DOMAIN_ORDER[index]} cx={x} cy={y} r="3.3" className="fill-sky-300" />)}
         <text x="90" y="16" textAnchor="middle" className="fill-zinc-400 text-[10px]">Body</text>
         <text x="165" y="91" textAnchor="end" className="fill-zinc-400 text-[10px]">Career</text>
-        <text x="90" y="171" textAnchor="middle" className="fill-zinc-400 text-[10px]">Home</text>
+        <text x="90" y="171" textAnchor="middle" className="fill-zinc-400 text-[10px]">Self</text>
         <text x="15" y="91" className="fill-zinc-400 text-[10px]">Money</text>
       </svg>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-zinc-600">
@@ -120,7 +120,7 @@ export function MissionGrowth({ bigFour }: Props) {
 
   return (
     <Card>
-      <CardHeader title="Mission growth" subtitle="The radar is this week. The garden is cumulative and never resets." right={<Leaf className="h-4 w-4 text-emerald-500" />} />
+      <CardHeader title="Mission growth" subtitle="This week shows balance. The garden shows durable evidence of change." right={<Leaf className="h-4 w-4 text-emerald-500" />} />
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <p className="mb-2 text-xs font-medium text-zinc-500">This week&apos;s shape</p>
@@ -140,7 +140,7 @@ export function MissionGrowth({ bigFour }: Props) {
           </div>
         </div>
       </div>
-      <p className="mt-4 border-t border-zinc-800 pt-3 text-[11px] leading-relaxed text-zinc-600">Growth rewards meaningful work, workouts, evidence, milestones, courage, and returning to previously deferred tasks. Plants never wilt because a hard day is not lost progress.</p>
+      <p className="mt-4 border-t border-zinc-800 pt-3 text-[11px] leading-relaxed text-zinc-600">Self growth is evidence, not affirmation: courage, returning after avoidance, learning from friction, and doing things the old version of you would have avoided. Plants never wilt because a hard day is not lost progress.</p>
     </Card>
   );
 }

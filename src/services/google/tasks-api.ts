@@ -6,7 +6,7 @@ const ERROR_TEXT: Record<number, string> = {
   400: "Google rejected the request.",
   401: "Google access token expired or invalid.",
   403: "Google denied access to Tasks.",
-  404: "The Google task list no longer exists.",
+  404: "The Google task list or task no longer exists.",
 };
 
 async function api<T>(accessToken: string, path: string, init: RequestInit = {}): Promise<T> {
@@ -38,11 +38,20 @@ export interface GoogleTask extends GoogleTaskLike {
   due?: string | null;
   updated?: string | null;
   completed?: string | null;
+  hidden?: boolean;
 }
 
 export async function listTaskLists(accessToken: string): Promise<TaskList[]> {
-  const data = await api<{ items?: TaskList[] }>(accessToken, `/users/@me/lists`);
-  return data.items ?? [];
+  const lists: TaskList[] = [];
+  let pageToken: string | undefined;
+  do {
+    const params = new URLSearchParams({ maxResults: "100" });
+    if (pageToken) params.set("pageToken", pageToken);
+    const data = await api<{ items?: TaskList[]; nextPageToken?: string }>(accessToken, `/users/@me/lists?${params.toString()}`);
+    lists.push(...(data.items ?? []));
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+  return lists;
 }
 
 export async function findOrCreateYearMissionList(accessToken: string): Promise<TaskList> {
@@ -56,27 +65,49 @@ export async function findOrCreateYearMissionList(accessToken: string): Promise<
 }
 
 export async function listGoogleTasks(accessToken: string, tasklistId: string): Promise<GoogleTask[]> {
-  const data = await api<{ items?: GoogleTask[] }>(
-    accessToken,
-    `/lists/${tasklistId}/tasks?showCompleted=true&showHidden=true&maxResults=100`
-  );
-  return data.items ?? [];
+  const tasks: GoogleTask[] = [];
+  let pageToken: string | undefined;
+  do {
+    const params = new URLSearchParams({
+      showCompleted: "true",
+      showHidden: "true",
+      maxResults: "100",
+    });
+    if (pageToken) params.set("pageToken", pageToken);
+    const data = await api<{ items?: GoogleTask[]; nextPageToken?: string }>(
+      accessToken,
+      `/lists/${encodeURIComponent(tasklistId)}/tasks?${params.toString()}`
+    );
+    tasks.push(...(data.items ?? []));
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+  return tasks;
 }
 
-export async function createGoogleTask(accessToken: string, tasklistId: string, payload: { title: string; notes?: string; due?: string | null; status?: string }): Promise<GoogleTask> {
-  return api<GoogleTask>(accessToken, `/lists/${tasklistId}/tasks`, {
+export async function createGoogleTask(
+  accessToken: string,
+  tasklistId: string,
+  payload: { title: string; notes?: string; due?: string | null; status?: string }
+): Promise<GoogleTask> {
+  return api<GoogleTask>(accessToken, `/lists/${encodeURIComponent(tasklistId)}/tasks`, {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-export async function updateGoogleTask(accessToken: string, tasklistId: string, taskId: string, payload: { title: string; notes?: string; due?: string | null; status?: string }): Promise<GoogleTask> {
-  return api<GoogleTask>(accessToken, `/lists/${tasklistId}/tasks/${taskId}`, {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  });
+export async function updateGoogleTask(
+  accessToken: string,
+  tasklistId: string,
+  taskId: string,
+  payload: { title: string; notes?: string; due?: string | null; status?: string }
+): Promise<GoogleTask> {
+  return api<GoogleTask>(
+    accessToken,
+    `/lists/${encodeURIComponent(tasklistId)}/tasks/${encodeURIComponent(taskId)}`,
+    { method: "PUT", body: JSON.stringify(payload) }
+  );
 }
 
 export async function deleteGoogleTask(accessToken: string, tasklistId: string, taskId: string): Promise<void> {
-  await api<void>(accessToken, `/lists/${tasklistId}/tasks/${taskId}`, { method: "DELETE" });
+  await api<void>(accessToken, `/lists/${encodeURIComponent(tasklistId)}/tasks/${encodeURIComponent(taskId)}`, { method: "DELETE" });
 }

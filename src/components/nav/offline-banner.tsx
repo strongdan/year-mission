@@ -9,7 +9,7 @@ export function OfflineBanner() {
 
   return (
     <div role="status" className="bg-amber-950/80 px-4 py-1.5 text-center text-xs text-amber-200">
-      Offline. Pending changes will retry when you reconnect.
+      Offline · cached screens stay readable; reconnect before making changes.
     </div>
   );
 }

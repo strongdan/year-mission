@@ -21,10 +21,12 @@ export interface DomainGrowth {
   comebacks: number;
 }
 
+// `home` remains the persisted legacy slug for compatibility. In the product it
+// now represents Self: confidence, personal growth, identity, and self-trust.
 const LABELS: Record<DomainSlug, string> = {
   money: "Money",
   body: "Body",
-  home: "Home",
+  home: "Self",
   capability: "Career",
 };
 
