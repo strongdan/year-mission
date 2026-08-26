@@ -16,8 +16,21 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 
-type HubData = NonNullable<Awaited<ReturnType<typeof getGoogleTaskHubAction>>["data"]>;
-type HubTask = HubData["tasks"][number];
+interface HubTask {
+  id: string;
+  title: string;
+  status: string;
+  notes?: string | null;
+  due?: string | null;
+  completed?: string | null;
+  tasklistId: string;
+  tasklistTitle: string;
+}
+
+interface HubData {
+  lists: { id: string; title: string }[];
+  tasks: HubTask[];
+}
 
 interface Status {
   configured: boolean;
@@ -86,7 +99,7 @@ export function GoogleTasksCard() {
       setError(res.error ?? "Google Tasks could not be loaded.");
       return;
     }
-    setHub(res.data);
+    setHub(res.data as HubData);
     setSelectedList((current) => current || res.data.lists[0]?.id || "");
   }
 
@@ -101,7 +114,7 @@ export function GoogleTasksCard() {
         const hubRes = await getGoogleTaskHubAction();
         if (cancelled) return;
         if (hubRes.ok && hubRes.data) {
-          setHub(hubRes.data);
+          setHub(hubRes.data as HubData);
           setSelectedList(hubRes.data.lists[0]?.id ?? "");
         } else {
           setError(hubRes.error ?? "Google Tasks could not be loaded.");
