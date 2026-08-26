@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CircleDollarSign, RefreshCw, ShieldCheck } from "lucide-react";
 import {
   connectSimpleFinAction,
@@ -30,6 +30,8 @@ interface FinanceStatus {
   };
 }
 
+type LiabilityType = "student_loan" | "mortgage" | "auto" | "personal" | "credit_card" | "other";
+
 function money(value: number): string {
   return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 }
@@ -41,19 +43,23 @@ export function FinanceSettingsCard() {
   const [loanName, setLoanName] = useState("");
   const [loanBalance, setLoanBalance] = useState("");
   const [loanApr, setLoanApr] = useState("");
+  const [liabilityType, setLiabilityType] = useState<LiabilityType>("student_loan");
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  async function refresh() {
     const result = await getFinanceStatusAction();
     if (result.ok && result.data) setStatus(result.data as FinanceStatus);
     else setError(result.error ?? "Finance status could not be loaded.");
-  }, []);
+  }
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void getFinanceStatusAction().then((result) => {
+      if (result.ok && result.data) setStatus(result.data as FinanceStatus);
+      else setError(result.error ?? "Finance status could not be loaded.");
+    });
+  }, []);
 
   const lastSync = useMemo(() => {
     const values = status?.dashboard.accounts.map((account) => account.lastSyncedAt).filter((value): value is string => Boolean(value)) ?? [];
@@ -71,7 +77,7 @@ export function FinanceSettingsCard() {
     if (result.ok) {
       setSetupToken("");
       setMessage("SimpleFIN connected and finance data synced.");
-      await load();
+      await refresh();
     } else setError(result.error ?? "SimpleFIN connection failed.");
     setBusy(null);
   }
@@ -84,7 +90,7 @@ export function FinanceSettingsCard() {
     const result = await syncFinanceAction();
     if (result.ok) {
       setMessage("Finance data refreshed.");
-      await load();
+      await refresh();
     } else setError(result.error ?? "Finance sync failed.");
     setBusy(null);
   }
@@ -97,7 +103,7 @@ export function FinanceSettingsCard() {
     const result = await disconnectSimpleFinAction();
     if (result.ok) {
       setMessage("SimpleFIN disconnected. Imported history was kept.");
-      await load();
+      await refresh();
     } else setError(result.error ?? "Could not disconnect SimpleFIN.");
     setBusy(null);
   }
@@ -114,9 +120,9 @@ export function FinanceSettingsCard() {
     setError(null);
     setMessage(null);
     const result = await saveManualLiabilityAction({
-      providerLiabilityId: `manual:${loanName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      providerLiabilityId: `manual:${liabilityType}:${loanName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       name: loanName.trim(),
-      liabilityType: "student_loan",
+      liabilityType,
       balance,
       apr,
       minimumPayment: null,
@@ -129,9 +135,9 @@ export function FinanceSettingsCard() {
       setLoanName("");
       setLoanBalance("");
       setLoanApr("");
-      setMessage("Student loan balance saved.");
-      await load();
-    } else setError(result.error ?? "Student loan could not be saved.");
+      setMessage("Liability balance saved.");
+      await refresh();
+    } else setError(result.error ?? "Liability could not be saved.");
     setBusy(null);
   }
 
@@ -144,7 +150,7 @@ export function FinanceSettingsCard() {
     if (result.ok) {
       setImportJson("");
       setMessage("Finance import applied without duplicating provider IDs.");
-      await load();
+      await refresh();
     } else setError(result.error ?? "Finance import failed.");
     setBusy(null);
   }
@@ -187,14 +193,22 @@ export function FinanceSettingsCard() {
         </section>
 
         <section className="rounded-xl border border-zinc-800 p-3">
-          <p className="text-sm font-semibold text-zinc-200">Student loans / unsupported accounts</p>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">A monthly balance is enough when a servicer will not connect. This avoids brittle credential scraping.</p>
+          <p className="text-sm font-semibold text-zinc-200">Unsupported liabilities</p>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">A periodic balance is enough when a loan or account will not connect. This avoids brittle credential scraping.</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <input value={loanName} onChange={(event) => setLoanName(event.target.value)} placeholder="Loan / servicer" className="col-span-2 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700" />
+            <select value={liabilityType} onChange={(event) => setLiabilityType(event.target.value as LiabilityType)} className="col-span-2 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700">
+              <option value="student_loan">Student loan</option>
+              <option value="credit_card">Credit card</option>
+              <option value="mortgage">Mortgage</option>
+              <option value="auto">Auto loan</option>
+              <option value="personal">Personal loan</option>
+              <option value="other">Other</option>
+            </select>
+            <input value={loanName} onChange={(event) => setLoanName(event.target.value)} placeholder="Account / servicer" className="col-span-2 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700" />
             <input inputMode="decimal" value={loanBalance} onChange={(event) => setLoanBalance(event.target.value)} placeholder="Balance" className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700" />
             <input inputMode="decimal" value={loanApr} onChange={(event) => setLoanApr(event.target.value)} placeholder="APR % (optional)" className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700" />
           </div>
-          <div className="mt-2"><Button size="sm" variant="secondary" onClick={saveLoan} disabled={Boolean(busy) || !loanName.trim() || !loanBalance}>{busy === "loan" ? "Saving…" : "Save loan balance"}</Button></div>
+          <div className="mt-2"><Button size="sm" variant="secondary" onClick={saveLoan} disabled={Boolean(busy) || !loanName.trim() || !loanBalance}>{busy === "loan" ? "Saving…" : "Save liability balance"}</Button></div>
         </section>
 
         <details className="rounded-xl border border-zinc-800 p-3">
