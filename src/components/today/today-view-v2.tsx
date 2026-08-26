@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Check, Moon, Sparkles } from "lucide-react";
 import {
   checkinAction,
@@ -113,7 +113,7 @@ export function TodayViewV2() {
   const usefulActionDone = data.completedToday.length > 0;
   const seasonKey = data.season?.name.toLowerCase() ?? "";
   const seasonMeta = SEASON_META[seasonKey];
-  const seasonGrowth = useMemo(() => seasonGrowthFrame(data.season?.name), [data.season?.name]);
+  const seasonGrowth = seasonGrowthFrame(data.season?.name);
   const monthName = now.toLocaleDateString(undefined, { month: "long" });
   const bigFourEntries = Object.entries(data.bigFour);
   const protectedAreas = bigFourEntries.filter(([, value]) => value.done >= value.target).length;
