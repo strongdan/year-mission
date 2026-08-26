@@ -1,0 +1,57 @@
+openapi: 3.1.0
+info:
+  title: Year Mission ChatGPT Actions
+  version: 1.0.0
+  description: Read Year Mission context and record owner-review proposals without directly mutating mission data.
+servers:
+  - url: https://YOUR_YEAR_MISSION_HOST
+security:
+  - bearerAuth: []
+paths:
+  /api/integrations/chatgpt/context:
+    get:
+      operationId: getYearMissionContext
+      summary: Get current Year Mission context
+      description: Returns goals, tasks, week mode, HealthKit-derived wellness summary, and the adaptive recommendation.
+      responses:
+        "200":
+          description: Current context
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /api/integrations/chatgpt/proposals:
+    post:
+      operationId: createYearMissionProposal
+      summary: Record a proposed Year Mission adjustment
+      description: Creates a pending proposal for owner review. It does not apply the change.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actionType, payload, reasoning]
+              properties:
+                actionType:
+                  type: string
+                  enum: [health_adjustment, progress_note, task_adjustment]
+                payload:
+                  type: object
+                  additionalProperties: true
+                reasoning:
+                  type: string
+      responses:
+        "201":
+          description: Proposal recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
