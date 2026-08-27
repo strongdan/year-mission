@@ -238,6 +238,8 @@ export function IdeaDump({ initialIdeas }: { initialIdeas: Idea[] }) {
         </div>
         {recording && <p className="mt-2 text-xs text-violet-300">Recording… speak naturally, then tap Stop & transcribe. Maximum five minutes.</p>}
         {transcribing && <p className="mt-2 text-xs text-violet-300">Turning your recording into editable text…</p>}
+        {message && <p className="mt-2 text-xs text-emerald-400">{message}</p>}
+        {error && <p className="mt-2 text-xs leading-relaxed text-amber-300">{error}</p>}
       </Card>
 
       {organized && activeIdeaId && (
@@ -267,9 +269,6 @@ export function IdeaDump({ initialIdeas }: { initialIdeas: Idea[] }) {
           )}
         </Card>
       )}
-
-      {message && <p className="text-xs text-emerald-400">{message}</p>}
-      {error && <p className="text-xs leading-relaxed text-amber-300">{error}</p>}
 
       <section className="flex flex-col gap-2">
         <div>
