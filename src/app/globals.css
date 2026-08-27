@@ -1,8 +1,16 @@
 @import "tailwindcss";
 
-:root {
+:root,
+:root[data-theme="dark"] {
   --background: #09090b;
   --foreground: #f4f4f5;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --background: #fafafa;
+  --foreground: #18181b;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -29,6 +37,10 @@ body {
   scrollbar-color: #27272a transparent;
 }
 
+:root[data-theme="light"] * {
+  scrollbar-color: #d4d4d8 transparent;
+}
+
 input,
 textarea,
 button {
@@ -38,3 +50,62 @@ button {
 ::selection {
   background: #3f3f46;
 }
+
+:root[data-theme="light"] ::selection {
+  background: #d4d4d8;
+}
+
+/*
+ * The app predates semantic color tokens and uses zinc utilities throughout.
+ * These mappings keep the existing components legible in light mode without
+ * forcing a broad UI rewrite. New surfaces should prefer bg-background and
+ * text-foreground where practical.
+ */
+:root[data-theme="light"] [class~="text-zinc-50"],
+:root[data-theme="light"] [class~="text-zinc-100"] { color: #18181b !important; }
+:root[data-theme="light"] [class~="text-zinc-200"] { color: #27272a !important; }
+:root[data-theme="light"] [class~="text-zinc-300"] { color: #3f3f46 !important; }
+:root[data-theme="light"] [class~="text-zinc-400"] { color: #52525b !important; }
+:root[data-theme="light"] [class~="text-zinc-500"] { color: #71717a !important; }
+:root[data-theme="light"] [class~="text-zinc-600"] { color: #71717a !important; }
+:root[data-theme="light"] [class~="text-zinc-700"] { color: #a1a1aa !important; }
+
+:root[data-theme="light"] [class~="bg-zinc-950"] { background-color: #fafafa !important; }
+:root[data-theme="light"] [class~="bg-zinc-900"] { background-color: #f4f4f5 !important; }
+:root[data-theme="light"] [class~="bg-zinc-800"] { background-color: #e4e4e7 !important; }
+:root[data-theme="light"] [class~="bg-zinc-950/95"] { background-color: rgb(250 250 250 / 0.96) !important; }
+:root[data-theme="light"] [class~="bg-zinc-950/90"] { background-color: rgb(250 250 250 / 0.92) !important; }
+:root[data-theme="light"] [class~="bg-zinc-950/80"] { background-color: rgb(250 250 250 / 0.88) !important; }
+:root[data-theme="light"] [class~="bg-zinc-950/70"] { background-color: rgb(250 250 250 / 0.84) !important; }
+:root[data-theme="light"] [class~="bg-zinc-950/60"] { background-color: rgb(250 250 250 / 0.78) !important; }
+:root[data-theme="light"] [class~="bg-zinc-950/50"],
+:root[data-theme="light"] [class~="bg-zinc-950/40"],
+:root[data-theme="light"] [class~="bg-zinc-950/30"],
+:root[data-theme="light"] [class~="bg-zinc-950/20"] { background-color: rgb(255 255 255 / 0.72) !important; }
+:root[data-theme="light"] [class~="bg-zinc-900/90"],
+:root[data-theme="light"] [class~="bg-zinc-900/80"],
+:root[data-theme="light"] [class~="bg-zinc-900/70"] { background-color: rgb(244 244 245 / 0.9) !important; }
+
+:root[data-theme="light"] [class~="border-zinc-950"] { border-color: #e4e4e7 !important; }
+:root[data-theme="light"] [class~="border-zinc-900"] { border-color: #e4e4e7 !important; }
+:root[data-theme="light"] [class~="border-zinc-800"] { border-color: #d4d4d8 !important; }
+:root[data-theme="light"] [class~="border-zinc-700"] { border-color: #a1a1aa !important; }
+:root[data-theme="light"] [class~="border-zinc-800/80"],
+:root[data-theme="light"] [class~="border-zinc-800/70"],
+:root[data-theme="light"] [class~="border-zinc-800/60"] { border-color: rgb(212 212 216 / 0.86) !important; }
+
+:root[data-theme="light"] [class~="placeholder:text-zinc-700"]::placeholder,
+:root[data-theme="light"] [class~="placeholder:text-zinc-600"]::placeholder { color: #a1a1aa !important; }
+
+:root[data-theme="light"] [class~="hover:bg-zinc-800"]:hover,
+:root[data-theme="light"] [class~="hover:bg-zinc-800/80"]:hover { background-color: #e4e4e7 !important; }
+:root[data-theme="light"] [class~="hover:bg-zinc-900"]:hover,
+:root[data-theme="light"] [class~="hover:bg-zinc-900/80"]:hover { background-color: #f4f4f5 !important; }
+:root[data-theme="light"] [class~="hover:text-zinc-100"]:hover,
+:root[data-theme="light"] [class~="hover:text-zinc-200"]:hover,
+:root[data-theme="light"] [class~="hover:text-zinc-300"]:hover { color: #27272a !important; }
+:root[data-theme="light"] [class~="hover:border-zinc-700"]:hover { border-color: #a1a1aa !important; }
+:root[data-theme="light"] [class~="focus:border-zinc-700"]:focus { border-color: #71717a !important; }
+
+:root[data-theme="light"] [class~="divide-zinc-800/80"] > :not(:last-child),
+:root[data-theme="light"] [class~="divide-zinc-800"] > :not(:last-child) { border-color: #d4d4d8 !important; }
