@@ -8,5 +8,6 @@ export default async function IdeasPage() {
   if (!user) redirect("/login");
 
   const ideas = await listIdeas(user.id);
-  return <IdeaDump initialIdeas={ideas.slice(0, 30)} />;
+  const visibleIdeas = ideas.slice(0, 30);
+  return <IdeaDump key={visibleIdeas[0]?.id ?? "empty"} initialIdeas={visibleIdeas} />;
 }
