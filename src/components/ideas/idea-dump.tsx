@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Brain, CheckSquare2, Sparkles, Square } from "lucide-react";
 import {
   captureIdeaAction,
@@ -20,6 +21,7 @@ function formatCapturedAt(value: string): string {
 }
 
 export function IdeaDump({ initialIdeas }: { initialIdeas: Idea[] }) {
+  const router = useRouter();
   const [text, setText] = useState("");
   const [ideas, setIdeas] = useState(initialIdeas);
   const [audioBusy, setAudioBusy] = useState(false);
@@ -29,6 +31,14 @@ export function IdeaDump({ initialIdeas }: { initialIdeas: Idea[] }) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const refreshOnReturn = () => {
+      if (document.visibilityState === "visible") router.refresh();
+    };
+    document.addEventListener("visibilitychange", refreshOnReturn);
+    return () => document.removeEventListener("visibilitychange", refreshOnReturn);
+  }, [router]);
 
   async function save(andOrganize: boolean) {
     if (!text.trim() || busy || audioBusy) return;
