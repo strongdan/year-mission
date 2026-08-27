@@ -13,6 +13,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const themeBootstrap = `(() => {
+  try {
+    const stored = localStorage.getItem("year-mission-theme");
+    const theme = stored === "light" ? "light" : "dark";
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  } catch {
+    document.documentElement.dataset.theme = "dark";
+  }
+})();`;
+
 export const metadata: Metadata = {
   title: "Year Mission",
   description: "A personal execution system for meaningful progress across four domains.",
@@ -28,7 +39,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  themeColor: "#09090b",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -42,9 +53,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+      </head>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <SerwistProvider swUrl="/serwist/sw.js" disable={process.env.NODE_ENV === "development"}>
           {children}
         </SerwistProvider>

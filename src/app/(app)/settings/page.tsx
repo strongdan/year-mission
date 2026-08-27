@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { SettingsView } from "@/components/settings/settings-view";
+import { AppearanceSettingsCard } from "@/components/settings/appearance-settings-card";
 import { ExecutionSettingsCard } from "@/components/settings/execution-settings-card";
 import { FinanceSettingsCard } from "@/components/settings/finance-settings-card";
 import { NotificationSettingsCard } from "@/components/settings/notification-settings-card";
@@ -16,6 +17,7 @@ export default async function SettingsPage() {
   return (
     <>
       <SettingsView environment={environment} buildSha={buildSha} />
+      <AppearanceSettingsCard />
       <FinanceSettingsCard />
       <ExecutionSettingsCard />
       <NotificationSettingsCard />
