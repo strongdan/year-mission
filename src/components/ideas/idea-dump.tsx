@@ -1,18 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Brain, CheckSquare2, Mic, MicOff, Sparkles, Square } from "lucide-react";
+import { useState } from "react";
+import { Brain, CheckSquare2, Sparkles, Square } from "lucide-react";
 import {
   captureIdeaAction,
   createIdeaTasksAction,
   organizeIdeaAction,
 } from "@/app/idea-actions";
+import { IdeaAudioCapture } from "@/components/ideas/idea-audio-capture";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import type { Idea } from "@/types/models";
 import type { OrganizedIdea } from "@/services/ideas/idea-organizer";
-
-const MAX_RECORDING_MS = 5 * 60 * 1000;
 
 function formatCapturedAt(value: string): string {
   const date = new Date(value);
@@ -20,124 +19,19 @@ function formatCapturedAt(value: string): string {
   return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-function preferredRecordingMimeType(): string | undefined {
-  if (typeof MediaRecorder === "undefined") return undefined;
-  for (const type of ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"]) {
-    if (MediaRecorder.isTypeSupported(type)) return type;
-  }
-  return undefined;
-}
-
 export function IdeaDump({ initialIdeas }: { initialIdeas: Idea[] }) {
   const [text, setText] = useState("");
   const [ideas, setIdeas] = useState(initialIdeas);
-  const [recording, setRecording] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
+  const [audioBusy, setAudioBusy] = useState(false);
   const [busy, setBusy] = useState<"save" | "save-organize" | "organize" | "tasks" | null>(null);
   const [activeIdeaId, setActiveIdeaId] = useState<string | null>(null);
   const [organized, setOrganized] = useState<OrganizedIdea | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function releaseMicrophone() {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    recorderRef.current = null;
-    if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
-    stopTimerRef.current = null;
-    setRecording(false);
-  }
-
-  async function transcribeRecording(blob: Blob) {
-    setTranscribing(true);
-    setError(null);
-    setMessage("Transcribing narration…");
-    try {
-      const form = new FormData();
-      const extension = blob.type.includes("mp4") ? "m4a" : "webm";
-      form.append("audio", new File([blob], `brain-dump.${extension}`, { type: blob.type || "audio/mp4" }));
-      const response = await fetch("/api/ideas/transcribe", { method: "POST", body: form });
-      const result = await response.json() as { ok: boolean; data?: { text?: string }; error?: string };
-      if (!response.ok || !result.ok || !result.data?.text?.trim()) {
-        throw new Error(result.error ?? "Could not transcribe the recording.");
-      }
-      const transcript = result.data.text.trim();
-      setText((current) => `${current.trimEnd()}${current.trim() ? "\n\n" : ""}${transcript}`);
-      setMessage("Narration transcribed. Edit anything you want before saving.");
-    } catch (caught) {
-      setMessage(null);
-      setError(caught instanceof Error ? caught.message : "Could not transcribe the recording.");
-    } finally {
-      setTranscribing(false);
-    }
-  }
-
-  async function startRecording() {
-    setError(null);
-    setMessage(null);
-    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-      setError("Audio recording is not available in this browser. You can still type the thought here.");
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = preferredRecordingMimeType();
-      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-      chunksRef.current = [];
-      streamRef.current = stream;
-      recorderRef.current = recorder;
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) chunksRef.current.push(event.data);
-      };
-      recorder.onerror = () => {
-        releaseMicrophone();
-        setError("Recording stopped unexpectedly. Please try again.");
-      };
-      recorder.onstop = () => {
-        const chunks = chunksRef.current;
-        chunksRef.current = [];
-        const type = recorder.mimeType || mimeType || "audio/mp4";
-        releaseMicrophone();
-        const blob = new Blob(chunks, { type });
-        if (blob.size === 0) {
-          setError("No audio was captured. Check microphone permission and try again.");
-          return;
-        }
-        void transcribeRecording(blob);
-      };
-
-      recorder.start(1000);
-      setRecording(true);
-      stopTimerRef.current = setTimeout(() => {
-        if (recorder.state !== "inactive") recorder.stop();
-      }, MAX_RECORDING_MS);
-    } catch (caught) {
-      releaseMicrophone();
-      const denied = caught instanceof DOMException && (caught.name === "NotAllowedError" || caught.name === "SecurityError");
-      setError(denied
-        ? "Microphone access is off. Allow microphone access for Year Mission in Safari/iPhone Settings, then try again."
-        : "Could not start the microphone. Please try again.");
-    }
-  }
-
-  function toggleNarration() {
-    if (recording) {
-      const recorder = recorderRef.current;
-      if (recorder && recorder.state !== "inactive") recorder.stop();
-      return;
-    }
-    void startRecording();
-  }
 
   async function save(andOrganize: boolean) {
-    if (!text.trim() || busy || recording || transcribing) return;
+    if (!text.trim() || busy || audioBusy) return;
     setBusy(andOrganize ? "save-organize" : "save");
     setError(null);
     setMessage(null);
@@ -207,7 +101,7 @@ export function IdeaDump({ initialIdeas }: { initialIdeas: Idea[] }) {
     setBusy(null);
   }
 
-  const captureBusy = Boolean(busy) || transcribing;
+  const captureBusy = Boolean(busy) || audioBusy;
 
   return (
     <div className="flex flex-col gap-4 p-4 pb-24">
@@ -225,19 +119,20 @@ export function IdeaDump({ initialIdeas }: { initialIdeas: Idea[] }) {
           placeholder="I keep thinking about…"
           className="min-h-44 w-full resize-y rounded-xl border border-zinc-800 bg-zinc-950/70 px-3 py-3 text-sm leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-700 focus:border-zinc-700"
         />
+        <IdeaAudioCapture
+          disabled={Boolean(busy)}
+          onBusyChange={setAudioBusy}
+          onTranscript={(transcript) => {
+            setText((current) => `${current.trimEnd()}${current.trim() ? "\n\n" : ""}${transcript.trim()}`);
+          }}
+        />
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button type="button" variant={recording ? "secondary" : "ghost"} onClick={toggleNarration} disabled={captureBusy}>
-            {recording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            {recording ? "Stop & transcribe" : transcribing ? "Transcribing…" : "Narrate"}
-          </Button>
-          <Button type="button" onClick={() => void save(false)} disabled={!text.trim() || captureBusy || recording}>{busy === "save" ? "Saving…" : "Save thought"}</Button>
-          <Button type="button" variant="secondary" onClick={() => void save(true)} disabled={!text.trim() || captureBusy || recording}>
+          <Button type="button" onClick={() => void save(false)} disabled={!text.trim() || captureBusy}>{busy === "save" ? "Saving…" : "Save thought"}</Button>
+          <Button type="button" variant="secondary" onClick={() => void save(true)} disabled={!text.trim() || captureBusy}>
             <Sparkles className="h-4 w-4" />
             {busy === "save-organize" || busy === "organize" ? "Organizing…" : "Save & organize"}
           </Button>
         </div>
-        {recording && <p className="mt-2 text-xs text-violet-300">Recording… speak naturally, then tap Stop & transcribe. Maximum five minutes.</p>}
-        {transcribing && <p className="mt-2 text-xs text-violet-300">Turning your recording into editable text…</p>}
       </Card>
 
       {organized && activeIdeaId && (
