@@ -12,19 +12,27 @@ export interface AudioTranscriptionResult {
   provider: "gemini" | "openai";
 }
 
-async function resolveKeys() {
+interface AudioTranscriptionOptions {
+  includeStoredKeys?: boolean;
+}
+
+async function resolveKeys(includeStoredKeys: boolean) {
   let preferred: "gemini" | "openai" | null = null;
   let storedGemini: string | null = null;
   let storedOpenAi: string | null = null;
-  try {
-    [preferred, storedGemini, storedOpenAi] = await Promise.all([
-      getPreferredAiProvider(),
-      getStoredApiKey("gemini"),
-      getStoredApiKey("openai"),
-    ]);
-  } catch {
-    // Deployment-level keys remain available if per-device key storage is unavailable.
+
+  if (includeStoredKeys) {
+    try {
+      [preferred, storedGemini, storedOpenAi] = await Promise.all([
+        getPreferredAiProvider(),
+        getStoredApiKey("gemini"),
+        getStoredApiKey("openai"),
+      ]);
+    } catch {
+      // Deployment-level keys remain available if per-device key storage is unavailable.
+    }
   }
+
   return {
     preferred,
     gemini: storedGemini ?? env.GEMINI_API_KEY ?? null,
@@ -77,12 +85,15 @@ async function transcribeWithOpenAi(file: File, apiKey: string): Promise<string>
   return text;
 }
 
-export async function transcribeIdeaAudio(file: File): Promise<AudioTranscriptionResult> {
+export async function transcribeIdeaAudio(
+  file: File,
+  options: AudioTranscriptionOptions = {},
+): Promise<AudioTranscriptionResult> {
   if (file.size <= 0) throw new Error("The recording was empty.");
   if (file.size > MAX_AUDIO_BYTES) throw new Error("Recording is too large. Keep a narration under about five minutes and try again.");
   if (!file.type.startsWith("audio/")) throw new Error("Unsupported recording format.");
 
-  const keys = await resolveKeys();
+  const keys = await resolveKeys(options.includeStoredKeys !== false);
   const order: Array<"gemini" | "openai"> = keys.preferred === "openai" ? ["openai", "gemini"] : ["gemini", "openai"];
   let lastError: unknown = null;
 
@@ -100,5 +111,7 @@ export async function transcribeIdeaAudio(file: File): Promise<AudioTranscriptio
   }
 
   if (lastError instanceof Error) throw lastError;
-  throw new Error("Audio transcription is not configured. Add a Gemini or OpenAI key in Settings.");
+  throw new Error(options.includeStoredKeys === false
+    ? "Native audio transcription needs a Gemini or OpenAI key configured in the deployment environment."
+    : "Audio transcription is not configured. Add a Gemini or OpenAI key in Settings.");
 }
