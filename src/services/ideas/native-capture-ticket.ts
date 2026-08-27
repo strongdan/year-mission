@@ -1,5 +1,3 @@
-import "server-only";
-
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 const TICKET_TTL_MS = 10 * 60 * 1000;
