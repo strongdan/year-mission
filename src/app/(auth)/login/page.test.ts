@@ -8,9 +8,9 @@ describe("login auth error message", () => {
     );
   });
 
-  it("falls back to a useful Google sign-in error", () => {
+  it("falls back to a provider-neutral sign-in error", () => {
     expect(getAuthErrorMessage("callback", null)).toBe(
-      "Google sign-in could not be completed. Try again."
+      "Sign-in could not be completed. Try again."
     );
   });
 });
