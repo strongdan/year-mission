@@ -11,7 +11,7 @@ import {
   type UserAiProvider,
 } from "@/services/integrations/api-key-store";
 
-const PROVIDER_Z = z.enum(["gemini", "openai"]);
+const PROVIDER_Z = z.enum(["gemini", "openrouter", "groq", "openai"]);
 const API_KEY_Z = z.string().trim().min(12).max(512);
 
 export async function getAiStatusAction() {
