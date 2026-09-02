@@ -5,15 +5,21 @@ import {
   listEvidence,
   listPromises,
 } from "@/repositories/supabase-repository";
-import { computeMomentum, type DayActivity } from "@/domain/momentum";
-import { WEEKLY_MINIMUM_COUNTS } from "@/domain/constants";
-import { taskWeight } from "@/domain/task-weight";
+import {
+  computeCategoryMomentum,
+  computeMomentum,
+  type CategoryMomentum,
+  type DayActivity,
+} from "@/domain/momentum";
+import { WEEKLY_MINIMUM_COUNTS, type DomainSlug } from "@/domain/constants";
+import { sizeFromMinutes, taskWeight } from "@/domain/task-weight";
 import { computeReliability, type CommitmentOutcome } from "@/domain/reliability";
 import { agencyLevel } from "@/domain/agency";
 
 export interface DashboardMetrics {
   momentum: number | null;
   momentumLabel: string;
+  categoryMomentum: CategoryMomentum[];
   reliability: number | null;
   reliabilityInterpretation: string;
   agency: string;
@@ -24,6 +30,25 @@ export interface DashboardMetrics {
   latestDebt: number | null;
   houseReadiness: number | null;
   activeExperimentCount: number;
+}
+
+const DOMAIN_SLUG_SET = new Set<DomainSlug>(["money", "body", "home", "capability"]);
+
+function emptyDomainUnits(): Record<DomainSlug, number> {
+  return { body: 0, money: 0, home: 0, capability: 0 };
+}
+
+function isoDateOffset(date: Date, days: number): string {
+  const shifted = new Date(date);
+  shifted.setUTCDate(shifted.getUTCDate() + days);
+  return shifted.toISOString().slice(0, 10);
+}
+
+function meaningfulTaskUnits(weight: number): number {
+  if (weight <= 0) return 0;
+  // Keep quick/low-impact work from gaming the signal while allowing a
+  // consequential task to count as more than one ordinary rep.
+  return Math.min(2, Math.max(0.5, weight / 3));
 }
 
 export class MetricsService {
@@ -44,6 +69,44 @@ export class MetricsService {
       home: { done: Math.min(homeDone, WEEKLY_MINIMUM_COUNTS.home), target: WEEKLY_MINIMUM_COUNTS.home },
       capability: { done: Math.min(capabilityDone, WEEKLY_MINIMUM_COUNTS.capability), target: WEEKLY_MINIMUM_COUNTS.capability },
     };
+  }
+
+  async categoryMomentum(userId: string, asOf = new Date()): Promise<CategoryMomentum[]> {
+    const end = isoDateOffset(asOf, 0);
+    const recentStart = isoDateOffset(asOf, -6);
+    const previousStart = isoDateOffset(asOf, -13);
+    const previousEnd = isoDateOffset(asOf, -7);
+    const [workouts, completed] = await Promise.all([
+      listWorkouts(userId, previousStart, 200),
+      listTasks(userId, { status: "completed", limit: 500 }),
+    ]);
+
+    const recentUnits = emptyDomainUnits();
+    const previousUnits = emptyDomainUnits();
+    const add = (slug: DomainSlug, date: string, units: number) => {
+      if (date < previousStart || date > end || units <= 0) return;
+      if (date >= recentStart) recentUnits[slug] += units;
+      else if (date <= previousEnd) previousUnits[slug] += units;
+    };
+
+    // Body uses actual logged movement rather than task completion so checking
+    // off a workout task and logging the same workout cannot double-count it.
+    for (const workout of workouts) add("body", workout.date, 1);
+
+    for (const task of completed) {
+      if (!task.completed_at || !task.domain?.slug || task.domain.slug === "body") continue;
+      const slug = task.domain.slug;
+      if (!DOMAIN_SLUG_SET.has(slug)) continue;
+      const weight = taskWeight({
+        impact: task.impact,
+        size: sizeFromMinutes(task.estimated_minutes),
+        courage: task.courage_task,
+        metaWork: task.meta_work,
+      });
+      add(slug, task.completed_at.slice(0, 10), meaningfulTaskUnits(weight));
+    }
+
+    return computeCategoryMomentum({ recentUnits, previousUnits, weeklyTargets: WEEKLY_MINIMUM_COUNTS });
   }
 
   async computeAndStoreMomentum(userId: string, weekStart: string): Promise<number | null> {
