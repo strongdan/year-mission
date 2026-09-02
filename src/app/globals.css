@@ -4,14 +4,26 @@
 :root[data-theme="dark"] {
   --background: #09090b;
   --foreground: #f4f4f5;
+  --season-glow: rgb(39 39 42 / 0.16);
   color-scheme: dark;
 }
 
 :root[data-theme="light"] {
   --background: #fafafa;
   --foreground: #18181b;
+  --season-glow: rgb(212 212 216 / 0.2);
   color-scheme: light;
 }
+
+:root[data-season="stabilize"] { --season-glow: rgb(14 165 233 / 0.12); }
+:root[data-season="build"] { --season-glow: rgb(16 185 129 / 0.12); }
+:root[data-season="transform"] { --season-glow: rgb(139 92 246 / 0.13); }
+:root[data-season="convert"] { --season-glow: rgb(245 158 11 / 0.13); }
+
+:root[data-theme="light"][data-season="stabilize"] { --season-glow: rgb(14 165 233 / 0.09); }
+:root[data-theme="light"][data-season="build"] { --season-glow: rgb(16 185 129 / 0.09); }
+:root[data-theme="light"][data-season="transform"] { --season-glow: rgb(139 92 246 / 0.09); }
+:root[data-theme="light"][data-season="convert"] { --season-glow: rgb(245 158 11 / 0.1); }
 
 @theme inline {
   --color-background: var(--background);
@@ -26,7 +38,9 @@ html {
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image: radial-gradient(circle at 50% -8rem, var(--season-glow), transparent 34rem);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
