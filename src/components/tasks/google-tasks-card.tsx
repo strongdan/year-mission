@@ -86,9 +86,19 @@ export function GoogleTasksCard() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function loadStatus() {
+  async function loadStatus(): Promise<Status | null> {
     const res = await getGoogleSyncStatusAction();
-    if (res.ok && res.data) setStatus(res.data);
+    if (res.ok && res.data) {
+      setStatus(res.data);
+      if (!res.data.connected) setHub(null);
+      return res.data;
+    }
+    return null;
+  }
+
+  async function handleGoogleFailure(message: string) {
+    setError(message);
+    await loadStatus();
   }
 
   async function loadHub() {
@@ -97,7 +107,7 @@ export function GoogleTasksCard() {
     const res = await getGoogleTaskHubAction();
     setLoadingHub(false);
     if (!res.ok || !res.data) {
-      setError(res.error ?? "Google Tasks could not be loaded.");
+      await handleGoogleFailure(res.error ?? "Google Tasks could not be loaded.");
       return;
     }
     setHub(res.data as HubData);
@@ -118,6 +128,10 @@ export function GoogleTasksCard() {
           setSelectedList(hubRes.data.lists[0]?.id ?? "");
         } else {
           setError(hubRes.error ?? "Google Tasks could not be loaded.");
+          const statusRes = await getGoogleSyncStatusAction();
+          if (cancelled || !statusRes.ok || !statusRes.data) return;
+          setStatus(statusRes.data);
+          if (!statusRes.data.connected) setHub(null);
         }
       }
     })();
@@ -154,7 +168,7 @@ export function GoogleTasksCard() {
       setMessage("Google Tasks synced.");
       await Promise.all([loadStatus(), loadHub()]);
     } else {
-      setError(result.error ?? "Google Tasks sync failed.");
+      await handleGoogleFailure(result.error ?? "Google Tasks sync failed.");
     }
     setSyncing(false);
   }
@@ -182,7 +196,7 @@ export function GoogleTasksCard() {
       setMessage("Added to Google Tasks.");
       await loadHub();
     } else {
-      setError(result.error ?? "Could not add Google Task.");
+      await handleGoogleFailure(result.error ?? "Could not add Google Task.");
     }
     setAdding(false);
   }
@@ -195,7 +209,7 @@ export function GoogleTasksCard() {
     if (result.ok) {
       setHub((current) => current ? { ...current, tasks: current.tasks.filter((candidate) => taskKey(candidate) !== taskKey(task)) } : current);
     } else {
-      setError(result.error ?? "Could not remove Google Task.");
+      await handleGoogleFailure(result.error ?? "Could not remove Google Task.");
     }
     setRemoving(null);
   }
@@ -220,8 +234,8 @@ export function GoogleTasksCard() {
         <p className="text-sm text-zinc-500">Google Tasks is not configured.</p>
       ) : !status.connected ? (
         <div className="flex flex-col gap-2">
-          <p className="text-sm text-zinc-400">Connect Google to view and manage all of your task lists here.</p>
-          <div><Button size="sm" onClick={connect}>Connect Google</Button></div>
+          <p className="text-sm text-zinc-400">{error ?? "Connect Google to view and manage all of your task lists here."}</p>
+          <div><Button size="sm" onClick={connect}>Reconnect Google</Button></div>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -263,7 +277,7 @@ export function GoogleTasksCard() {
         </div>
       )}
       {message && <p className="mt-3 text-xs text-emerald-400">{message}</p>}
-      {error && <p className="mt-3 text-xs text-amber-300">{error}</p>}
+      {error && status?.connected && <p className="mt-3 text-xs text-amber-300">{error}</p>}
     </Card>
   );
 }
