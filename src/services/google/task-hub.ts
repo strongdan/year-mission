@@ -1,7 +1,8 @@
 import "server-only";
-import { getGoogleConnection } from "@/repositories/supabase-repository";
+import { getGoogleConnection, upsertGoogleConnection } from "@/repositories/supabase-repository";
 import { decryptToken } from "./encryption";
 import { refreshAccessToken } from "./oauth";
+import { googleReconnectMessage, isGoogleReconnectRequired } from "./token-errors";
 import {
   createGoogleTask,
   deleteGoogleTask,
@@ -24,7 +25,22 @@ export interface GoogleTaskHubData {
 async function accessTokenForUser(userId: string): Promise<string> {
   const connection = await getGoogleConnection(userId);
   if (!connection?.refresh_token) throw new Error("Connect Google first.");
-  return refreshAccessToken(decryptToken(connection.refresh_token));
+
+  try {
+    return await refreshAccessToken(decryptToken(connection.refresh_token));
+  } catch (error) {
+    if (isGoogleReconnectRequired(error)) {
+      await upsertGoogleConnection(userId, {
+        refresh_token: null,
+        token_encrypted: false,
+        email: null,
+        google_user_id: null,
+        scope: null,
+      });
+      throw new Error(googleReconnectMessage());
+    }
+    throw error;
+  }
 }
 
 export async function getGoogleTaskHub(userId: string): Promise<GoogleTaskHubData> {
