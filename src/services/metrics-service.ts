@@ -5,7 +5,7 @@ import {
   listEvidence,
   listPromises,
 } from "@/repositories/supabase-repository";
-import { computeMomentum, type DayActivity } from "@/domain/momentum";
+import { computeMomentum, weightedRecentAverage, type DayActivity } from "@/domain/momentum";
 import { WEEKLY_MINIMUM_COUNTS } from "@/domain/constants";
 import { taskWeight } from "@/domain/task-weight";
 import { computeReliability, type CommitmentOutcome } from "@/domain/reliability";
@@ -24,6 +24,29 @@ export interface DashboardMetrics {
   latestDebt: number | null;
   houseReadiness: number | null;
   activeExperimentCount: number;
+}
+
+type CategoryScores = {
+  body_score: number;
+  money_score: number;
+  home_score: number;
+  capability_score: number;
+};
+
+function isoDayOffset(days: number): string {
+  const date = new Date();
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function rollingWindowScore(dates: string[], day: string, target: number): number {
+  const end = new Date(`${day}T00:00:00Z`);
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - 6);
+  const startKey = start.toISOString().slice(0, 10);
+  const count = dates.filter((date) => date >= startKey && date <= day).length;
+  return Math.min(100, (count / Math.max(1, target)) * 100);
 }
 
 export class MetricsService {
@@ -46,10 +69,41 @@ export class MetricsService {
     };
   }
 
+  private async categoryMomentum(userId: string): Promise<CategoryScores> {
+    // A category's daily signal is the trailing 7-day completion ratio against
+    // its normal weekly floor. Smoothing those signals over 14 days means a
+    // Monday never resets momentum and one quiet day cannot erase prior work.
+    const evidenceStart = isoDayOffset(-20);
+    const [workouts, completed] = await Promise.all([
+      listWorkouts(userId, evidenceStart, 200),
+      listTasks(userId, { status: "completed", limit: 500 }),
+    ]);
+    const recentCompleted = completed.filter((task) => task.completed_at && task.completed_at.slice(0, 10) >= evidenceStart);
+    const dates = Array.from({ length: 14 }, (_, index) => isoDayOffset(index - 13));
+    const workoutDates = workouts.map((workout) => workout.date);
+    const moneyDates = recentCompleted.filter((task) => task.domain?.slug === "money").map((task) => task.completed_at!.slice(0, 10));
+    const homeDates = recentCompleted.filter((task) => task.domain?.slug === "home").map((task) => task.completed_at!.slice(0, 10));
+    const capabilityDates = recentCompleted.filter((task) => task.domain?.slug === "capability").map((task) => task.completed_at!.slice(0, 10));
+    const alpha = 2 / (dates.length + 1);
+
+    const smooth = (activityDates: string[], target: number) => Math.round(weightedRecentAverage(
+      dates.map((date) => rollingWindowScore(activityDates, date, target)),
+      alpha,
+    ));
+
+    return {
+      body_score: smooth(workoutDates, WEEKLY_MINIMUM_COUNTS.body),
+      money_score: smooth(moneyDates, WEEKLY_MINIMUM_COUNTS.money),
+      home_score: smooth(homeDates, WEEKLY_MINIMUM_COUNTS.home),
+      capability_score: smooth(capabilityDates, WEEKLY_MINIMUM_COUNTS.capability),
+    };
+  }
+
   async computeAndStoreMomentum(userId: string, weekStart: string): Promise<number | null> {
     const days = await this.buildDayActivities(userId, weekStart);
     const momentum = computeMomentum({ days });
     if (momentum === null) return null;
+    const categories = await this.categoryMomentum(userId);
     const { createServerClientForApp } = await import("@/integrations/supabase/server");
     const supabase = await createServerClientForApp();
     if (supabase) {
@@ -57,7 +111,8 @@ export class MetricsService {
         user_id: userId,
         date: new Date().toISOString().slice(0, 10),
         overall_score: momentum,
-      });
+        ...categories,
+      }, { onConflict: "user_id,date" });
     }
     return momentum;
   }
