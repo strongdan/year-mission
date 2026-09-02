@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "cloudflare:check": "pnpx vinext@1.0.0-beta.8 check"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
