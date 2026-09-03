@@ -44,7 +44,7 @@ export const financeImportSchema = z.object({
   provider: financeProviderSchema,
   generatedAt: z.iso.datetime(),
   accounts: z.array(financeAccountSchema).max(100),
-  transactions: z.array(financeTransactionSchema).max(5000).default([]),
+  transactions: z.array(financeTransactionSchema).max(10_000).default([]),
   liabilities: z.array(financeLiabilitySchema).max(200).default([]),
 });
 
