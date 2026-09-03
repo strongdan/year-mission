@@ -38,9 +38,9 @@ create trigger finance_connections_set_updated_at
 
 alter table public.finance_connections enable row level security;
 
--- Credentials are intentionally not readable through the normal user-scoped client.
--- Server actions use the service role after authenticating and scoping the user.
-create policy "Users can view finance connection metadata" on public.finance_connections
-  for select using (auth.uid() = user_id);
+-- Deliberately define no SELECT/INSERT/UPDATE policy. Permanent Plaid access tokens,
+-- including their encrypted ciphertext, are only handled by authenticated server
+-- actions through the service-role client after explicitly scoping user_id.
+-- Users may delete their own connection row if a future direct client flow needs it.
 create policy "Users can delete own finance connections" on public.finance_connections
   for delete using (auth.uid() = user_id);
