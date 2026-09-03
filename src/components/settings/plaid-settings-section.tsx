@@ -193,21 +193,25 @@ export function PlaidSettingsSection() {
   }, [finishSession]);
 
   useEffect(() => {
-    void refreshStatus();
+    const frame = window.requestAnimationFrame(() => {
+      void refreshStatus();
 
-    if (!window.location.search.includes("oauth_state_id=")) return;
-    const session = readStoredSession();
-    if (!session) {
-      setError("Plaid returned from bank authorization, but the Link session could not be restored. Start Connect bank again.");
-      clearOAuthQuery();
-      return;
-    }
+      if (!window.location.search.includes("oauth_state_id=")) return;
+      const session = readStoredSession();
+      if (!session) {
+        setError("Plaid returned from bank authorization, but the Link session could not be restored. Start Connect bank again.");
+        clearOAuthQuery();
+        return;
+      }
 
-    setBusy("oauth");
-    void openLink(session, window.location.href).catch((cause) => {
-      setBusy(null);
-      setError(cause instanceof Error ? cause.message : "Plaid OAuth could not be resumed.");
+      setBusy("oauth");
+      void openLink(session, window.location.href).catch((cause) => {
+        setBusy(null);
+        setError(cause instanceof Error ? cause.message : "Plaid OAuth could not be resumed.");
+      });
     });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [openLink, refreshStatus]);
 
   async function startNewConnection() {
