@@ -6,6 +6,12 @@ create table public.journal_entries (
   body text not null check (char_length(body) between 1 and 12000),
   ai_analysis text,
   suggested_action text,
+  ai_provider text,
+  ai_model text,
+  ai_input_tokens integer,
+  ai_output_tokens integer,
+  ai_estimated_cost numeric(10,6),
+  ai_latency_ms integer,
   promoted_task_id uuid references public.tasks (id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
