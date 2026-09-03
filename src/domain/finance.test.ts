@@ -35,6 +35,35 @@ describe("financeImportSchema", () => {
     expect(parsed.liabilities[0].balance).toBe(12000);
   });
 
+  it("accepts Plaid as a normalized read-only provider", () => {
+    const parsed = financeImportSchema.parse({
+      provider: "plaid",
+      generatedAt: "2026-09-02T20:00:00.000Z",
+      accounts: [{
+        providerAccountId: "plaid-checking",
+        name: "Checking",
+        institutionName: "Example Bank",
+        accountType: "checking",
+        balance: 1200,
+        availableBalance: 1100,
+        currency: "USD",
+      }],
+      transactions: [{
+        providerTransactionId: "plaid-tx-1",
+        providerAccountId: "plaid-checking",
+        postedDate: "2026-09-01",
+        amount: -25,
+        payee: "Coffee",
+        pending: false,
+        metadata: { plaidDetailedCategory: "FOOD_AND_DRINK_COFFEE" },
+      }],
+      liabilities: [],
+    });
+
+    expect(parsed.provider).toBe("plaid");
+    expect(parsed.transactions[0].amount).toBe(-25);
+  });
+
   it("rejects insecure/invalid numeric liability data", () => {
     const result = financeImportSchema.safeParse({
       provider: "manual",
