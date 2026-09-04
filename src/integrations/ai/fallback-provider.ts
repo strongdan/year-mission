@@ -1,5 +1,3 @@
-import "server-only";
-
 import type { AiProvider } from "./provider";
 
 export interface FallbackAttempt {
