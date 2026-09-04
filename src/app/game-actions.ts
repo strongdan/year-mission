@@ -70,7 +70,7 @@ export async function getAchievementsAction() {
     meaningfulActions: meaningful.length,
     courageActions: meaningful.filter((task) => task.courage_task).length,
     weeklyWins: meaningful.filter((task) => task.weekly_win).length,
-    representedDomains: meaningful.map((task) => task.domain?.slug).filter((slug): slug is string => !!slug),
+    representedDomains: meaningful.flatMap((task) => task.domain ? [task.domain.slug] : []),
     comebacks: missionEvidence.filter((item) => item.type === "avoidance_overcome").length,
     milestones: missionMilestones.length,
   });
