@@ -28,7 +28,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 
-type UserAiProvider = "gemini" | "openai";
+type UserAiProvider = "gemini" | "openrouter" | "groq" | "openai";
+const AI_PROVIDERS: readonly UserAiProvider[] = ["gemini", "openrouter", "groq", "openai"];
+
+const AI_PROVIDER_META: Record<UserAiProvider, { label: string; description: string }> = {
+  gemini: { label: "Gemini", description: "Google Gemini free-tier path for routine Coach work." },
+  openrouter: { label: "OpenRouter", description: "Uses OpenRouter's free model router and can rotate as free models change." },
+  groq: { label: "Groq", description: "Fast, very-low-cost GPT-OSS models with metered usage." },
+  openai: { label: "OpenAI", description: "Paid fallback for Coach and task parsing when configured." },
+};
 
 interface GoogleStatus {
   configured: boolean;
@@ -52,9 +60,12 @@ interface AiStatus {
   stored: {
     preferred: UserAiProvider | null;
     gemini: { configured: boolean; hint: string | null };
+    openrouter: { configured: boolean; hint: string | null };
+    groq: { configured: boolean; hint: string | null };
     openai: { configured: boolean; hint: string | null };
   };
-  environment: { gemini: boolean; openai: boolean };
+  fallbackOrder: UserAiProvider[];
+  environment: Record<UserAiProvider, boolean>;
 }
 
 type Tone = "ready" | "warning" | "muted";
@@ -81,11 +92,15 @@ function formatLastSync(value: string | null): string {
   return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
+function providerLabel(provider: UserAiProvider): string {
+  return AI_PROVIDER_META[provider].label;
+}
+
 export function SettingsView({ environment, buildSha }: { environment: string; buildSha: string }) {
   const [google, setGoogle] = useState<GoogleStatus | null>(null);
   const [calendar, setCalendar] = useState<CalendarStatus | null>(null);
   const [ai, setAi] = useState<AiStatus | null>(null);
-  const [apiInputs, setApiInputs] = useState<Record<UserAiProvider, string>>({ gemini: "", openai: "" });
+  const [apiInputs, setApiInputs] = useState<Record<UserAiProvider, string>>({ gemini: "", openrouter: "", groq: "", openai: "" });
   const [apiBusy, setApiBusy] = useState<UserAiProvider | null>(null);
   const [timezone, setTimezone] = useState<string>("");
   const [standalone, setStandalone] = useState<boolean | null>(null);
@@ -185,7 +200,7 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
     if (result.ok && result.data) {
       setAi(result.data as AiStatus);
       setApiInputs((current) => ({ ...current, [provider]: "" }));
-      setMessage(`${provider === "gemini" ? "Gemini" : "OpenAI"} connected and selected for Coach.`);
+      setMessage(`${providerLabel(provider)} connected and selected as the first Coach provider.`);
     } else {
       setError(result.error ?? "Could not save API key.");
     }
@@ -200,7 +215,7 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
     const result = await removeAiApiKeyAction(provider);
     if (result.ok && result.data) {
       setAi(result.data as AiStatus);
-      setMessage(`${provider === "gemini" ? "Gemini" : "OpenAI"} key removed from this device.`);
+      setMessage(`${providerLabel(provider)} key removed from this device.`);
     } else {
       setError(result.error ?? "Could not remove API key.");
     }
@@ -215,7 +230,7 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
     const result = await selectAiProviderAction(provider);
     if (result.ok && result.data) {
       setAi(result.data as AiStatus);
-      setMessage(`${provider === "gemini" ? "Gemini" : "OpenAI"} selected for Coach.`);
+      setMessage(`${providerLabel(provider)} selected as the first Coach provider; configured fallbacks remain available.`);
     } else {
       setError(result.error ?? "Could not select provider.");
     }
@@ -229,7 +244,7 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
   const calendarLabel = calendar?.outcome === "ok" ? "Read only" : calendar?.needsReconnect ? "Reconnect required" : calendar?.outcome === "not_connected" ? "Not connected" : calendar?.outcome === "not_configured" ? "Not configured" : calendar?.outcome === "error" ? "Unavailable" : "Checking";
 
   const aiTone: Tone = ai && !ai.mock ? "ready" : ai?.mock ? "warning" : "muted";
-  const aiLabel = ai ? (ai.mock ? "Mock coach" : ai.provider === "gemini" ? "Gemini" : ai.provider) : "Checking";
+  const aiLabel = ai ? (ai.mock ? "Mock coach" : ai.provider) : "Checking";
 
   return (
     <div className="flex flex-col gap-4 p-4 pb-8">
@@ -251,7 +266,7 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
       </Card>
 
       <Card>
-        <CardHeader title="Account" subtitle="Google sign-in is the only account method for this personal app." right={<UserRound className="h-4 w-4 text-zinc-500" />} />
+        <CardHeader title="Account" subtitle="Sign in with Apple or Google through Supabase Auth." right={<UserRound className="h-4 w-4 text-zinc-500" />} />
         <div className="flex items-center justify-between gap-3">
           <div><p className="text-sm font-medium text-zinc-200">Signed in</p><p className="mt-0.5 text-xs text-zinc-500">Supabase session is active.</p></div>
           <form action="/auth/signout" method="post"><Button type="submit" size="sm" variant="secondary">Sign out</Button></form>
@@ -271,7 +286,7 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
             <div><Button size="sm" onClick={connectGoogle} disabled={busy !== null || google?.configured === false}>{busy === "connect" ? "Connecting…" : "Connect Google"}</Button></div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {calendar?.needsReconnect && <Button size="sm" onClick={connectGoogle} disabled={busy !== null}>{busy === "connect" ? "Connecting…" : "Reconnect for Calendar"}</Button>}
+              {calendar?.needsReconnect && <Button size="sm" onClick={connectGoogle} disabled={busy !== null}>{busy === "connect" ? "Connecting…" : "Reconnect Google"}</Button>}
               <Button size="sm" variant="secondary" onClick={syncGoogle} disabled={busy !== null}><RefreshCw className={`h-3.5 w-3.5 ${busy === "sync" ? "animate-spin" : ""}`} />{busy === "sync" ? "Syncing…" : "Sync Tasks"}</Button>
               <Button size="sm" variant="ghost" onClick={disconnectGoogle} disabled={busy !== null}>{busy === "disconnect" ? "Disconnecting…" : "Disconnect"}</Button>
             </div>
@@ -281,22 +296,23 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
       </Card>
 
       <Card>
-        <CardHeader title="AI services & API keys" subtitle="Add a key here instead of editing Vercel environment variables." right={<KeyRound className="h-4 w-4 text-violet-400" />} />
+        <CardHeader title="AI services & fallback" subtitle="Zero- and low-cost providers are tried before paid OpenAI unless you choose another first provider." right={<KeyRound className="h-4 w-4 text-violet-400" />} />
         {ai ? (
           <div className="flex flex-col gap-4">
             <div className="rounded-xl border border-zinc-800 bg-zinc-950/30 px-3">
-              <div className="flex items-center justify-between gap-3 py-2"><span className="text-sm text-zinc-300">Active Coach provider</span><span className={`text-xs ${ai.mock ? "text-amber-400" : "text-emerald-400"}`}>{ai.mock ? "Built-in mock" : ai.provider}</span></div>
+              <div className="flex items-center justify-between gap-3 py-2"><span className="text-sm text-zinc-300">First Coach provider</span><span className={`text-xs ${ai.mock ? "text-amber-400" : "text-emerald-400"}`}>{ai.mock ? "Built-in mock" : ai.provider}</span></div>
               <div className="flex items-center justify-between gap-3 border-t border-zinc-800/80 py-2"><span className="text-sm text-zinc-300">Coach model</span><span className="max-w-[180px] truncate text-xs text-zinc-500">{ai.model}</span></div>
+              <div className="flex items-start justify-between gap-3 border-t border-zinc-800/80 py-2"><span className="text-sm text-zinc-300">Fallback order</span><span className="max-w-[220px] text-right text-xs leading-relaxed text-zinc-500">{ai.fallbackOrder.length ? ai.fallbackOrder.map(providerLabel).join(" → ") : "No live providers"}</span></div>
             </div>
 
-            {(["gemini", "openai"] as const).map((provider) => {
-              const label = provider === "gemini" ? "Gemini" : "OpenAI";
+            {AI_PROVIDERS.map((provider) => {
+              const meta = AI_PROVIDER_META[provider];
               const stored = ai.stored[provider];
               const active = ai.provider === provider && !ai.mock;
               return (
                 <div key={provider} className={`rounded-xl border p-3 ${active ? "border-violet-800/70 bg-violet-950/10" : "border-zinc-800 bg-zinc-950/20"}`}>
                   <div className="flex items-start justify-between gap-3">
-                    <div><p className="text-sm font-semibold text-zinc-200">{label}</p><p className="mt-0.5 text-[11px] text-zinc-500">{provider === "gemini" ? "Preferred low-cost/free-tier Coach option." : "Use your OpenAI API account for Coach and task parsing."}</p></div>
+                    <div><p className="text-sm font-semibold text-zinc-200">{meta.label}</p><p className="mt-0.5 text-[11px] text-zinc-500">{meta.description}</p></div>
                     <span className={`text-[11px] ${stored.configured ? "text-emerald-400" : ai.environment[provider] ? "text-sky-400" : "text-zinc-600"}`}>{stored.configured ? `Connected ${stored.hint ?? ""}` : ai.environment[provider] ? "Server key" : "Not connected"}</span>
                   </div>
 
@@ -307,7 +323,7 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
 
                   {stored.configured && (
                     <div className="mt-2 flex gap-2">
-                      {!active && <Button size="sm" variant="secondary" onClick={() => selectApiProvider(provider)} disabled={apiBusy !== null}>Use for Coach</Button>}
+                      {!active && <Button size="sm" variant="secondary" onClick={() => selectApiProvider(provider)} disabled={apiBusy !== null}>Try first</Button>}
                       <Button size="sm" variant="ghost" onClick={() => removeApiKey(provider)} disabled={apiBusy !== null}>Remove key</Button>
                     </div>
                   )}
@@ -316,8 +332,8 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
             })}
 
             {!ai.storageAvailable && <p className="text-xs leading-relaxed text-amber-300/80">Secure key storage needs a server encryption key before API keys can be saved here.</p>}
-            <p className="text-[11px] leading-relaxed text-zinc-600">Keys entered here are tested server-side, encrypted, and kept in an HttpOnly cookie. The app never displays the saved key again. This storage is per device/browser; deployment-level Vercel keys still work as a fallback.</p>
-            {ai.freeTier && !ai.mock && <p className="text-xs leading-relaxed text-emerald-400/80">Gemini is active; the configured model family supports a free-tier path.</p>}
+            <p className="text-[11px] leading-relaxed text-zinc-600">Keys entered here are tested server-side, encrypted, and kept in an HttpOnly cookie. The app never displays the saved key again. Deployment-level provider keys remain eligible as fallbacks.</p>
+            {ai.freeTier && !ai.mock && <p className="text-xs leading-relaxed text-emerald-400/80">The active first provider has a configured zero-cost path. Provider limits still apply.</p>}
           </div>
         ) : <p className="text-sm text-zinc-500">Checking Coach configuration…</p>}
       </Card>
@@ -328,7 +344,7 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
           <div className="flex items-center justify-between gap-3 py-2"><span className="text-sm text-zinc-300">Time zone</span><span className="max-w-[190px] truncate text-xs text-zinc-500">{timezone || "Detecting…"}</span></div>
           <div className="flex items-center justify-between gap-3 py-2"><span className="text-sm text-zinc-300">Week starts</span><span className="text-xs text-zinc-500">Monday</span></div>
           <div className="flex items-center justify-between gap-3 py-2"><span className="text-sm text-zinc-300">Calendar behavior</span><span className="text-xs text-zinc-500">Read only</span></div>
-          <div className="flex items-center justify-between gap-3 py-2"><span className="text-sm text-zinc-300">Notifications</span><span className="text-xs text-zinc-500">Not configured</span></div>
+          <div className="flex items-center justify-between gap-3 py-2"><span className="text-sm text-zinc-300">Notifications</span><span className="text-xs text-zinc-500">Configured separately</span></div>
         </div>
       </Card>
 
