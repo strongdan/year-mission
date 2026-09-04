@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Flame, RotateCcw, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { getGameLoopAction } from "@/app/game-actions";
 import { Card } from "@/components/ui/card";
@@ -23,18 +23,27 @@ function chargeTone(charge: number): string {
   return "from-zinc-700 to-zinc-600";
 }
 
-export function MissionChargeCard({ refreshKey }: { refreshKey: string }) {
+export function MissionChargeCard() {
   const [data, setData] = useState<GameLoopData | null>(null);
 
+  const load = useCallback(async () => {
+    const result = await getGameLoopAction();
+    if (result.ok && result.data) setData(result.data);
+  }, []);
+
   useEffect(() => {
-    let cancelled = false;
-    getGameLoopAction().then((result) => {
-      if (!cancelled && result.ok && result.data) setData(result.data);
-    });
-    return () => {
-      cancelled = true;
+    void load();
+    const onFocus = () => void load();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void load();
     };
-  }, [refreshKey]);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [load]);
 
   if (!data) return null;
 
