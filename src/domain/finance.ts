@@ -44,7 +44,8 @@ export const financeImportSchema = z.object({
   provider: financeProviderSchema,
   generatedAt: z.iso.datetime(),
   accounts: z.array(financeAccountSchema).max(100),
-  transactions: z.array(financeTransactionSchema).max(5000).default([]),
+  // Matches the Plaid safety ceiling: 20 cursor pages × 500 transactions.
+  transactions: z.array(financeTransactionSchema).max(10_000).default([]),
   liabilities: z.array(financeLiabilitySchema).max(200).default([]),
 });
 
