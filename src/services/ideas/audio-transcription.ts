@@ -6,10 +6,11 @@ import { GEMINI_MODELS } from "@/integrations/ai/provider";
 import { getPreferredAiProvider, getStoredApiKey } from "@/services/integrations/api-key-store";
 
 const MAX_AUDIO_BYTES = 12 * 1024 * 1024;
+type TranscriptionProvider = "gemini" | "openai";
 
 export interface AudioTranscriptionResult {
   text: string;
-  provider: "gemini" | "openai";
+  provider: TranscriptionProvider;
 }
 
 interface AudioTranscriptionOptions {
@@ -17,17 +18,20 @@ interface AudioTranscriptionOptions {
 }
 
 async function resolveKeys(includeStoredKeys: boolean) {
-  let preferred: "gemini" | "openai" | null = null;
+  let preferred: TranscriptionProvider | null = null;
   let storedGemini: string | null = null;
   let storedOpenAi: string | null = null;
 
   if (includeStoredKeys) {
     try {
-      [preferred, storedGemini, storedOpenAi] = await Promise.all([
+      const [preferredAi, gemini, openai] = await Promise.all([
         getPreferredAiProvider(),
         getStoredApiKey("gemini"),
         getStoredApiKey("openai"),
       ]);
+      preferred = preferredAi === "gemini" || preferredAi === "openai" ? preferredAi : null;
+      storedGemini = gemini;
+      storedOpenAi = openai;
     } catch {
       // Deployment-level keys remain available if per-device key storage is unavailable.
     }
@@ -94,7 +98,7 @@ export async function transcribeIdeaAudio(
   if (!file.type.startsWith("audio/")) throw new Error("Unsupported recording format.");
 
   const keys = await resolveKeys(options.includeStoredKeys !== false);
-  const order: Array<"gemini" | "openai"> = keys.preferred === "openai" ? ["openai", "gemini"] : ["gemini", "openai"];
+  const order: TranscriptionProvider[] = keys.preferred === "openai" ? ["openai", "gemini"] : ["gemini", "openai"];
   let lastError: unknown = null;
 
   for (const provider of order) {
