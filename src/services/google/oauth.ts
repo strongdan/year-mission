@@ -1,6 +1,7 @@
 import "server-only";
 import { googleConfig, GoogleConfigError } from "./config";
 import { createGoogleOAuthState } from "./oauth-state";
+import { GoogleOAuthError } from "./token-errors";
 import { GOOGLE_SCOPES } from "@/domain/google-sync";
 
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
@@ -27,6 +28,12 @@ export function buildAuthUrl(userId: string): string {
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
+function sanitizeOAuthDetail(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const sanitized = value.replace(/[^\w .,:;!?@/\-{}\[\]'\"]/g, "").trim().slice(0, 180);
+  return sanitized || null;
+}
+
 async function tokenRequest(form: URLSearchParams): Promise<TokenResult> {
   const { clientId, clientSecret } = googleConfig();
   form.set("client_id", clientId);
@@ -37,9 +44,19 @@ async function tokenRequest(form: URLSearchParams): Promise<TokenResult> {
     body: form.toString(),
   });
   if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    const safeDetail = detail.replace(/[^\w .,:;!?@/\-{}\[\]"]/g, "").slice(0, 180);
-    throw new GoogleConfigError(`Google token exchange failed (${res.status})${safeDetail ? `: ${safeDetail}` : "."}`);
+    const raw = await res.text().catch(() => "");
+    let code: string | null = null;
+    let description: string | null = null;
+
+    try {
+      const parsed = JSON.parse(raw) as { error?: unknown; error_description?: unknown };
+      code = sanitizeOAuthDetail(parsed.error);
+      description = sanitizeOAuthDetail(parsed.error_description);
+    } catch {
+      description = sanitizeOAuthDetail(raw);
+    }
+
+    throw new GoogleOAuthError(res.status, code, description);
   }
   const data = (await res.json()) as {
     access_token?: string;
