@@ -11,8 +11,14 @@ export default async function SettingsPage() {
   const { user } = await requireUser();
   if (!user) redirect("/login");
 
-  const environment = process.env.VERCEL_ENV ?? (process.env.NODE_ENV === "production" ? "production" : "development");
-  const buildSha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local";
+  const environment =
+    process.env.YEAR_MISSION_DEPLOYMENT_ENV ??
+    process.env.VERCEL_ENV ??
+    (process.env.NODE_ENV === "production" ? "production" : "development");
+  const buildSha =
+    process.env.YEAR_MISSION_BUILD_SHA?.slice(0, 7) ??
+    process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ??
+    "local";
 
   return (
     <>
