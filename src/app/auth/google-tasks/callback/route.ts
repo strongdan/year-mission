@@ -1,7 +1,9 @@
 import { createAdminClient } from "@/integrations/supabase/server";
+import { upsertGoogleConnectionForUser } from "@/services/google/connection-store";
 import { encryptToken } from "@/services/google/encryption";
 import { exchangeCode, getTokenInfo } from "@/services/google/oauth";
 import { verifyGoogleOAuthState } from "@/services/google/oauth-state";
+import { googleReconnectMessage, isGoogleReconnectRequired } from "@/services/google/token-errors";
 import { NextResponse } from "next/server";
 
 function redirectToSettings(request: Request, params: Record<string, string>) {
@@ -12,7 +14,7 @@ function redirectToSettings(request: Request, params: Record<string, string>) {
 
 function safeErrorMessage(error: unknown): string {
   const value = error instanceof Error ? error.message : "Google connection failed.";
-  return value.replace(/[^\w .,:;!?@/\-{}\[\]"]/g, "").slice(0, 220);
+  return value.replace(/[^\w .,:;!?@/\-{}\[\]\"]/g, "").slice(0, 220);
 }
 
 export async function GET(request: Request) {
@@ -55,20 +57,18 @@ export async function GET(request: Request) {
     const { data: userRecord, error: userError } = await admin.auth.admin.getUserById(state.userId);
     if (userError || !userRecord.user) throw new Error("The Year Mission account that started this connection no longer exists.");
 
-    const { error: saveError } = await admin.from("google_connections").upsert(
-      {
-        user_id: state.userId,
-        refresh_token: encryptToken(token.refreshToken),
-        token_encrypted: true,
-        email: info.email,
-        google_user_id: info.userId,
-        scope: token.scope,
-      },
-      { onConflict: "user_id" }
-    );
-    if (saveError) throw new Error(`Could not save Google connection: ${saveError.message}`);
+    await upsertGoogleConnectionForUser(state.userId, {
+      refresh_token: encryptToken(token.refreshToken),
+      token_encrypted: true,
+      email: info.email,
+      google_user_id: info.userId,
+      scope: token.scope,
+    });
   } catch (error) {
-    return redirectToSettings(request, { google: "error", message: safeErrorMessage(error) });
+    return redirectToSettings(request, {
+      google: "error",
+      message: isGoogleReconnectRequired(error) ? googleReconnectMessage() : safeErrorMessage(error),
+    });
   }
 
   return redirectToSettings(request, { google: "connected" });
