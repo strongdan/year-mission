@@ -3,14 +3,17 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
-export type UserAiProvider = "gemini" | "openai";
+export type UserAiProvider = "gemini" | "openrouter" | "groq" | "openai";
 
 const ALGO = "aes-256-gcm";
 const COOKIE_NAMES: Record<UserAiProvider, string> = {
   gemini: "ym_api_gemini",
+  openrouter: "ym_api_openrouter",
+  groq: "ym_api_groq",
   openai: "ym_api_openai",
 };
 const PROVIDER_COOKIE = "ym_ai_provider";
+const PROVIDERS: readonly UserAiProvider[] = ["gemini", "openrouter", "groq", "openai"];
 
 function encryptionKey(): Buffer {
   const encoded = process.env.INTEGRATION_SECRETS_KEY ?? process.env.GOOGLE_TOKEN_ENCRYPTION_KEY ?? "";
@@ -73,7 +76,7 @@ export async function clearStoredApiKey(provider: UserAiProvider): Promise<void>
 export async function getPreferredAiProvider(): Promise<UserAiProvider | null> {
   const jar = await cookies();
   const value = jar.get(PROVIDER_COOKIE)?.value;
-  return value === "gemini" || value === "openai" ? value : null;
+  return PROVIDERS.includes(value as UserAiProvider) ? (value as UserAiProvider) : null;
 }
 
 export async function setPreferredAiProvider(provider: UserAiProvider): Promise<void> {
@@ -84,21 +87,25 @@ export async function setPreferredAiProvider(provider: UserAiProvider): Promise<
 export async function getStoredApiStatus(): Promise<{
   preferred: UserAiProvider | null;
   gemini: { configured: boolean; hint: string | null };
+  openrouter: { configured: boolean; hint: string | null };
+  groq: { configured: boolean; hint: string | null };
   openai: { configured: boolean; hint: string | null };
 }> {
-  // Validate that the server has a usable encryption root even when no API-key
-  // cookie exists yet, so Settings can accurately report whether saving is available.
   encryptionKey();
 
-  const [preferred, gemini, openai] = await Promise.all([
+  const [preferred, gemini, openrouter, groq, openai] = await Promise.all([
     getPreferredAiProvider(),
     getStoredApiKey("gemini"),
+    getStoredApiKey("openrouter"),
+    getStoredApiKey("groq"),
     getStoredApiKey("openai"),
   ]);
   const hint = (value: string | null) => value ? `••••${value.slice(-4)}` : null;
   return {
     preferred,
     gemini: { configured: Boolean(gemini), hint: hint(gemini) },
+    openrouter: { configured: Boolean(openrouter), hint: hint(openrouter) },
+    groq: { configured: Boolean(groq), hint: hint(groq) },
     openai: { configured: Boolean(openai), hint: hint(openai) },
   };
 }

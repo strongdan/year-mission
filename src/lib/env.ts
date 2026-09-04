@@ -6,12 +6,12 @@ const rawEnvSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
-  AI_PROVIDER: z.enum(["auto", "gemini", "openai", "mock"]).default("auto"),
+  OPENROUTER_API_KEY: z.string().optional(),
+  GROQ_API_KEY: z.string().optional(),
+  AI_PROVIDER: z.enum(["auto", "gemini", "openrouter", "groq", "openai", "mock"]).default("auto"),
   AI_DAILY_BUDGET_USD: z.coerce.number().default(0.5),
   AI_MONTHLY_BUDGET_USD: z.coerce.number().default(10),
-  AI_MOCK_MODE: z
-    .enum(["auto", "force"])
-    .default("auto"),
+  AI_MOCK_MODE: z.enum(["auto", "force"]).default("auto"),
 });
 
 export type AppEnv = z.infer<typeof rawEnvSchema>;
@@ -22,6 +22,8 @@ const rawEnv = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+  GROQ_API_KEY: process.env.GROQ_API_KEY,
   AI_PROVIDER: process.env.AI_PROVIDER,
   AI_DAILY_BUDGET_USD: process.env.AI_DAILY_BUDGET_USD,
   AI_MONTHLY_BUDGET_USD: process.env.AI_MONTHLY_BUDGET_USD,
@@ -45,6 +47,8 @@ export function parseEnv(input: typeof rawEnv): { env: AppEnv; issues: string[] 
     SUPABASE_SERVICE_ROLE_KEY: undefined,
     OPENAI_API_KEY: undefined,
     GEMINI_API_KEY: undefined,
+    OPENROUTER_API_KEY: undefined,
+    GROQ_API_KEY: undefined,
     ...defaults,
   } satisfies AppEnv;
 

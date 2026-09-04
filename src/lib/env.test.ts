@@ -9,6 +9,8 @@ describe("parseEnv", () => {
       SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
       OPENAI_API_KEY: undefined,
       GEMINI_API_KEY: undefined,
+      OPENROUTER_API_KEY: undefined,
+      GROQ_API_KEY: undefined,
       AI_PROVIDER: "[SENSITIVE]",
       AI_DAILY_BUDGET_USD: "[SENSITIVE]",
       AI_MONTHLY_BUDGET_USD: "[SENSITIVE]",
@@ -38,6 +40,8 @@ describe("parseEnv", () => {
       SUPABASE_SERVICE_ROLE_KEY: undefined,
       OPENAI_API_KEY: undefined,
       GEMINI_API_KEY: "gemini-key",
+      OPENROUTER_API_KEY: undefined,
+      GROQ_API_KEY: undefined,
       AI_PROVIDER: "gemini",
       AI_DAILY_BUDGET_USD: undefined,
       AI_MONTHLY_BUDGET_USD: undefined,
@@ -47,5 +51,41 @@ describe("parseEnv", () => {
     expect(parsed.env.GEMINI_API_KEY).toBe("gemini-key");
     expect(parsed.env.AI_PROVIDER).toBe("gemini");
     expect(parsed.issues).toEqual([]);
+  });
+
+  it("accepts OpenRouter and Groq provider configuration", () => {
+    const openRouter = parseEnv({
+      NEXT_PUBLIC_SUPABASE_URL: undefined,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: undefined,
+      SUPABASE_SERVICE_ROLE_KEY: undefined,
+      OPENAI_API_KEY: undefined,
+      GEMINI_API_KEY: undefined,
+      OPENROUTER_API_KEY: "openrouter-key",
+      GROQ_API_KEY: undefined,
+      AI_PROVIDER: "openrouter",
+      AI_DAILY_BUDGET_USD: undefined,
+      AI_MONTHLY_BUDGET_USD: undefined,
+      AI_MOCK_MODE: undefined,
+    });
+    const groq = parseEnv({
+      NEXT_PUBLIC_SUPABASE_URL: undefined,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: undefined,
+      SUPABASE_SERVICE_ROLE_KEY: undefined,
+      OPENAI_API_KEY: undefined,
+      GEMINI_API_KEY: undefined,
+      OPENROUTER_API_KEY: undefined,
+      GROQ_API_KEY: "groq-key",
+      AI_PROVIDER: "groq",
+      AI_DAILY_BUDGET_USD: undefined,
+      AI_MONTHLY_BUDGET_USD: undefined,
+      AI_MOCK_MODE: undefined,
+    });
+
+    expect(openRouter.env.AI_PROVIDER).toBe("openrouter");
+    expect(openRouter.env.OPENROUTER_API_KEY).toBe("openrouter-key");
+    expect(groq.env.AI_PROVIDER).toBe("groq");
+    expect(groq.env.GROQ_API_KEY).toBe("groq-key");
+    expect(openRouter.issues).toEqual([]);
+    expect(groq.issues).toEqual([]);
   });
 });

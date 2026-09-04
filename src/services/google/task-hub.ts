@@ -1,5 +1,6 @@
 import "server-only";
-import { getGoogleConnection, upsertGoogleConnection } from "@/repositories/supabase-repository";
+import { getGoogleConnection } from "@/repositories/supabase-repository";
+import { clearGoogleConnectionCredentials } from "./connection-store";
 import { decryptToken } from "./encryption";
 import { refreshAccessToken } from "./oauth";
 import { googleReconnectMessage, isGoogleReconnectRequired } from "./token-errors";
@@ -30,13 +31,7 @@ async function accessTokenForUser(userId: string): Promise<string> {
     return await refreshAccessToken(decryptToken(connection.refresh_token));
   } catch (error) {
     if (isGoogleReconnectRequired(error)) {
-      await upsertGoogleConnection(userId, {
-        refresh_token: null,
-        token_encrypted: false,
-        email: null,
-        google_user_id: null,
-        scope: null,
-      });
+      await clearGoogleConnectionCredentials(userId);
       throw new Error(googleReconnectMessage());
     }
     throw error;
