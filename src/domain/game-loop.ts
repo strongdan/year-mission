@@ -24,6 +24,15 @@ export interface ComebackState {
   quietDays: number;
 }
 
+export interface MissionAchievement {
+  id: "first_spark" | "four_corners" | "courage" | "comeback" | "weekly_win" | "milestone" | "long_game";
+  title: string;
+  description: string;
+  earned: boolean;
+  progress: number;
+  target: number;
+}
+
 type GameTask = Pick<Task, "impact" | "courage_task" | "weekly_win" | "meta_work">;
 type WeeklyValue = { done: number; target: number };
 
@@ -95,6 +104,76 @@ export function chooseBonusMission(bigFour: Record<string, WeeklyValue>): BonusM
   const selected = candidates[0];
   if (!selected) return null;
   return { slug: selected.slug, label: selected.label, done: selected.done, target: selected.target };
+}
+
+export function buildAchievements(input: {
+  meaningfulActions: number;
+  courageActions: number;
+  weeklyWins: number;
+  representedDomains: string[];
+  comebacks: number;
+  milestones: number;
+}): MissionAchievement[] {
+  const represented = new Set(input.representedDomains.filter((slug) => DOMAIN_ORDER.includes(slug as (typeof DOMAIN_ORDER)[number]))).size;
+  const values: MissionAchievement[] = [
+    {
+      id: "first_spark",
+      title: "First Spark",
+      description: "Complete the first meaningful action of the mission.",
+      progress: Math.min(1, input.meaningfulActions),
+      target: 1,
+      earned: input.meaningfulActions >= 1,
+    },
+    {
+      id: "four_corners",
+      title: "Four Corners",
+      description: "Create meaningful evidence in all four life areas.",
+      progress: Math.min(4, represented),
+      target: 4,
+      earned: represented >= 4,
+    },
+    {
+      id: "courage",
+      title: "Courage Stack",
+      description: "Finish three actions you marked as uncomfortable or brave.",
+      progress: Math.min(3, input.courageActions),
+      target: 3,
+      earned: input.courageActions >= 3,
+    },
+    {
+      id: "comeback",
+      title: "Returner",
+      description: "Come back and act after avoidance or a quiet stretch.",
+      progress: Math.min(1, input.comebacks),
+      target: 1,
+      earned: input.comebacks >= 1,
+    },
+    {
+      id: "weekly_win",
+      title: "Weekly Win",
+      description: "Finish a task designated as the week's decisive win.",
+      progress: Math.min(1, input.weeklyWins),
+      target: 1,
+      earned: input.weeklyWins >= 1,
+    },
+    {
+      id: "milestone",
+      title: "Proof Point",
+      description: "Reach and record a real mission milestone.",
+      progress: Math.min(1, input.milestones),
+      target: 1,
+      earned: input.milestones >= 1,
+    },
+    {
+      id: "long_game",
+      title: "Long Game",
+      description: "Accumulate fifty meaningful completed actions.",
+      progress: Math.min(50, input.meaningfulActions),
+      target: 50,
+      earned: input.meaningfulActions >= 50,
+    },
+  ];
+  return values;
 }
 
 function dateOnlyUtc(value: string): number | null {
