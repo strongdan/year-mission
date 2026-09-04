@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 const themeBootstrap = `(() => {
   try {
     const stored = localStorage.getItem("year-mission-theme");
-    const theme = stored === "light" ? "light" : "dark";
+    const theme = stored === "light" || stored === "night" ? stored : "dark";
     document.documentElement.dataset.theme = theme;
-    document.documentElement.style.colorScheme = theme;
+    document.documentElement.style.colorScheme = theme === "light" ? "light" : "dark";
   } catch {
     document.documentElement.dataset.theme = "dark";
   }
