@@ -1,69 +1,108 @@
 # Finance integration
 
-Year Mission treats financial data as read-only telemetry. It does not replace a budgeting application and it never asks for bank usernames or passwords.
+Year Mission treats financial data as **read-only telemetry**. It does not replace a budgeting application, ask for bank usernames/passwords, or initiate payments/transfers.
 
 ## Architecture
 
 ```text
-Banks / credit cards ----> SimpleFIN -----------+
-                                               |
-Banks / CSV / OFX -------> Actual Budget ------+----> Year Mission finance import ----> Supabase
-                                               |
-Unsupported loans -------- manual balance ------+
+Banks / cards -----------> Plaid (preferred) ----+
+Banks / cards -----------> SimpleFIN ------------+
+Banks / CSV / OFX -------> Actual Budget --------+----> normalized finance hub ----> Supabase
+Unsupported liabilities -> manual/import --------+
 ```
 
-Year Mission normalizes all sources into three concepts:
+All sources normalize into accounts, transactions, and liabilities. The existing `financial_snapshots` table remains the compact Money-domain summary.
 
-- accounts
-- transactions
-- liabilities
+## Plaid — preferred direct bank connection
 
-The existing `financial_snapshots` table remains the small progress-level summary. Finance sync updates its cash reserve and consumer-debt values so existing Money progress views continue to work.
+Year Mission defaults Plaid to **Sandbox**. Production must be explicitly selected with `PLAID_ENVIRONMENT=production`.
+
+The app requests only:
+
+- Transactions
+- optional Liabilities consent
+
+It does **not** request Auth routing/account numbers, payment initiation, Transfer, lending, or any money-movement product.
+
+### Server configuration
+
+```text
+PLAID_CLIENT_ID
+PLAID_SECRET
+PLAID_ENVIRONMENT=sandbox|production
+PLAID_REDIRECT_URI=https://year-mission.dangaston.workers.dev/settings
+PLAID_WEBHOOK_URL=...                 # optional until webhook-driven sync is enabled
+INTEGRATION_SECRETS_KEY               # 32-byte base64 encryption root
+SUPABASE_SERVICE_ROLE_KEY
+```
+
+Never expose `PLAID_SECRET`, permanent Plaid access tokens, or `INTEGRATION_SECRETS_KEY` client-side.
+
+### Link and storage flow
+
+1. Settings asks the server for a short-lived Link token.
+2. Plaid Link runs in the browser/PWA.
+3. A new connection yields a temporary public token.
+4. The server exchanges it for a permanent access token + Item ID.
+5. The access token is AES-256-GCM encrypted and stored in `finance_connections`.
+6. Accounts, transaction deltas, and supported liabilities are normalized into the existing finance tables.
+
+For OAuth institutions, the temporary Link session is stored in local storage only long enough to resume Link after redirect. The permanent access token never enters browser storage.
+
+`finance_connections` has RLS enabled and deliberately exposes no normal user SELECT/INSERT/UPDATE policy. Authenticated server actions use the service-role client and scope every operation by the authenticated `user_id`.
+
+### Transaction sync
+
+Year Mission uses Plaid's cursor-based `/transactions/sync` model:
+
+- persist the last successful cursor per Item
+- upsert added/modified transactions by stable Plaid transaction ID
+- delete IDs Plaid marks removed
+- request up to 500 records per page
+- restart once from the original cursor on `TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION`
+- cap pagination at 20 pages
+- convert Plaid's positive spending amounts to Year Mission's negative-outflow convention
+
+### Reconnect
+
+Recoverable Item errors such as `ITEM_LOGIN_REQUIRED` or revoked permission mark the connection `reconnect_required`. Settings launches Plaid Link update mode using the encrypted access token, then retries sync after authorization succeeds.
+
+### Disconnect vs delete
+
+These controls are intentionally separate:
+
+- **Disconnect** revokes the Plaid Item and deletes the stored access token while retaining imported history.
+- **Delete imported Plaid data** removes Plaid-sourced accounts, transactions, and liabilities from Year Mission without affecting the bank.
+
+### Activation gates
+
+Repository implementation is not the same as live banking activation. Before calling Plaid production-ready:
+
+1. Apply `0013_journal.sql` then `0014_plaid_finance.sql` to the target Supabase project.
+2. Configure Plaid Sandbox credentials first.
+3. Register the exact Cloudflare settings redirect URI with Plaid.
+4. Configure the Cloudflare Worker variables/secrets.
+5. Test Sandbox Link → exchange → sync → reconnect → disconnect and data deletion.
+6. For real data, use an eligible Plaid Production/Trial account and perform an institution smoke test.
+
+Keep `PLAID_ENVIRONMENT=sandbox` until those gates pass.
 
 ## SimpleFIN
 
-SimpleFIN is optional and low-cost; it is not free. It is useful for automatic bank/card balances and transactions when supported by the institution.
-
-In Year Mission:
-
-1. Open Settings → Finances.
-2. Obtain a one-time SimpleFIN setup token from SimpleFIN Bridge.
-3. Paste the setup token into Year Mission.
-4. Choose **Connect SimpleFIN**.
-
-The setup token is claimed only once. The resulting credential-bearing SimpleFIN access URL is encrypted with AES-256-GCM and stored in an HttpOnly secure cookie. The encryption root is the existing `INTEGRATION_SECRETS_KEY`, falling back to `GOOGLE_TOKEN_ENCRYPTION_KEY`.
-
-The access URL is never rendered back to the browser and should never be logged.
-
-This V1 secret storage is intentionally browser/user-session scoped. It supports manual **Sync now** from Settings. It does not provide unattended server cron sync; if unattended finance sync is added later, move the encrypted connection credential into a server-side per-user secret store.
+SimpleFIN remains an optional low-cost fallback. A one-time setup token is claimed server-side; the credential-bearing access URL is encrypted with AES-256-GCM in an HttpOnly secure cookie. It is never rendered back to the browser or logged.
 
 ## Actual Budget
 
-Actual remains the better place for budgeting, reconciliation, categories, and imports from CSV/OFX/QFX. Year Mission only consumes normalized data.
+Actual remains the better place for budgeting, reconciliation, categories, and CSV/OFX/QFX imports. Year Mission consumes only normalized data through the existing import bridge.
 
-Actual does not expose a general REST API. Its supported automation surfaces are its Node API and CLI. The included bridge script uses the stable Actual CLI and POSTs a normalized payload to Year Mission.
+Current canonical import endpoint:
 
-### Install Actual CLI
-
-The Actual CLI requires Node.js 22+.
-
-```bash
-npm install --location=global @actual-app/cli
+```text
+POST https://year-mission.dangaston.workers.dev/api/finance/import
+Authorization: Bearer <YEAR_MISSION_FINANCE_SYNC_TOKEN>
 ```
 
-Configure the CLI with environment variables (recommended) or an Actual config file. Typical environment variables are:
-
-```bash
-ACTUAL_SERVER_URL=https://your-actual-server.example
-ACTUAL_SYNC_ID=<budget-sync-id>
-ACTUAL_SESSION_TOKEN=<session-token>
-```
-
-Do not commit Actual passwords or session tokens.
-
-### Year Mission server configuration
-
-Set these Vercel environment variable names:
+Server-side configuration:
 
 ```text
 YEAR_MISSION_OWNER_USER_ID
@@ -71,134 +110,23 @@ YEAR_MISSION_FINANCE_SYNC_TOKEN
 SUPABASE_SERVICE_ROLE_KEY
 ```
 
-`YEAR_MISSION_FINANCE_SYNC_TOKEN` should be a random long secret, for example generated locally with:
+Use `YEAR_MISSION_FINANCE_IMPORT_URL` to override the destination explicitly when running the bridge.
 
-```bash
-openssl rand -hex 32
-```
+## Manual / normalized import
 
-Never commit or log its value.
+Unsupported liabilities can be entered manually. Settings also accepts normalized JSON for other local/import tools. Provider namespaces are isolated, so Plaid sync does not overwrite SimpleFIN, Actual, or manual records.
 
-The server endpoint is:
+Transaction convention is always **negative = outflow, positive = inflow**.
 
-```text
-POST /api/finance/import
-Authorization: Bearer <YEAR_MISSION_FINANCE_SYNC_TOKEN>
-Content-Type: application/json
-```
+## Security invariants
 
-The endpoint validates the normalized payload with Zod, uses the service-role Supabase client, applies deterministic provider IDs for idempotency, and logs only source/count metadata.
-
-### Run the Actual bridge
-
-From the Year Mission repository:
-
-```bash
-YEAR_MISSION_FINANCE_SYNC_TOKEN='...' \
-node scripts/sync-actual-finance.mjs
-```
-
-Optional environment variables:
-
-```text
-YEAR_MISSION_FINANCE_IMPORT_URL   defaults to https://year-mission.vercel.app/api/finance/import
-ACTUAL_CLI_BIN                    defaults to actual
-ACTUAL_FINANCE_LOOKBACK_DAYS      defaults to 95, clamped to 7–365
-```
-
-The bridge:
-
-1. lists active Actual accounts;
-2. reads current balances;
-3. reads recent transactions;
-4. converts Actual integer cents to dollars;
-5. excludes split-parent transactions to avoid double counting;
-6. sends normalized data to Year Mission.
-
-Repeated syncs are safe because accounts and transactions are upserted by stable provider IDs.
-
-## Unsupported/student loans
-
-Perfect transaction-level loan sync is not required. For a servicer that is missing from SimpleFIN/Actual, use Settings → Finances → Student loans / unsupported accounts and update the balance periodically.
-
-A useful loan record consists of:
-
-- name/servicer
-- current balance
-- APR when known
-- later: minimum payment and due date
-
-Manual records use their own provider namespace and are not overwritten by SimpleFIN or Actual imports.
-
-## Normalized JSON import
-
-Settings also accepts a normalized JSON payload for one-off imports or another local tool:
-
-```json
-{
-  "provider": "actual",
-  "generatedAt": "2026-08-25T12:00:00.000Z",
-  "accounts": [
-    {
-      "providerAccountId": "checking-1",
-      "name": "Checking",
-      "institutionName": "Example Bank",
-      "accountType": "checking",
-      "balance": 2500,
-      "availableBalance": 2400,
-      "currency": "USD",
-      "active": true
-    }
-  ],
-  "transactions": [
-    {
-      "providerTransactionId": "tx-1",
-      "providerAccountId": "checking-1",
-      "postedDate": "2026-08-24",
-      "amount": -42.50,
-      "payee": "Groceries",
-      "category": "Food",
-      "pending": false,
-      "metadata": {}
-    }
-  ],
-  "liabilities": [
-    {
-      "providerLiabilityId": "loan-1",
-      "name": "Student Loan",
-      "liabilityType": "student_loan",
-      "balance": 12000,
-      "apr": 4.5,
-      "currency": "USD"
-    }
-  ]
-}
-```
-
-Transaction convention: negative amounts are outflows and positive amounts are inflows. This matches Actual and SimpleFIN.
-
-## Data preservation and security invariants
-
-- No bank username/password is stored by Year Mission.
+- Year Mission never stores bank usernames/passwords.
+- Plaid permanent access tokens are encrypted and service-role-only.
 - SimpleFIN's access credential is encrypted and HttpOnly.
-- Actual credentials stay on the machine running Actual/its CLI.
-- Finance import bearer tokens stay server-side/local environment only.
-- All finance tables have user-scoped Row Level Security.
-- Stable provider IDs make repeated imports idempotent.
-- Manual liabilities are not overwritten by imports from another provider.
-- Disconnecting SimpleFIN removes the connection credential but keeps imported history.
+- Actual credentials remain on the machine running Actual/its CLI.
+- Finance import bearer tokens remain server-side/local only.
+- Finance data tables are user-scoped with RLS.
+- Stable provider IDs make repeated imports/syncs idempotent.
+- Disconnecting a provider does not silently delete historical imported data.
 - No transaction payloads or credentials are written to application logs.
-
-## Money UI
-
-`/money` intentionally stays small. It shows:
-
-- cash
-- total debt
-- credit-card debt
-- student-loan debt
-- other debt
-- trailing 30-day outflow
-- accounts and liabilities
-
-It does not attempt to recreate Actual, Mint, Monarch, or a transaction-analysis dashboard.
+- AI can summarize normalized finance telemetry but cannot move money.
