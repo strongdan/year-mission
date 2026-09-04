@@ -6,9 +6,10 @@ import { Flame, RotateCcw, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { getGameLoopAction } from "@/app/game-actions";
 import { Card } from "@/components/ui/card";
 
-type GameLoopData = Awaited<ReturnType<typeof getGameLoopAction>>["data"];
+type GameLoopResult = Awaited<ReturnType<typeof getGameLoopAction>>;
+type GameLoopData = Extract<GameLoopResult, { ok: true }>["data"];
 
-function tierCopy(tier: NonNullable<GameLoopData>["charge"]["tier"]): string {
+function tierCopy(tier: GameLoopData["charge"]["tier"]): string {
   if (tier === "full_charge") return "Full charge. The useful move now is to leave the app and enjoy the result.";
   if (tier === "day_won") return "The day already counts. Anything else is bonus.";
   if (tier === "in_motion") return "You have traction. One more meaningful move can turn this into a won day.";
