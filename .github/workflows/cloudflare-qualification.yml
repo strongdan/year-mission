@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   vinext:
     runs-on: ubuntu-latest
@@ -42,6 +45,20 @@ jobs:
 
       - name: Build Cloudflare Worker output
         run: pnpm run build:vinext
+
+      - name: Materialize qualified migration files
+        if: github.event_name == 'push' && github.ref == 'refs/heads/infra/cloudflare-migration'
+        shell: bash
+        run: |
+          git add .gitignore package.json pnpm-lock.yaml pnpm-workspace.yaml vite.config.ts wrangler.jsonc
+          if git diff --cached --quiet; then
+            echo 'Cloudflare migration files already materialized.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'infra: materialize qualified Cloudflare config'
+          git push origin HEAD:infra/cloudflare-migration
 
       - name: Show generated migration files
         if: always()
