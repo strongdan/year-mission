@@ -15,7 +15,7 @@ function encryptionKey(): Buffer {
   return key;
 }
 
-function encrypt(value: string): string {
+export function encryptFinanceSecret(value: string): string {
   const iv = randomBytes(12);
   const cipher = createCipheriv(ALGO, encryptionKey(), iv);
   const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
@@ -23,7 +23,7 @@ function encrypt(value: string): string {
   return `${iv.toString("base64")}:${tag.toString("base64")}:${encrypted.toString("base64")}`;
 }
 
-function decrypt(payload: string): string {
+export function decryptFinanceSecret(payload: string): string {
   const [ivB64, tagB64, dataB64] = payload.split(":");
   if (!ivB64 || !tagB64 || !dataB64) throw new Error("Malformed encrypted finance secret.");
   const decipher = createDecipheriv(ALGO, encryptionKey(), Buffer.from(ivB64, "base64"));
@@ -45,7 +45,7 @@ export async function setSimpleFinAccessUrl(accessUrl: string): Promise<void> {
   const url = new URL(accessUrl);
   if (url.protocol !== "https:") throw new Error("SimpleFIN access URL must use HTTPS.");
   const jar = await cookies();
-  jar.set(SIMPLEFIN_COOKIE, encrypt(accessUrl), cookieOptions());
+  jar.set(SIMPLEFIN_COOKIE, encryptFinanceSecret(accessUrl), cookieOptions());
 }
 
 export async function getSimpleFinAccessUrl(): Promise<string | null> {
@@ -53,7 +53,7 @@ export async function getSimpleFinAccessUrl(): Promise<string | null> {
   const encrypted = jar.get(SIMPLEFIN_COOKIE)?.value;
   if (!encrypted) return null;
   try {
-    return decrypt(encrypted);
+    return decryptFinanceSecret(encrypted);
   } catch {
     return null;
   }
