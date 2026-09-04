@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const financeProviderSchema = z.enum(["actual", "simplefin", "manual", "import"]);
+export const financeProviderSchema = z.enum(["actual", "simplefin", "plaid", "manual", "import"]);
 export type FinanceProvider = z.infer<typeof financeProviderSchema>;
 
 export const financeAccountSchema = z.object({
