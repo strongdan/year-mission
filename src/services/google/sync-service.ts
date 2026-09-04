@@ -2,6 +2,8 @@ import "server-only";
 import { refreshAccessToken } from "./oauth";
 import { encryptToken, decryptToken } from "./encryption";
 import { isGoogleTasksConfigured } from "./config";
+import { clearGoogleConnectionCredentials, upsertGoogleConnectionForUser } from "./connection-store";
+import { googleReconnectMessage, isGoogleReconnectRequired } from "./token-errors";
 import { findOrCreateYearMissionList, listGoogleTasks, createGoogleTask, updateGoogleTask, type GoogleTask } from "./tasks-api";
 import { listPrimaryCalendarEvents, type GoogleCalendarEvent } from "./calendar-api";
 import {
@@ -15,7 +17,7 @@ import {
   type SyncSummary,
 } from "@/domain/google-sync";
 import { ACTIVE_STATUSES } from "@/domain/task-states";
-import { getGoogleConnection, upsertGoogleConnection, listGoogleSyncRecords, upsertGoogleSyncRecord, listTasks, updateTask, insertTask } from "@/repositories/supabase-repository";
+import { getGoogleConnection, listGoogleSyncRecords, upsertGoogleSyncRecord, listTasks, updateTask, insertTask } from "@/repositories/supabase-repository";
 import type { GoogleTaskSync } from "@/types/models";
 
 export type SyncOutcome = "not_configured" | "not_connected" | "error" | "ok";
@@ -36,8 +38,17 @@ export interface CalendarWeekResult {
 async function accessTokenForConnection(userId: string): Promise<{ accessToken: string; scope: string } | null> {
   const connection = await getGoogleConnection(userId);
   if (!connection?.refresh_token) return null;
-  const accessToken = await refreshAccessToken(decryptToken(connection.refresh_token));
-  return { accessToken, scope: connection.scope ?? "" };
+
+  try {
+    const accessToken = await refreshAccessToken(decryptToken(connection.refresh_token));
+    return { accessToken, scope: connection.scope ?? "" };
+  } catch (error) {
+    if (isGoogleReconnectRequired(error)) {
+      await clearGoogleConnectionCredentials(userId);
+      throw new Error(googleReconnectMessage());
+    }
+    throw error;
+  }
 }
 
 export async function getGoogleCalendarWeek(userId: string, weekStart: string): Promise<CalendarWeekResult> {
@@ -60,20 +71,17 @@ export async function getGoogleCalendarWeek(userId: string, weekStart: string): 
   }
 
   try {
-    const accessToken = await refreshAccessToken(decryptToken(connection.refresh_token));
+    const access = await accessTokenForConnection(userId);
+    if (!access) return { outcome: "not_connected", events: [], needsReconnect: false };
     const start = new Date(`${weekStart}T00:00:00Z`);
     const end = new Date(start);
     end.setUTCDate(end.getUTCDate() + 7);
-    const events = await listPrimaryCalendarEvents(accessToken, start.toISOString(), end.toISOString());
+    const events = await listPrimaryCalendarEvents(access.accessToken, start.toISOString(), end.toISOString());
     return { outcome: "ok", events, needsReconnect: false };
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "Google Calendar could not be loaded.";
-    return {
-      outcome: "error",
-      events: [],
-      needsReconnect: message.toLowerCase().includes("reconnect") || message.toLowerCase().includes("permission"),
-      error: message,
-    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Google Calendar could not be loaded.";
+    const needsReconnect = isGoogleReconnectRequired(error) || message === googleReconnectMessage() || message.toLowerCase().includes("permission");
+    return { outcome: "error", events: [], needsReconnect, error: needsReconnect ? googleReconnectMessage() : message };
   }
 }
 
@@ -85,14 +93,10 @@ export async function syncGoogleTasks(userId: string): Promise<SyncResult> {
     const access = await accessTokenForConnection(userId);
     if (!access) return { outcome: "not_connected" };
     accessToken = access.accessToken;
-  } catch (e) {
-    const connection = await getGoogleConnection(userId);
-    const message = e instanceof Error ? e.message : "Failed to refresh Google token.";
-    if (connection?.refresh_token && connection.token_encrypted && message.includes("invalid")) {
-      await upsertGoogleConnection(userId, { refresh_token: null });
-      return { outcome: "error", error: "Google connection expired. Reconnect." };
-    }
-    return { outcome: "error", error: message };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to refresh Google token.";
+    const reconnect = isGoogleReconnectRequired(error) || message === googleReconnectMessage();
+    return { outcome: "error", error: reconnect ? googleReconnectMessage() : message };
   }
 
   try {
@@ -216,13 +220,11 @@ export async function syncGoogleTasks(userId: string): Promise<SyncResult> {
       outcome: "ok",
       summary: { ...summarize(results), tasklistId: tasklist.id },
     };
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "Google sync failed.";
-    if (message.includes("invalid")) {
-      await upsertGoogleConnection(userId, { refresh_token: null });
-      return { outcome: "error", error: "Google connection expired. Reconnect." };
-    }
-    return { outcome: "error", error: message };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Google sync failed.";
+    const reconnect = isGoogleReconnectRequired(error) || message === googleReconnectMessage();
+    if (reconnect) await clearGoogleConnectionCredentials(userId);
+    return { outcome: "error", error: reconnect ? googleReconnectMessage() : message };
   }
 }
 
@@ -238,7 +240,7 @@ export async function storeGoogleConnection(
   userId: string,
   opts: { refreshToken: string; email: string; googleUserId: string; scope: string }
 ) {
-  await upsertGoogleConnection(userId, {
+  await upsertGoogleConnectionForUser(userId, {
     refresh_token: encryptToken(opts.refreshToken),
     token_encrypted: true,
     email: opts.email,
@@ -248,5 +250,5 @@ export async function storeGoogleConnection(
 }
 
 export async function disconnectGoogleTasks(userId: string): Promise<void> {
-  await upsertGoogleConnection(userId, { refresh_token: null, token_encrypted: false, email: null, google_user_id: null, scope: null });
+  await clearGoogleConnectionCredentials(userId);
 }
