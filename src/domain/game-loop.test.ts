@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildChargeState, chooseBonusMission, detectComeback, taskChargePoints } from "./game-loop";
+import { buildAchievements, buildChargeState, chooseBonusMission, detectComeback, taskChargePoints } from "./game-loop";
 
 const baseTask = {
   impact: "low" as const,
@@ -65,6 +65,23 @@ describe("chooseBonusMission", () => {
       home: { done: 1, target: 1 },
       capability: { done: 1, target: 1 },
     })).toBeNull();
+  });
+});
+
+describe("buildAchievements", () => {
+  it("unlocks deterministic achievements from meaningful evidence", () => {
+    const achievements = buildAchievements({
+      meaningfulActions: 12,
+      courageActions: 3,
+      weeklyWins: 1,
+      representedDomains: ["body", "money", "home", "capability"],
+      comebacks: 1,
+      milestones: 1,
+    });
+    expect(achievements.find((item) => item.id === "four_corners")?.earned).toBe(true);
+    expect(achievements.find((item) => item.id === "courage")?.earned).toBe(true);
+    expect(achievements.find((item) => item.id === "long_game")?.earned).toBe(false);
+    expect(achievements.find((item) => item.id === "long_game")?.progress).toBe(12);
   });
 });
 
