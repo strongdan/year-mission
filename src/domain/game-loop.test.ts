@@ -45,8 +45,8 @@ describe("buildChargeState", () => {
 
   it("caps daily charge at 100", () => {
     const completedToday = Array.from({ length: 4 }, () => ({ ...baseTask, impact: "high" as const, courage_task: true, weekly_win: true }));
-    const protected = Object.fromEntries(Object.keys(bigFour).map((key) => [key, { done: 1, target: 1 }]));
-    const state = buildChargeState({ completedToday, bigFour: protected });
+    const protectedAreas = Object.fromEntries(Object.keys(bigFour).map((key) => [key, { done: 1, target: 1 }]));
+    const state = buildChargeState({ completedToday, bigFour: protectedAreas });
     expect(state.charge).toBe(100);
     expect(state.label).toBe("Full charge");
     expect(state.nextTarget).toBeNull();
