@@ -60,7 +60,7 @@ export function buildChargeState(input: {
   const meaningful = input.completedToday.filter((task) => !task.meta_work);
   const actionPoints = Math.min(80, meaningful.reduce((total, task) => total + taskChargePoints(task), 0));
   const protectedAreas = Object.values(input.bigFour).filter((value) => value.target > 0 && value.done >= value.target).length;
-  const balancePoints = Math.min(20, protectedAreas * 5);
+  const balancePoints = meaningful.length > 0 ? Math.min(20, protectedAreas * 5) : 0;
   const charge = Math.min(100, actionPoints + balancePoints);
   const resolved = TIERS.find((candidate) => charge >= candidate.threshold) ?? TIERS[TIERS.length - 1];
   const nextTarget = NEXT_THRESHOLDS.find((threshold) => charge < threshold) ?? null;
