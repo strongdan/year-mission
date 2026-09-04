@@ -5,6 +5,7 @@ import { AppearanceSettingsCard } from "@/components/settings/appearance-setting
 import { ExecutionSettingsCard } from "@/components/settings/execution-settings-card";
 import { FinanceSettingsCard } from "@/components/settings/finance-settings-card";
 import { NotificationSettingsCard } from "@/components/settings/notification-settings-card";
+import { PlaidSettingsSection } from "@/components/settings/plaid-settings-section";
 import { TimelineSettingsCard } from "@/components/settings/timeline-settings-card";
 
 export default async function SettingsPage() {
@@ -24,6 +25,7 @@ export default async function SettingsPage() {
     <>
       <SettingsView environment={environment} buildSha={buildSha} />
       <AppearanceSettingsCard />
+      <div className="px-4 pb-4"><PlaidSettingsSection /></div>
       <FinanceSettingsCard />
       <ExecutionSettingsCard />
       <NotificationSettingsCard />
