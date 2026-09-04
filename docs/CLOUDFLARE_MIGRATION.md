@@ -110,6 +110,12 @@ The `next/offline` compatibility warning makes the installed-PWA/offline tests a
 8. Stop unnecessary Vercel Git builds after Cloudflare stabilization.
 9. Retire the Vercel project only when the rollback window is deliberately closed.
 
-## Current stop point
+## Current status
 
-Repository compatibility and Worker build qualification are complete. No Cloudflare account credentials are stored in this repository and no Cloudflare account connector is available in the current execution environment, so a live Worker deployment, Worker secret configuration, and provider-console OAuth changes remain operational cutover steps.
+Cloudflare Worker live deployment and validation are complete. Cloudflare Workers + vinext is now canonical (`https://year-mission.dangaston.workers.dev`), and Vercel (`https://year-mission.vercel.app`) remains an active, tested rollback target.
+
+### Production Deployment Metadata
+- **Cloudflare Worker:** `year-mission`
+- **Canonical Host:** `https://year-mission.dangaston.workers.dev`
+- **Vercel Rollback Host:** `https://year-mission.vercel.app`
+- **Rollback Status:** Active & Ready

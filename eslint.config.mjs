@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Vercel prebuilt deployment output.
     ".vercel/**",
+    // vinext build output.
+    "dist/**",
     // Supabase CLI local tooling artifacts.
     "supabase/.temp/**",
     "supabase/.branches/**",
