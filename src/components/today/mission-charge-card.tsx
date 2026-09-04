@@ -33,7 +33,9 @@ export function MissionChargeCard() {
   }, []);
 
   useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
     const onFocus = () => void load();
     const onVisibility = () => {
       if (document.visibilityState === "visible") void load();
@@ -41,6 +43,7 @@ export function MissionChargeCard() {
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
+      window.clearTimeout(timer);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
