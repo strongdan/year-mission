@@ -36,6 +36,13 @@ describe("buildChargeState", () => {
     expect(state.nextTarget).toBe(50);
   });
 
+  it("does not passively charge from weekly protection without action today", () => {
+    const state = buildChargeState({ completedToday: [], bigFour });
+    expect(state.charge).toBe(0);
+    expect(state.label).toBe("Ready");
+    expect(state.protectedAreas).toBe(1);
+  });
+
   it("caps daily charge at 100", () => {
     const completedToday = Array.from({ length: 4 }, () => ({ ...baseTask, impact: "high" as const, courage_task: true, weekly_win: true }));
     const protected = Object.fromEntries(Object.keys(bigFour).map((key) => [key, { done: 1, target: 1 }]));
