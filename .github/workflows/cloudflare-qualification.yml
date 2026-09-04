@@ -1,0 +1,59 @@
+name: Cloudflare qualification
+
+on:
+  push:
+    branches: [infra/cloudflare-migration]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  vinext:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.17.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: vinext compatibility scan
+        continue-on-error: true
+        run: pnpx vinext@1.0.0-beta.9 check
+
+      - name: Generate Cloudflare configuration in runner
+        run: >-
+          pnpx vinext@1.0.0-beta.9 init
+          --skip-check
+          --platform=cloudflare
+          --data-cache=none
+          --image-optimization=none
+
+      - name: Build Cloudflare Worker output
+        run: pnpm run build:vinext
+
+      - name: Show generated migration files
+        if: always()
+        shell: bash
+        run: |
+          echo '--- git status ---'
+          git status --short
+          echo '--- package.json ---'
+          cat package.json
+          echo '--- vite.config.ts ---'
+          test -f vite.config.ts && cat vite.config.ts || true
+          echo '--- wrangler.jsonc ---'
+          test -f wrangler.jsonc && cat wrangler.jsonc || true
+          echo '--- .gitignore tail ---'
+          tail -n 30 .gitignore || true
