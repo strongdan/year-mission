@@ -176,4 +176,7 @@ Then in the Supabase dashboard:
 
 ## Roadmap discipline
 
+- Cloudflare Workers Builds automatic deployment verified (`main` auto-deploys to production, non-main branch uploads preview version).
+
+
 After the core loop works, the project follows a 30-day feature freeze (`AGENTS.md` §33). Observations go into `OBSERVATIONS.md`; features are not built during the freeze. Future ideas are promoted only with real evidence of repeated use.
