@@ -110,12 +110,31 @@ The `next/offline` compatibility warning makes the installed-PWA/offline tests a
 8. Stop unnecessary Vercel Git builds after Cloudflare stabilization.
 9. Retire the Vercel project only when the rollback window is deliberately closed.
 
+## Automated Deployments (Cloudflare Workers Builds)
+
+Cloudflare Workers Builds is configured as the canonical automatic deployment authority for Year Mission.
+
+- **Git Repository:** `strongdan/year-mission`
+- **Production Branch:** `main`
+- **Root Directory:** `/`
+- **Build Command:** `pnpm run build:vinext`
+- **Production Deploy Command:** `pnpm run deploy:vinext`
+- **Preview Version Upload Command:** `pnpm exec wrangler versions upload --config dist/server/wrangler.json`
+- **Build Caching:** Enabled
+- **Branch Triggers:**
+  - Production: `branch_includes=["main"]` -> runs build and deploys active Worker version
+  - Preview: `branch_includes=["*"]`, `branch_excludes=["main"]` -> uploads preview Worker version without altering production
+- **Supabase Migrations:** Strictly manual/gated (never auto-executed on deployment)
+- **Vercel Rollback:** Autobuilds disabled (`VERCEL_AUTOBUILDS=OFF`); project remains available as manual rollback target (`https://year-mission.vercel.app`).
+
 ## Current status
 
-Cloudflare Worker live deployment and validation are complete. Cloudflare Workers + vinext is now canonical (`https://year-mission.dangaston.workers.dev`), and Vercel (`https://year-mission.vercel.app`) remains an active, tested rollback target.
+Cloudflare Worker live deployment and validation are complete. Cloudflare Workers + vinext is canonical (`https://year-mission.dangaston.workers.dev`), and Vercel (`https://year-mission.vercel.app`) remains an active, tested rollback target.
 
 ### Production Deployment Metadata
 - **Cloudflare Worker:** `year-mission`
 - **Canonical Host:** `https://year-mission.dangaston.workers.dev`
 - **Vercel Rollback Host:** `https://year-mission.vercel.app`
 - **Rollback Status:** Active & Ready
+- **Auto-Deploy Engine:** Cloudflare Workers Builds
+
