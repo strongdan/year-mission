@@ -1,6 +1,10 @@
 # Year Mission — ROADMAP.md
 
-Last updated: 2026-09-02
+Last updated: 2026-09-04
+
+> [!NOTE]
+> All P0 recovery items **YM-RM-001** through **YM-RM-010** (Google connection idempotency, Google invalid_grant recovery, Sign in with Apple, AI provider pool & failover, Cloudflare cutover, Seasonal visual identity, Night Shift, Today journaling with AI reflection, and read-only Plaid banking integration) have been fully implemented, tested, merged into `main` via PR #34, applied in Supabase production (`0013_journal.sql`, `0014_plaid_finance.sql`), and deployed to Cloudflare Workers (`https://year-mission.dangaston.workers.dev`). See `docs/BACKLOG_RECOVERY_STATUS.md` for details.
+
 
 ## Purpose
 
