@@ -4,6 +4,8 @@ A small, private, mobile-first personal execution tool.
 
 > Do the right things, in the right order, long enough for meaningful change to occur.
 
+<!-- Cloudflare Workers Builds automatic deployment active -->
+
 The app helps you answer, in seconds:
 
 - What matters now?
