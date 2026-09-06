@@ -8,6 +8,34 @@ import {
   type ConfirmedLabScan,
 } from "@/app/lab-actions";
 
+interface LabPanelView {
+  id: string;
+  collected_at: string | null;
+  source_name: string | null;
+  ai_interpretation: string | null;
+  created_at: string;
+}
+
+interface LabResultView {
+  id: string;
+  panel_id: string;
+  test_name: string;
+  loinc_code: string | null;
+  value_numeric: number | string | null;
+  value_text: string | null;
+  unit: string | null;
+  reference_low: number | string | null;
+  reference_high: number | string | null;
+  reference_text: string | null;
+  abnormal_flag: string;
+  created_at: string;
+}
+
+interface LabProgressView {
+  panels: LabPanelView[];
+  results: LabResultView[];
+}
+
 function downloadJson(filename: string, value: unknown) {
   const blob = new Blob([JSON.stringify(value, null, 2)], { type: "application/fhir+json" });
   const url = URL.createObjectURL(blob);
@@ -51,14 +79,14 @@ function toFhirBundle(scan: ConfirmedLabScan) {
 
 export function LabScanCard() {
   const [draft, setDraft] = useState<ConfirmedLabScan | null>(null);
-  const [recent, setRecent] = useState<{ panels: any[]; results: any[] }>({ panels: [], results: [] });
+  const [recent, setRecent] = useState<LabProgressView>({ panels: [], results: [] });
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const load = () => {
     startTransition(async () => {
       const result = await listLabProgressAction();
-      if (result.ok) setRecent(result.data);
+      if (result.ok) setRecent(result.data as LabProgressView);
     });
   };
 
