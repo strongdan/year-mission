@@ -15,7 +15,10 @@ export function ProgressPageShell() {
             <h1 className="text-xl font-semibold text-zinc-100">Progress</h1>
             <p className="text-xs text-zinc-500">Evidence of change, not a leaderboard.</p>
           </header>
-          <Link href="/advice" className="text-xs text-zinc-500 hover:text-zinc-200">Advice</Link>
+          <div className="flex items-center gap-3">
+            <Link href="/review" className="text-xs text-zinc-500 hover:text-zinc-200">Review</Link>
+            <Link href="/advice" className="text-xs text-zinc-500 hover:text-zinc-200">Advice</Link>
+          </div>
         </div>
       </div>
       <div className="pt-4"><ProgressGrowthPanel /></div>
