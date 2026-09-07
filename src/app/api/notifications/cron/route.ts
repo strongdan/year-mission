@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/integrations/supabase/server";
-import { localClock, reminderWindowsDue } from "@/domain/notification-schedule";
+import { localClock, reminderWindowsDue, shouldSendDailyCheckinReminder } from "@/domain/notification-schedule";
 import { isWebPushConfigured, sendEmptyWebPush } from "@/services/notifications/web-push";
 
 interface PreferenceRow {
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const shouldSendEvening = eveningDue && !dailyCheckinAlreadyDone;
+    const shouldSendEvening = shouldSendDailyCheckinReminder(eveningDue, dailyCheckinAlreadyDone);
     if (!morningDue && !shouldSendEvening) continue;
 
     const { data: subscriptions } = await admin
