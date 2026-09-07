@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
 import { getCalendarWeekAction } from "@/app/calendar-actions";
+import { ComingUpCard } from "@/components/anticipation/coming-up-card";
 
 type CalendarData = NonNullable<Awaited<ReturnType<typeof getCalendarWeekAction>>["data"]>;
 type EventItem = CalendarData["events"][number];
@@ -41,51 +42,54 @@ export function NextCalendarEvent() {
     };
   }, []);
 
-  if (!data || data.outcome !== "ok") return null;
-
-  const upcoming = data.events
-    .filter((event) => event.allDay || loadedAt === null || new Date(event.end).getTime() >= loadedAt)
-    .sort((a, b) => eventDate(a).getTime() - eventDate(b).getTime());
+  const upcoming = data?.outcome === "ok"
+    ? data.events
+        .filter((event) => event.allDay || loadedAt === null || new Date(event.end).getTime() >= loadedAt)
+        .sort((a, b) => eventDate(a).getTime() - eventDate(b).getTime())
+    : [];
   const next = upcoming[0];
 
-  if (!next) return null;
-
   return (
-    <div className="rounded-xl border border-sky-950/80 bg-sky-950/10 px-3 py-2.5">
-      <div className="flex items-center gap-3">
-        <CalendarDays className="h-4 w-4 shrink-0 text-sky-400" />
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] text-zinc-500">Next calendar constraint</p>
-          <p className="truncate text-sm text-zinc-300">
-            <span className="mr-2 text-zinc-500">{eventTime(next)}</span>{next.title}
-          </p>
-        </div>
-        {upcoming.length > 1 && (
-          <button
-            type="button"
-            onClick={() => setExpanded((value) => !value)}
-            aria-expanded={expanded}
-            className="inline-flex shrink-0 items-center gap-1 text-[11px] text-zinc-600 hover:text-zinc-300"
-          >
-            Week {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          </button>
-        )}
-      </div>
-
-      {expanded && (
-        <div className="mt-3 divide-y divide-sky-950/60 border-t border-sky-950/60">
-          {upcoming.slice(1, 8).map((event) => (
-            <div key={event.id} className="grid grid-cols-[74px_1fr] gap-2 py-2.5 text-xs">
-              <span className="text-zinc-600">{eventDay(event)}</span>
-              <div className="min-w-0">
-                <p className="truncate text-zinc-300">{event.title}</p>
-                <p className="mt-0.5 text-[11px] text-zinc-600">{eventTime(event)}</p>
-              </div>
+    <div className="flex flex-col gap-2">
+      {next && (
+        <div className="rounded-xl border border-sky-950/80 bg-sky-950/10 px-3 py-2.5">
+          <div className="flex items-center gap-3">
+            <CalendarDays className="h-4 w-4 shrink-0 text-sky-400" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] text-zinc-500">Next calendar constraint</p>
+              <p className="truncate text-sm text-zinc-300">
+                <span className="mr-2 text-zinc-500">{eventTime(next)}</span>{next.title}
+              </p>
             </div>
-          ))}
-          {upcoming.length > 8 && <p className="pt-2.5 text-[11px] text-zinc-600">Showing the next 8 events.</p>}
+            {upcoming.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setExpanded((value) => !value)}
+                aria-expanded={expanded}
+                className="inline-flex shrink-0 items-center gap-1 text-[11px] text-zinc-600 hover:text-zinc-300"
+              >
+                Week {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </button>
+            )}
+          </div>
+
+          {expanded && (
+            <div className="mt-3 divide-y divide-sky-950/60 border-t border-sky-950/60">
+              {upcoming.slice(1, 8).map((event) => (
+                <div key={event.id} className="grid grid-cols-[74px_1fr] gap-2 py-2.5 text-xs">
+                  <span className="text-zinc-600">{eventDay(event)}</span>
+                  <div className="min-w-0">
+                    <p className="truncate text-zinc-300">{event.title}</p>
+                    <p className="mt-0.5 text-[11px] text-zinc-600">{eventTime(event)}</p>
+                  </div>
+                </div>
+              ))}
+              {upcoming.length > 8 && <p className="pt-2.5 text-[11px] text-zinc-600">Showing the next 8 events.</p>}
+            </div>
+          )}
         </div>
       )}
+      <ComingUpCard />
     </div>
   );
 }
