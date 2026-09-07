@@ -32,7 +32,7 @@ export async function listPrimaryCalendarEvents(
     timeMax,
     singleEvents: "true",
     orderBy: "startTime",
-    maxResults: "50",
+    maxResults: "250",
     fields: "items(id,summary,start,end,location,status,htmlLink)",
   });
 
