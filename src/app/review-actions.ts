@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
-import { createServerClientForApp } from "@/integrations/supabase/server";
+import { createAdminClient } from "@/integrations/supabase/server";
 import { listDomains, listEvidence, listTasks, listWorkouts } from "@/repositories/supabase-repository";
 import { summarizeMonthlyActivity, type ScorecardDomain } from "@/domain/monthly-scorecard";
 
@@ -67,11 +67,11 @@ export async function getRoadmapReviewAction() {
     .sort((a, b) => a.updated_at.localeCompare(b.updated_at))
     .slice(0, 20);
 
-  const supabase = await createServerClientForApp();
+  const admin = await createAdminClient();
   let decisions: Array<Record<string, unknown>> = [];
   let decisionLogReady = false;
-  if (supabase) {
-    const { data, error } = await supabase
+  if (admin) {
+    const { data, error } = await admin
       .from("decision_log")
       .select("id,decision,context,reasoning,confidence,decided_at,review_date,actual_outcome,reviewed_at,created_at")
       .eq("user_id", user.id)
@@ -102,10 +102,10 @@ export async function createDecisionAction(input: unknown) {
   if (!user) return { ok: false as const, error: "Not signed in." };
   const parsed = DECISION_Z.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Check the decision fields." };
-  const supabase = await createServerClientForApp();
-  if (!supabase) return { ok: false as const, error: "Database is not configured." };
+  const admin = await createAdminClient();
+  if (!admin) return { ok: false as const, error: "Database admin access is not configured." };
   const value = parsed.data;
-  const { error } = await supabase.from("decision_log").insert({
+  const { error } = await admin.from("decision_log").insert({
     user_id: user.id,
     decision: value.decision,
     context: value.context || null,
@@ -122,11 +122,12 @@ export async function recordDecisionOutcomeAction(input: unknown) {
   if (!user) return { ok: false as const, error: "Not signed in." };
   const parsed = OUTCOME_Z.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Check the outcome." };
-  const supabase = await createServerClientForApp();
-  if (!supabase) return { ok: false as const, error: "Database is not configured." };
-  const { error } = await supabase
+  const admin = await createAdminClient();
+  if (!admin) return { ok: false as const, error: "Database admin access is not configured." };
+  const now = new Date().toISOString();
+  const { error } = await admin
     .from("decision_log")
-    .update({ actual_outcome: parsed.data.actualOutcome, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .update({ actual_outcome: parsed.data.actualOutcome, reviewed_at: now, updated_at: now })
     .eq("id", parsed.data.id)
     .eq("user_id", user.id);
   if (error) return { ok: false as const, error: error.message };
