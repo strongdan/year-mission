@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, Lightbulb, Settings2 } from "lucide-react";
+import { ArrowLeft, BellRing, Lightbulb, Settings2 } from "lucide-react";
 
 const linkClass = "inline-flex h-8 items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/80 px-2.5 text-xs text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-100";
 
@@ -10,9 +10,18 @@ export function AppUtilityBar() {
   const pathname = usePathname();
   const inSettings = pathname.startsWith("/settings");
   const inIdeas = pathname.startsWith("/ideas");
+  const inReminders = pathname.startsWith("/reminders");
 
   return (
     <div className="mx-auto flex w-full max-w-md justify-end gap-2 px-4 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
+      <Link
+        href={inReminders ? "/" : "/reminders"}
+        aria-label={inReminders ? "Back to Today" : "Actionable reminders"}
+        className={linkClass}
+      >
+        {inReminders ? <ArrowLeft className="h-3.5 w-3.5" /> : <BellRing className="h-3.5 w-3.5" />}
+        {inReminders ? "Today" : "Reminders"}
+      </Link>
       <Link
         href={inIdeas ? "/" : "/ideas"}
         aria-label={inIdeas ? "Back to Today" : "Brain dump"}
