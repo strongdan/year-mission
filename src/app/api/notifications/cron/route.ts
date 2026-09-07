@@ -36,6 +36,7 @@ export async function GET(request: Request) {
   const now = new Date();
   let sent = 0;
   let expired = 0;
+  let skippedAlreadyCheckedIn = 0;
 
   for (const preference of (data ?? []) as PreferenceRow[]) {
     let clock: ReturnType<typeof localClock>;
@@ -47,6 +48,28 @@ export async function GET(request: Request) {
 
     const { morningDue, eveningDue } = reminderWindowsDue(preference, clock);
     if (!morningDue && !eveningDue) continue;
+
+    let dailyCheckinAlreadyDone = false;
+    if (eveningDue) {
+      const { data: checkin } = await admin
+        .from("daily_checkins")
+        .select("date")
+        .eq("user_id", preference.user_id)
+        .eq("date", clock.date)
+        .maybeSingle();
+      dailyCheckinAlreadyDone = Boolean(checkin);
+
+      if (dailyCheckinAlreadyDone) {
+        skippedAlreadyCheckedIn += 1;
+        await admin
+          .from("notification_preferences")
+          .update({ last_evening_sent_on: clock.date })
+          .eq("user_id", preference.user_id);
+      }
+    }
+
+    const shouldSendEvening = eveningDue && !dailyCheckinAlreadyDone;
+    if (!morningDue && !shouldSendEvening) continue;
 
     const { data: subscriptions } = await admin
       .from("push_subscriptions")
@@ -73,10 +96,10 @@ export async function GET(request: Request) {
     if (accepted > 0) {
       const sentPatch: { last_morning_sent_on?: string; last_evening_sent_on?: string } = {};
       if (morningDue) sentPatch.last_morning_sent_on = clock.date;
-      if (eveningDue) sentPatch.last_evening_sent_on = clock.date;
+      if (shouldSendEvening) sentPatch.last_evening_sent_on = clock.date;
       await admin.from("notification_preferences").update(sentPatch).eq("user_id", preference.user_id);
     }
   }
 
-  return NextResponse.json({ ok: true, sent, expired });
+  return NextResponse.json({ ok: true, sent, expired, skippedAlreadyCheckedIn });
 }
