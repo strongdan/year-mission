@@ -66,3 +66,7 @@ export function reminderWindowsDue(preference: ReminderPreference, clock: Notifi
       dueWithinWindow(preference.evening_time, clock.hour, clock.minute),
   };
 }
+
+export function shouldSendDailyCheckinReminder(eveningDue: boolean, hasCheckinForLocalDate: boolean): boolean {
+  return eveningDue && !hasCheckinForLocalDate;
+}
