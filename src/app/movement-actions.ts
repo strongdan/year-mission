@@ -5,13 +5,12 @@ import { requireUser } from "@/lib/auth";
 import { createAdminClient } from "@/integrations/supabase/server";
 import {
   buildMovementSnapshot,
-  MOVEMENT_OPTIONS,
   type MovementActivity,
   type MovementSnapshot,
 } from "@/domain/movement-variety";
 
 const DATE_Z = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const ACTIVITY_Z = z.enum(MOVEMENT_OPTIONS.map((option) => option.id) as [MovementActivity, ...MovementActivity[]]);
+const ACTIVITY_Z = z.enum(["swim", "run", "skate", "hike", "walk", "bike", "other"]);
 const LOG_Z = z.object({ activity: ACTIVITY_Z, happenedOn: DATE_Z });
 const PREFERENCES_Z = z.object({ enabled: z.boolean(), nudgeAfterDays: z.number().int().min(1).max(7) });
 
