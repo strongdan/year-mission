@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Activity, CalendarDays, HeartPulse, Sparkles } from "lucide-react";
 import { getLifeBalanceAction } from "@/app/life-balance-actions";
 import { Card, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 type LifeBalanceData = NonNullable<Awaited<ReturnType<typeof getLifeBalanceAction>>["data"]>;
 
@@ -17,6 +18,16 @@ function recoveryLabel(value: LifeBalanceData["recovery"]): string {
 export function LifeBalanceCard() {
   const [data, setData] = useState<LifeBalanceData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  async function load() {
+    const result = await getLifeBalanceAction();
+    if (!result.ok || !result.data) {
+      setError(result.error ?? "Life balance could not be loaded.");
+      return;
+    }
+    setData(result.data);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -33,7 +44,28 @@ export function LifeBalanceCard() {
     };
   }, []);
 
-  if (error) return null;
+  async function syncAppleHealth() {
+    if (syncing) return;
+    setSyncing(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/health/apple/native-ticket", { method: "POST" });
+      const result = (await response.json()) as { ok: boolean; data?: { deepLink?: string }; error?: string };
+      if (!response.ok || !result.ok || !result.data?.deepLink) {
+        throw new Error(result.error ?? "Could not start Apple Health sync.");
+      }
+      window.location.href = result.data.deepLink;
+      setTimeout(() => {
+        setSyncing(false);
+        load();
+      }, 1500);
+    } catch (cause) {
+      setSyncing(false);
+      setError(cause instanceof Error ? cause.message : "Could not start Apple Health sync.");
+    }
+  }
+
+  if (error && !data) return null;
   if (!data) {
     return (
       <Card>
@@ -113,11 +145,21 @@ export function LifeBalanceCard() {
           </div>
         </div>
 
-        {!data.healthConnected && (
-          <p className="text-[11px] leading-relaxed text-zinc-600">
-            Apple Health sync is not active yet. Once the iPhone companion sends HealthKit summaries, this card will use steps, active energy, exercise minutes, stand hours, HRV, resting heart rate, and sleep without turning them into a fake precision score.
-          </p>
-        )}
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
+          <div>
+            <p className="text-xs font-medium text-zinc-300">Apple Health</p>
+            <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
+              {data.healthConnected
+                ? "HealthKit summaries are available to Year Mission. Sync again whenever you want fresh data."
+                : "Sync steps, active energy, exercise, stand hours, HRV, resting heart rate, and sleep from the iPhone companion."}
+            </p>
+          </div>
+          <Button size="sm" variant="secondary" onClick={syncAppleHealth} disabled={syncing}>
+            {syncing ? "Opening…" : data.healthConnected ? "Sync" : "Connect"}
+          </Button>
+        </div>
+
+        {error && <p className="text-[11px] text-amber-300/80">{error}</p>}
       </div>
     </Card>
   );
