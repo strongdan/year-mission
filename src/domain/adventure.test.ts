@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildAdventureProgress, themeForSeason } from "./adventure";
+import { buildAdventureProgress, seasonForDate, themeForSeason } from "./adventure";
 import type { DailyCheckin, Task, Workout } from "@/types/models";
 
 const task = (overrides: Partial<Task> = {}): Task => ({
@@ -24,7 +24,7 @@ describe("adventure progression", () => {
   it("rewards meaningful work, movement, and check-ins without exceeding the daily cap", () => {
     const result = buildAdventureProgress({
       today: "2026-09-10",
-      seasonStart: "2026-09-01",
+      seasonStart: "2026-06-21",
       completedTasks: [task({ weekly_win: true, courage_task: true })],
       checkins: [checkin({ evening_reset_completion: "target" })],
       workouts: [workout()],
@@ -40,14 +40,28 @@ describe("adventure progression", () => {
   it("awards zero XP to meta-work tasks", () => {
     const result = buildAdventureProgress({
       today: "2026-09-10",
-      seasonStart: "2026-09-01",
+      seasonStart: "2026-06-21",
       completedTasks: [task({ meta_work: true, impact: "high" })],
       checkins: [], workouts: [], health: [],
     });
     expect(result.today.taskXp).toBe(0);
   });
 
-  it("rotates season themes deterministically", () => {
+  it("uses calendar seasons at the equinox and solstice boundaries", () => {
+    expect(seasonForDate("2026-03-19").id).toBe("winter");
+    expect(seasonForDate("2026-03-20").id).toBe("spring");
+    expect(seasonForDate("2026-06-21").id).toBe("summer");
+    expect(seasonForDate("2026-09-22").id).toBe("fall");
+    expect(seasonForDate("2026-12-21").id).toBe("winter");
+  });
+
+  it("keeps the intended seasonal emphasis", () => {
+    expect(seasonForDate("2026-07-15").emphasis).toContain("Outdoor exercise");
+    expect(seasonForDate("2026-10-15").emphasis).toContain("Career development");
+    expect(seasonForDate("2027-01-15").emphasis).toContain("Learning");
+  });
+
+  it("rotates legacy season themes deterministically", () => {
     expect(themeForSeason(1)).toBe("forest");
     expect(themeForSeason(4)).toBe("aurora");
     expect(themeForSeason(5)).toBe("forest");
