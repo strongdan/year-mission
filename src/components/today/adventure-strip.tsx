@@ -19,6 +19,10 @@ function percent(value: number) {
   return `${Math.max(3, Math.min(97, value))}%`;
 }
 
+function formatSeasonDate(value: string) {
+  return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 function StatPill({ icon, label }: { icon: React.ReactNode; label: string }) {
   return <div className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-950/60 px-2.5 py-1.5 text-[11px] text-zinc-300">{icon}{label}</div>;
 }
@@ -58,10 +62,19 @@ export function AdventureStrip() {
     <Card className="overflow-hidden border-zinc-800 p-0">
       <div className="border-b border-zinc-800 px-4 py-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Year Mission Adventure</p>
-            <h2 className="mt-1 text-base font-semibold text-zinc-100">{data.seasonName} · {data.monthName}</h2>
-            <p className="mt-0.5 text-xs text-zinc-500">{data.monthFocus ?? data.seasonObjective ?? data.weekLabel}</p>
+            <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <h2 className="text-base font-semibold text-zinc-100">{data.seasonName} · {data.monthName}</h2>
+              <span className="text-[10px] text-zinc-600">{formatSeasonDate(data.seasonStart)}–{formatSeasonDate(data.seasonEnd)}</span>
+            </div>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-zinc-400">{data.seasonObjective}</p>
+            {data.monthFocus && <p className="mt-1 text-[11px] text-zinc-600">This month: {data.monthFocus}</p>}
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {data.seasonEmphasis.map((item) => (
+                <span key={item} className="rounded-full border border-zinc-800 bg-zinc-950/40 px-2 py-1 text-[10px] text-zinc-400">{item}</span>
+              ))}
+            </div>
           </div>
           <div className="text-right">
             <div className="flex items-center justify-end gap-1.5 text-amber-300"><Award className="h-4 w-4" /><span className="text-sm font-semibold">Level {p.level}</span></div>
@@ -137,7 +150,7 @@ export function AdventureStrip() {
 
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-900/40 bg-amber-950/10 px-3 py-2.5">
           <Trophy className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-          <p className="text-[11px] leading-relaxed text-zinc-400">XP rewards movement, meaningful tasks, and brief check-ins. There is no streak penalty, no lost progress, and no reason to grind after the day already feels lived.</p>
+          <p className="text-[11px] leading-relaxed text-zinc-400">The season is an emphasis, not a rule. Summer can lean toward outside life; fall and winter can lean toward learning and development. The radar can be uneven on purpose.</p>
         </div>
       </div>
     </Card>
