@@ -47,6 +47,7 @@ export async function getGameLoopAction() {
       charge,
       bonusMission,
       comeback,
+      bigFour,
     },
   } as const;
 }

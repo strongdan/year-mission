@@ -1,3 +1,4 @@
+import { AdventureStrip } from "@/components/today/adventure-strip";
 import { MissionChargeCard } from "@/components/today/mission-charge-card";
 import { JournalCard } from "@/components/today/journal-card";
 import { TodayViewV2 } from "@/components/today/today-view-v2";
@@ -6,7 +7,8 @@ import { LifeBalanceCard } from "@/components/today/life-balance-card";
 export default function TodayPage() {
   return (
     <>
-      <div className="px-4 pt-4">
+      <div className="flex flex-col gap-4 px-4 pt-4">
+        <AdventureStrip />
         <MissionChargeCard />
       </div>
       <TodayViewV2 />
