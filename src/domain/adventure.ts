@@ -1,6 +1,17 @@
 import type { Task, DailyCheckin, Workout } from "@/types/models";
 
 export type AdventureTheme = "forest" | "coast" | "alpine" | "aurora";
+export type CalendarSeason = "spring" | "summer" | "fall" | "winter";
+
+export interface SeasonProfile {
+  id: CalendarSeason;
+  name: string;
+  startDate: string;
+  endDate: string;
+  theme: AdventureTheme;
+  objective: string;
+  emphasis: string[];
+}
 
 export interface HealthDay {
   date: string;
@@ -41,6 +52,78 @@ const WEEK_TARGET_XP = 900;
 const MONTH_TARGET_XP = 3600;
 const SEASON_TARGET_XP = 10800;
 const LEVEL_XP = 500;
+
+function iso(year: number, month: number, day: number): string {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/**
+ * Mission seasons follow the real calendar seasons instead of arbitrary plan quarters.
+ * Fixed equinox/solstice dates are intentional: they are stable, legible, and close enough
+ * to the astronomical boundaries without introducing timezone-sensitive ephemeris logic.
+ */
+export function seasonForDate(date: string): SeasonProfile {
+  const year = Number(date.slice(0, 4));
+  const spring = iso(year, 3, 20);
+  const summer = iso(year, 6, 21);
+  const fall = iso(year, 9, 22);
+  const winter = iso(year, 12, 21);
+
+  if (date >= winter) {
+    return {
+      id: "winter",
+      name: "Winter",
+      startDate: winter,
+      endDate: iso(year + 1, 3, 19),
+      theme: "aurora",
+      objective: "Deep season: learn, strengthen your craft, develop yourself, recover, and reflect.",
+      emphasis: ["Learning", "Career development", "Personal development", "Recovery"],
+    };
+  }
+  if (date >= fall) {
+    return {
+      id: "fall",
+      name: "Fall",
+      startDate: fall,
+      endDate: iso(year, 12, 20),
+      theme: "alpine",
+      objective: "Turn inward with purpose: learning, career development, personal development, and stronger routines.",
+      emphasis: ["Learning", "Career development", "Personal development", "Routines"],
+    };
+  }
+  if (date >= summer) {
+    return {
+      id: "summer",
+      name: "Summer",
+      startDate: summer,
+      endDate: iso(year, 9, 21),
+      theme: "coast",
+      objective: "Use the long days: get things done outside, exercise outside, and make room for family adventures.",
+      emphasis: ["Outside projects", "Outdoor exercise", "Family adventures", "Physical momentum"],
+    };
+  }
+  if (date >= spring) {
+    return {
+      id: "spring",
+      name: "Spring",
+      startDate: spring,
+      endDate: iso(year, 6, 20),
+      theme: "forest",
+      objective: "Re-emerge: rebuild outdoor momentum, move more, and prepare the projects you want to enjoy in summer.",
+      emphasis: ["Outside time", "Movement", "Preparation", "Re-entry"],
+    };
+  }
+
+  return {
+    id: "winter",
+    name: "Winter",
+    startDate: iso(year - 1, 12, 21),
+    endDate: iso(year, 3, 19),
+    theme: "aurora",
+    objective: "Deep season: learn, strengthen your craft, develop yourself, recover, and reflect.",
+    emphasis: ["Learning", "Career development", "Personal development", "Recovery"],
+  };
+}
 
 function taskXp(task: Pick<Task, "impact" | "weekly_win" | "courage_task" | "meta_work">): number {
   if (task.meta_work) return 0;
