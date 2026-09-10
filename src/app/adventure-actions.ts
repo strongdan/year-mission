@@ -2,15 +2,11 @@
 
 import { requireUser } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabaseServer";
-import { getActivePlan, getMonthlyFocus, listDailyCheckins, listSeasons, listTasks, listWorkouts } from "@/repositories/supabase-repository";
-import { buildAdventureProgress, themeForSeason, type HealthDay } from "@/domain/adventure";
+import { getActivePlan, getMonthlyFocus, listDailyCheckins, listTasks, listWorkouts } from "@/repositories/supabase-repository";
+import { buildAdventureProgress, seasonForDate, type HealthDay } from "@/domain/adventure";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function currentSeason<T extends { start_date: string; end_date: string; sequence: number }>(seasons: T[], today: string): T | null {
-  return seasons.find((season) => season.start_date <= today && season.end_date >= today) ?? seasons.sort((a, b) => a.sequence - b.sequence)[0] ?? null;
 }
 
 export async function getAdventureAction() {
@@ -21,16 +17,15 @@ export async function getAdventureAction() {
   const plan = await getActivePlan(user.id);
   if (!plan) return { ok: false as const, error: "No active mission." };
 
-  const [seasons, completedTasks, checkins, workouts, monthlyFocus] = await Promise.all([
-    listSeasons(plan.id),
+  const calendarSeason = seasonForDate(today);
+  const [completedTasks, checkins, workouts, monthlyFocus] = await Promise.all([
     listTasks(user.id, { status: "completed", limit: 1000 }),
     listDailyCheckins(user.id, plan.start_date),
     listWorkouts(user.id, plan.start_date, 500),
     getMonthlyFocus(user.id, new Date().getFullYear(), new Date().getMonth() + 1),
   ]);
 
-  const season = currentSeason(seasons, today);
-  const seasonStart = season?.start_date ?? plan.start_date;
+  const seasonStart = calendarSeason.startDate < plan.start_date ? plan.start_date : calendarSeason.startDate;
 
   const { data: healthRows, error: healthError } = await supabaseServer
     .from("health_daily_summaries")
@@ -59,9 +54,12 @@ export async function getAdventureAction() {
     ok: true as const,
     data: {
       planTitle: plan.title,
-      seasonName: season?.name ?? "Current season",
-      seasonObjective: season?.objective ?? null,
-      seasonTheme: themeForSeason(season?.sequence ?? 1),
+      seasonName: calendarSeason.name,
+      seasonObjective: calendarSeason.objective,
+      seasonTheme: calendarSeason.theme,
+      seasonStart: calendarSeason.startDate,
+      seasonEnd: calendarSeason.endDate,
+      seasonEmphasis: calendarSeason.emphasis,
       monthName,
       monthFocus: monthlyFocus?.title ?? null,
       weekLabel: `${monthName} · Adventure ${weekOfMonth}`,
