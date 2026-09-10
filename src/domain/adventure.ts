@@ -1,4 +1,5 @@
 import type { Task, DailyCheckin, Workout } from "@/types/models";
+import { holidayAdjustedXp, holidayForDate, type GameHoliday } from "@/domain/holidays";
 
 export type AdventureTheme = "forest" | "coast" | "alpine" | "aurora";
 export type CalendarSeason = "spring" | "summer" | "fall" | "winter";
@@ -29,7 +30,10 @@ export interface AdventureDayScore {
   taskXp: number;
   movementXp: number;
   checkinXp: number;
+  holidayBonusXp: number;
+  baseXp: number;
   totalXp: number;
+  holiday: GameHoliday | null;
 }
 
 export interface AdventureProgress {
@@ -52,16 +56,12 @@ const WEEK_TARGET_XP = 900;
 const MONTH_TARGET_XP = 3600;
 const SEASON_TARGET_XP = 10800;
 const LEVEL_XP = 500;
+const DAILY_BASE_CAP_XP = 260;
 
 function iso(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-/**
- * Mission seasons follow the real calendar seasons instead of arbitrary plan quarters.
- * Fixed equinox/solstice dates are intentional: they are stable, legible, and close enough
- * to the astronomical boundaries without introducing timezone-sensitive ephemeris logic.
- */
 export function seasonForDate(date: string): SeasonProfile {
   const year = Number(date.slice(0, 4));
   const spring = iso(year, 3, 20);
@@ -70,59 +70,18 @@ export function seasonForDate(date: string): SeasonProfile {
   const winter = iso(year, 12, 21);
 
   if (date >= winter) {
-    return {
-      id: "winter",
-      name: "Winter",
-      startDate: winter,
-      endDate: iso(year + 1, 3, 19),
-      theme: "aurora",
-      objective: "Deep season: learn, strengthen your craft, develop yourself, recover, and reflect.",
-      emphasis: ["Learning", "Career development", "Personal development", "Recovery"],
-    };
+    return { id: "winter", name: "Winter", startDate: winter, endDate: iso(year + 1, 3, 19), theme: "aurora", objective: "Deep season: learn, strengthen your craft, develop yourself, recover, and reflect.", emphasis: ["Learning", "Career development", "Personal development", "Recovery"] };
   }
   if (date >= fall) {
-    return {
-      id: "fall",
-      name: "Fall",
-      startDate: fall,
-      endDate: iso(year, 12, 20),
-      theme: "alpine",
-      objective: "Turn inward with purpose: learning, career development, personal development, and stronger routines.",
-      emphasis: ["Learning", "Career development", "Personal development", "Routines"],
-    };
+    return { id: "fall", name: "Fall", startDate: fall, endDate: iso(year, 12, 20), theme: "alpine", objective: "Turn inward with purpose: learning, career development, personal development, and stronger routines.", emphasis: ["Learning", "Career development", "Personal development", "Routines"] };
   }
   if (date >= summer) {
-    return {
-      id: "summer",
-      name: "Summer",
-      startDate: summer,
-      endDate: iso(year, 9, 21),
-      theme: "coast",
-      objective: "Use the long days: get things done outside, exercise outside, and make room for family adventures.",
-      emphasis: ["Outside projects", "Outdoor exercise", "Family adventures", "Physical momentum"],
-    };
+    return { id: "summer", name: "Summer", startDate: summer, endDate: iso(year, 9, 21), theme: "coast", objective: "Use the long days: get things done outside, exercise outside, and make room for family adventures.", emphasis: ["Outside projects", "Outdoor exercise", "Family adventures", "Physical momentum"] };
   }
   if (date >= spring) {
-    return {
-      id: "spring",
-      name: "Spring",
-      startDate: spring,
-      endDate: iso(year, 6, 20),
-      theme: "forest",
-      objective: "Re-emerge: rebuild outdoor momentum, move more, and prepare the projects you want to enjoy in summer.",
-      emphasis: ["Outside time", "Movement", "Preparation", "Re-entry"],
-    };
+    return { id: "spring", name: "Spring", startDate: spring, endDate: iso(year, 6, 20), theme: "forest", objective: "Re-emerge: rebuild outdoor momentum, move more, and prepare the projects you want to enjoy in summer.", emphasis: ["Outside time", "Movement", "Preparation", "Re-entry"] };
   }
-
-  return {
-    id: "winter",
-    name: "Winter",
-    startDate: iso(year - 1, 12, 21),
-    endDate: iso(year, 3, 19),
-    theme: "aurora",
-    objective: "Deep season: learn, strengthen your craft, develop yourself, recover, and reflect.",
-    emphasis: ["Learning", "Career development", "Personal development", "Recovery"],
-  };
+  return { id: "winter", name: "Winter", startDate: iso(year - 1, 12, 21), endDate: iso(year, 3, 19), theme: "aurora", objective: "Deep season: learn, strengthen your craft, develop yourself, recover, and reflect.", emphasis: ["Learning", "Career development", "Personal development", "Recovery"] };
 }
 
 function taskXp(task: Pick<Task, "impact" | "weekly_win" | "courage_task" | "meta_work">): number {
@@ -138,27 +97,18 @@ function movementXp(health: HealthDay | undefined, workouts: Workout[]): number 
   const activeEnergy = health?.active_energy_kcal ?? 0;
   const exercise = health?.exercise_minutes ?? 0;
   const stand = health?.stand_hours ?? 0;
-  const mobilityMinutes = workouts
-    .filter((workout) => workout.type === "mobility")
-    .reduce((sum, workout) => sum + (workout.duration_minutes ?? 0), 0);
-
-  const stepXp = Math.min(40, Math.floor(steps / 1000) * 4);
-  const energyXp = Math.min(25, Math.floor(activeEnergy / 100) * 5);
-  const exerciseXp = Math.min(40, Math.floor(exercise / 5) * 5);
-  const standXp = Math.min(24, stand * 2);
-  const mobilityXp = Math.min(25, Math.floor(mobilityMinutes / 5) * 5);
-  return stepXp + energyXp + exerciseXp + standXp + mobilityXp;
+  const mobilityMinutes = workouts.filter((workout) => workout.type === "mobility").reduce((sum, workout) => sum + (workout.duration_minutes ?? 0), 0);
+  return Math.min(40, Math.floor(steps / 1000) * 4)
+    + Math.min(25, Math.floor(activeEnergy / 100) * 5)
+    + Math.min(40, Math.floor(exercise / 5) * 5)
+    + Math.min(24, stand * 2)
+    + Math.min(25, Math.floor(mobilityMinutes / 5) * 5);
 }
 
 function checkinXp(checkin: DailyCheckin | undefined): number {
   if (!checkin) return 0;
-  const morning = 15;
-  const evening = checkin.evening_reset_completion === "target"
-    ? 20
-    : checkin.evening_reset_completion === "floor"
-      ? 10
-      : 0;
-  return morning + evening;
+  const evening = checkin.evening_reset_completion === "target" ? 20 : checkin.evening_reset_completion === "floor" ? 10 : 0;
+  return 15 + evening;
 }
 
 function clampProgress(xp: number, target: number): number {
@@ -179,6 +129,7 @@ export function themeForSeason(sequence: number): AdventureTheme {
 
 export function buildAdventureProgress(input: {
   today: string;
+  planStart: string;
   seasonStart: string;
   completedTasks: Task[];
   checkins: DailyCheckin[];
@@ -197,35 +148,26 @@ export function buildAdventureProgress(input: {
   const workoutMap = new Map<string, Workout[]>();
   for (const workout of input.workouts) workoutMap.set(workout.date, [...(workoutMap.get(workout.date) ?? []), workout]);
 
-  const dates = new Set<string>([
-    input.today,
-    ...taskGroups.keys(),
-    ...checkinMap.keys(),
-    ...healthMap.keys(),
-    ...workoutMap.keys(),
-  ]);
-
+  const dates = new Set<string>([input.today, ...taskGroups.keys(), ...checkinMap.keys(), ...healthMap.keys(), ...workoutMap.keys()]);
   for (const date of dates) {
     const taskPoints = (taskGroups.get(date) ?? []).reduce((sum, task) => sum + taskXp(task), 0);
     const movePoints = movementXp(healthMap.get(date), workoutMap.get(date) ?? []);
     const checkPoints = checkinXp(checkinMap.get(date));
-    byDate.set(date, {
-      date,
-      taskXp: taskPoints,
-      movementXp: movePoints,
-      checkinXp: checkPoints,
-      totalXp: Math.min(260, taskPoints + movePoints + checkPoints),
-    });
+    const baseXp = Math.min(DAILY_BASE_CAP_XP, taskPoints + movePoints + checkPoints);
+    const holiday = holidayForDate(date);
+    const adjusted = holidayAdjustedXp(baseXp, holiday);
+    byDate.set(date, { date, taskXp: taskPoints, movementXp: movePoints, checkinXp: checkPoints, holidayBonusXp: adjusted.bonusXp, baseXp, totalXp: adjusted.totalXp, holiday });
   }
 
-  const today = byDate.get(input.today) ?? { date: input.today, taskXp: 0, movementXp: 0, checkinXp: 0, totalXp: 0 };
+  const today = byDate.get(input.today) ?? { date: input.today, taskXp: 0, movementXp: 0, checkinXp: 0, holidayBonusXp: 0, baseXp: 0, totalXp: 0, holiday: holidayForDate(input.today) };
   const now = new Date(`${input.today}T12:00:00`);
   const weekStart = mondayOf(now);
-  const monthStart = input.today.slice(0, 7) + "-01";
-  const totalXp = Array.from(byDate.values()).filter((day) => day.date >= input.seasonStart && day.date <= input.today).reduce((sum, day) => sum + day.totalXp, 0);
-  const weekXp = Array.from(byDate.values()).filter((day) => day.date >= weekStart && day.date <= input.today).reduce((sum, day) => sum + day.totalXp, 0);
-  const monthXp = Array.from(byDate.values()).filter((day) => day.date >= monthStart && day.date <= input.today).reduce((sum, day) => sum + day.totalXp, 0);
-  const seasonXp = Array.from(byDate.values()).filter((day) => day.date >= input.seasonStart && day.date <= input.today).reduce((sum, day) => sum + day.totalXp, 0);
+  const monthStart = `${input.today.slice(0, 7)}-01`;
+  const values = Array.from(byDate.values());
+  const totalXp = values.filter((day) => day.date >= input.planStart && day.date <= input.today).reduce((sum, day) => sum + day.totalXp, 0);
+  const weekXp = values.filter((day) => day.date >= weekStart && day.date <= input.today).reduce((sum, day) => sum + day.totalXp, 0);
+  const monthXp = values.filter((day) => day.date >= monthStart && day.date <= input.today).reduce((sum, day) => sum + day.totalXp, 0);
+  const seasonXp = values.filter((day) => day.date >= input.seasonStart && day.date <= input.today).reduce((sum, day) => sum + day.totalXp, 0);
 
   return {
     totalXp,
@@ -236,7 +178,7 @@ export function buildAdventureProgress(input: {
     weekXp,
     monthXp,
     seasonXp,
-    dayProgress: clampProgress(today.totalXp, DAY_TARGET_XP),
+    dayProgress: today.holiday && today.totalXp === 0 ? 100 : clampProgress(today.totalXp, DAY_TARGET_XP),
     weekProgress: clampProgress(weekXp, WEEK_TARGET_XP),
     monthProgress: clampProgress(monthXp, MONTH_TARGET_XP),
     seasonProgress: clampProgress(seasonXp, SEASON_TARGET_XP),
