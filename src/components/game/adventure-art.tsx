@@ -1,5 +1,6 @@
 import { Campfire, Flag, Gem, Mountain, Sparkles, TentTree } from "lucide-react";
 import type { GameHoliday } from "@/domain/holidays";
+import styles from "./adventure-art.module.css";
 
 type Theme = "forest" | "coast" | "alpine" | "aurora";
 
@@ -13,16 +14,14 @@ type WeekDay = {
 
 export function ExplorerSprite({ moving }: { moving: boolean }) {
   return (
-    <div className={moving ? "ym-explorer ym-explorer-moving" : "ym-explorer"} aria-label="Explorer character">
-      <div className="ym-explorer-head">
-        <div className="ym-explorer-hat" />
-      </div>
-      <div className="ym-explorer-pack" />
-      <div className="ym-explorer-body" />
-      <div className="ym-explorer-arm ym-explorer-arm-left" />
-      <div className="ym-explorer-arm ym-explorer-arm-right" />
-      <div className="ym-explorer-leg ym-explorer-leg-left" />
-      <div className="ym-explorer-leg ym-explorer-leg-right" />
+    <div className={`${styles.explorer} ${moving ? styles.explorerMoving : ""}`} aria-label="Explorer character">
+      <div className={styles.head}><div className={styles.hat} /></div>
+      <div className={styles.pack} />
+      <div className={styles.body} />
+      <div className={`${styles.arm} ${styles.armLeft}`} />
+      <div className={`${styles.arm} ${styles.armRight}`} />
+      <div className={`${styles.leg} ${styles.legLeft}`} />
+      <div className={`${styles.leg} ${styles.legRight}`} />
     </div>
   );
 }
@@ -40,8 +39,8 @@ export function SeasonalForeground({ theme }: { theme: Theme }) {
   if (theme === "coast") {
     return <div className="pointer-events-none absolute inset-x-0 bottom-10 h-16 overflow-hidden" aria-hidden="true">
       <div className="absolute inset-x-0 bottom-0 h-10 bg-cyan-400/15" />
-      <div className="ym-wave absolute inset-x-0 bottom-5 h-px bg-cyan-100/50" />
-      <div className="ym-wave ym-wave-delay absolute inset-x-0 bottom-2 h-px bg-white/20" />
+      <div className={`${styles.wave} absolute inset-x-0 bottom-5 h-px bg-cyan-100/50`} />
+      <div className={`${styles.wave} ${styles.waveDelay} absolute inset-x-0 bottom-2 h-px bg-white/20`} />
     </div>;
   }
   if (theme === "alpine") {
@@ -54,19 +53,19 @@ export function SeasonalForeground({ theme }: { theme: Theme }) {
     </div>;
   }
   return <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-    <div className="ym-aurora absolute left-[8%] top-5 h-16 w-[44%] -rotate-6 rounded-[50%] bg-emerald-300/15 blur-2xl" />
-    <div className="ym-aurora ym-aurora-delay absolute left-[36%] top-1 h-20 w-[46%] rotate-3 rounded-[50%] bg-cyan-300/10 blur-2xl" />
-    {[12, 23, 39, 57, 73, 87].map((left) => <span key={left} className="ym-star absolute top-8 h-1 w-1 rounded-full bg-white/70" style={{ left: `${left}%` }} />)}
+    <div className={`${styles.aurora} absolute left-[8%] top-5 h-16 w-[44%] -rotate-6 rounded-[50%] bg-emerald-300/15 blur-2xl`} />
+    <div className={`${styles.aurora} ${styles.auroraDelay} absolute left-[36%] top-1 h-20 w-[46%] rotate-3 rounded-[50%] bg-cyan-300/10 blur-2xl`} />
+    {[12, 23, 39, 57, 73, 87].map((left) => <span key={left} className={`${styles.star} absolute top-8 h-1 w-1 rounded-full bg-white/70`} style={{ left: `${left}%` }} />)}
   </div>;
 }
 
 export function HolidayScenery({ holiday }: { holiday: GameHoliday | null }) {
   if (!holiday) return null;
   if (holiday.scene === "fireworks") return <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-    {[24, 48, 72].map((left, index) => <div key={left} className="ym-firework absolute top-12" style={{ left: `${left}%`, animationDelay: `${index * 0.45}s` }}><Sparkles className="h-8 w-8 text-amber-200" /></div>)}
+    {[24, 48, 72].map((left, index) => <div key={left} className={`${styles.firework} absolute top-12`} style={{ left: `${left}%`, animationDelay: `${index * 0.45}s` }}><Sparkles className="h-8 w-8 text-amber-200" /></div>)}
   </div>;
   if (holiday.scene === "snow" || holiday.scene === "winter") return <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-    {Array.from({ length: 16 }, (_, index) => <span key={index} className="ym-snow absolute top-0 block h-1.5 w-1.5 rounded-full bg-white/70" style={{ left: `${4 + index * 6}%`, animationDelay: `${(index % 5) * 0.32}s` }} />)}
+    {Array.from({ length: 16 }, (_, index) => <span key={index} className={`${styles.snow} absolute top-0 block h-1.5 w-1.5 rounded-full bg-white/70`} style={{ left: `${4 + index * 6}%`, animationDelay: `${(index % 5) * 0.32}s` }} />)}
   </div>;
   if (holiday.scene === "campfire") return <div className="pointer-events-none absolute bottom-11 right-[17%] text-amber-300" aria-hidden="true"><Campfire className="h-11 w-11 drop-shadow-[0_0_12px_rgba(251,191,36,0.45)]" /></div>;
   if (holiday.scene === "alaska") return <div className="pointer-events-none absolute bottom-14 right-[12%] rounded-lg border border-sky-200/20 bg-sky-950/50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-sky-100" aria-hidden="true">Alaska</div>;
