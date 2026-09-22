@@ -25,6 +25,26 @@ final class HealthKitSyncCoordinator: ObservableObject {
 
     private let healthStore = HKHealthStore()
     private let calendar = Calendar.autoupdatingCurrent
+    private let trustedHosts: Set<String> = [
+        "year-mission.dangaston.workers.dev",
+        "year-mission.vercel.app",
+    ]
+
+    private func trustedBaseURL(_ value: String) -> URL? {
+        guard
+            let url = URL(string: value),
+            url.scheme?.lowercased() == "https",
+            let host = url.host?.lowercased(),
+            trustedHosts.contains(host),
+            url.user == nil,
+            url.password == nil,
+            url.port == nil,
+            url.query == nil,
+            url.fragment == nil,
+            url.path.isEmpty || url.path == "/"
+        else { return nil }
+        return URL(string: "https://\(host)")
+    }
 
     func handle(url: URL) -> Bool {
         guard url.scheme == "yearmission", url.host == "health-sync" else { return false }
@@ -32,9 +52,9 @@ final class HealthKitSyncCoordinator: ObservableObject {
             let parts = URLComponents(url: url, resolvingAgainstBaseURL: false),
             let ticket = parts.queryItems?.first(where: { $0.name == "ticket" })?.value,
             let baseString = parts.queryItems?.first(where: { $0.name == "base" })?.value,
-            let baseURL = URL(string: baseString)
+            let baseURL = trustedBaseURL(baseString)
         else {
-            lastMessage = "Year Mission could not read the Health sync request."
+            lastMessage = "Year Mission rejected an untrusted Health sync request."
             return true
         }
 
