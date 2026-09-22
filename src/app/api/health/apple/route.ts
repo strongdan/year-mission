@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { getSupabaseServer } from "@/lib/supabaseServer";
 
 const summarySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -54,6 +54,8 @@ export async function POST(request: NextRequest) {
     updated_at: new Date().toISOString(),
   }));
 
+  const supabaseServer = await getSupabaseServer();
+  if (!supabaseServer) return NextResponse.json({ error: "Health sync is not configured." }, { status: 503 });
   const { error } = await supabaseServer
     .from("health_daily_summaries")
     .upsert(rows, { onConflict: "user_id,date,source" });

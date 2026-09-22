@@ -1,7 +1,7 @@
 "use server";
 
 import { requireUser } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { getSupabaseServer } from "@/lib/supabaseServer";
 import { getGoogleCalendarWeek } from "@/services/google/sync-service";
 import { movementSignal, recoveryCopy, recoverySignal, LIFE_MENU, type HealthSummary } from "@/domain/life-balance";
 
@@ -26,14 +26,17 @@ export async function getLifeBalanceAction() {
   const { user } = await requireUser();
   if (!user) return { ok: false as const, error: "Not signed in." };
 
+  const supabaseServer = await getSupabaseServer();
   const [calendar, healthResult] = await Promise.all([
     getGoogleCalendarWeek(user.id, mondayOf()),
     supabaseServer
+      ? supabaseServer
       .from("health_daily_summaries")
       .select("date,steps,active_energy_kcal,exercise_minutes,stand_hours,hrv_sdnn_ms,resting_heart_rate_bpm,sleep_minutes")
       .eq("user_id", user.id)
       .gte("date", daysAgo(21))
-      .order("date", { ascending: false }),
+      .order("date", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   const health = (healthResult.data ?? []) as HealthSummary[];

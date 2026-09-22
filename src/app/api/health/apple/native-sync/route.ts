@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { getSupabaseServer } from "@/lib/supabaseServer";
 import { verifyNativeCaptureTicket } from "@/services/ideas/native-capture-ticket";
 
 export const runtime = "nodejs";
@@ -54,6 +54,8 @@ export async function POST(request: Request) {
     updated_at: now,
   }));
 
+  const supabaseServer = await getSupabaseServer();
+  if (!supabaseServer) return NextResponse.json({ ok: false, error: "Health sync is not configured." }, { status: 503 });
   const { error } = await supabaseServer
     .from("health_daily_summaries")
     .upsert(rows, { onConflict: "user_id,date,source" });

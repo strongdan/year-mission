@@ -1,7 +1,7 @@
 "use server";
 
 import { requireUser } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { getSupabaseServer } from "@/lib/supabaseServer";
 import { getActivePlan, getMonthlyFocus, listDailyCheckins, listTasks, listWorkouts } from "@/repositories/supabase-repository";
 import { buildAdventureProgress, seasonForDate, type HealthDay } from "@/domain/adventure";
 import { alaskaStateHolidays, holidayForDate } from "@/domain/holidays";
@@ -50,13 +50,16 @@ export async function getAdventureAction() {
   ]);
 
   const seasonStart = calendarSeason.startDate < plan.start_date ? plan.start_date : calendarSeason.startDate;
-  const { data: healthRows, error: healthError } = await supabaseServer
-    .from("health_daily_summaries")
-    .select("date,steps,active_energy_kcal,exercise_minutes,stand_hours,hrv_sdnn_ms,resting_heart_rate_bpm,sleep_minutes")
-    .eq("user_id", user.id)
-    .gte("date", plan.start_date)
-    .lte("date", today)
-    .order("date", { ascending: true });
+  const supabaseServer = await getSupabaseServer();
+  const { data: healthRows, error: healthError } = supabaseServer
+    ? await supabaseServer
+      .from("health_daily_summaries")
+      .select("date,steps,active_energy_kcal,exercise_minutes,stand_hours,hrv_sdnn_ms,resting_heart_rate_bpm,sleep_minutes")
+      .eq("user_id", user.id)
+      .gte("date", plan.start_date)
+      .lte("date", today)
+      .order("date", { ascending: true })
+    : { data: [], error: null };
 
   const health = healthError ? [] : ((healthRows ?? []) as HealthDay[]);
   const progress = buildAdventureProgress({ today, planStart: plan.start_date, seasonStart, completedTasks, checkins, workouts, health });
