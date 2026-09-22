@@ -407,10 +407,12 @@ Acceptable:
 Avoid:
 
 - coins
-- fake XP
+- fake or unbounded XP systems
 - childish badges
 - leaderboards
 - loud confetti
+
+Exception: SPEC.md §39 explicitly authorizes the bounded Year Mission Adventure XP/level/landmark layer as a visual metaphor for real-world progress. Do not extend that exception to hypnosis, Conversation Confidence, app interaction, streak debt, or unrelated features.
 
 Real-world progress is the reward signal.
 
