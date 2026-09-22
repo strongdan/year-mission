@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getAuthErrorMessage } from "./page";
+import { getAuthErrorMessage } from "@/domain/auth-errors";
 
 describe("login auth error message", () => {
   it("shows callback failure diagnostics when provided", () => {

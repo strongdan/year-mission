@@ -5,13 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type { Provider } from "@supabase/supabase-js";
 import { createBrowserClient } from "@/integrations/supabase/client";
 import { hasSupabaseConfig } from "@/lib/env";
-
-export function getAuthErrorMessage(error: string | null, message: string | null) {
-  if (!error) return null;
-  if (message) return message;
-  if (error === "callback") return "Sign-in could not be completed. Try again.";
-  return "Sign-in failed. Try again.";
-}
+import { getAuthErrorMessage } from "@/domain/auth-errors";
 
 type LoginProvider = Extract<Provider, "google" | "apple">;
 
