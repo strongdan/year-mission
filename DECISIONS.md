@@ -500,14 +500,6 @@ Not because it is intellectually interesting.
 
 # D028 — The product should practice its own philosophy
 
-# D029 — Conversation Confidence is an optional, user-controlled Annual Focus
-
-**Status:** Accepted
-
-Social Ease & Expression is implemented as an optional 12-month Annual Focus thread. Its month themes are relative prompts, not deadlines, and progression requires explicit user choice. The feature reuses profile-owned preferences and existing planning surfaces rather than introducing a separate behavior-tracking subsystem.
-
-The application may link to curated third-party guided audio as optional support. It never copies or rehosts audio, treats listening as progress, requests microphone access for speaking practice, or infers psychological state from health or audio data. Real-world participation remains the primary practice.
-
 **Status:** Accepted
 
 Year Mission tells the user to:
@@ -527,3 +519,46 @@ Prefer:
 over:
 
 > sophisticated architecture for imagined futures
+
+---
+
+# D029 — Conversation Confidence is an optional, user-controlled Annual Focus
+
+**Status:** Accepted
+
+Social Ease & Expression is implemented as an optional 12-month Annual Focus thread. Its month themes are relative prompts, not deadlines, and progression requires explicit user choice. The feature reuses profile-owned preferences and existing planning surfaces rather than introducing a separate behavior-tracking subsystem.
+
+The application may link to curated third-party guided audio as optional support. It never copies or rehosts audio, treats listening as progress, requests microphone access for speaking practice, or infers psychological state from health or audio data. Real-world participation remains the primary practice.
+
+---
+
+# D030 — Adventure may use bounded XP as a presentation layer
+
+**Status:** Accepted
+
+The owner explicitly chose a side-scrolling Adventure presentation with levels, landmarks, seasonal worlds, and bounded XP derived from meaningful real-world work and movement.
+
+This is a narrow exception to the general anti-gamification rule. It must not become a generic engagement economy:
+
+- no spendable coins;
+- no leaderboard;
+- no streak loss or missed-day debt;
+- no level regression;
+- meta-work earns no XP;
+- rest/holiday days may remain zero-play;
+- Today execution remains visually prior to the Adventure dashboard;
+- hypnosis, Conversation Confidence, and guided-audio listening do not earn XP simply for completion.
+
+The Adventure metaphor should make the year feel lived, not incentivize app usage for its own sake.
+
+---
+
+# D031 — Credit score and user-confirmed lab history are optional secondary Progress evidence
+
+**Status:** Accepted
+
+Credit-score history may appear as a compact, provider-agnostic Progress tool when enabled, preserving model/bureau provenance and remaining an outcome signal rather than a reward.
+
+Lab scanning may use AI to extract candidate values from an uploaded image, but AI output is never authoritative: the user reviews/corrects before persistence, unsupported units/ranges/codes are not invented, and the source image is not retained after extraction.
+
+Neither feature should displace the core Progress metrics or turn Year Mission into a comprehensive finance or medical-record system.
