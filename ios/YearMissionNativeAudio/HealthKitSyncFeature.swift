@@ -25,40 +25,20 @@ final class HealthKitSyncCoordinator: ObservableObject {
 
     private let healthStore = HKHealthStore()
     private let calendar = Calendar.autoupdatingCurrent
-    private let trustedHosts: Set<String> = [
-        "year-mission.dangaston.workers.dev",
-        "year-mission.vercel.app",
-    ]
-
-    private func trustedBaseURL(_ value: String) -> URL? {
-        guard
-            let url = URL(string: value),
-            url.scheme?.lowercased() == "https",
-            let host = url.host?.lowercased(),
-            trustedHosts.contains(host),
-            url.user == nil,
-            url.password == nil,
-            url.port == nil,
-            url.query == nil,
-            url.fragment == nil,
-            url.path.isEmpty || url.path == "/"
-        else { return nil }
-        return URL(string: "https://\(host)")
-    }
+    private static let productionOrigin = URL(string: "https://year-mission.dangaston.workers.dev")!
 
     func handle(url: URL) -> Bool {
         guard url.scheme == "yearmission", url.host == "health-sync" else { return false }
         guard
             let parts = URLComponents(url: url, resolvingAgainstBaseURL: false),
             let ticket = parts.queryItems?.first(where: { $0.name == "ticket" })?.value,
-            let baseString = parts.queryItems?.first(where: { $0.name == "base" })?.value,
-            let baseURL = trustedBaseURL(baseString)
+            !ticket.isEmpty
         else {
-            lastMessage = "Year Mission rejected an untrusted Health sync request."
+            lastMessage = "Year Mission could not read the Health sync request."
             return true
         }
 
-        Task { await sync(ticket: ticket, baseURL: baseURL) }
+        Task { await sync(ticket: ticket, baseURL: Self.productionOrigin) }
         return true
     }
 

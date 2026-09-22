@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Award, CalendarDays, Dumbbell, Flag, Footprints, Gift, HeartPulse, Moon, Sparkles, Sunrise, Trophy } from "lucide-react";
+import { CalendarDays, Dumbbell, Flag, Footprints, Gift, HeartPulse, Moon, Sparkles, Sunrise, Trophy } from "lucide-react";
 import { getAdventureAction } from "@/app/adventure-actions";
 import { Card } from "@/components/ui/card";
 import { CollectibleShelf, ExplorerSprite, HolidayScenery, MonthBossCard, SeasonalForeground, WeeklyMiniMap } from "@/components/game/adventure-art";
@@ -70,9 +70,8 @@ export function AdventureStrip() {
   const p = data.progress;
   const h = data.todayHealth;
   const holiday = data.holiday;
-  const isRestHoliday = Boolean(holiday && p.today.baseXp === 0);
   const playerLeft = `${5 + p.dayProgress * 0.9}%`;
-  const nextReward = data.nextRewards.find((reward) => p.today.totalXp < reward.at)?.label ?? "Expedition complete";
+  const nextReward = data.nextRewards.find((reward) => p.dayProgress < reward.at)?.label ?? "Expedition complete";
 
   return (
     <Card className="overflow-hidden border-zinc-800 bg-zinc-950 p-0 shadow-2xl shadow-black/20">
@@ -90,11 +89,7 @@ export function AdventureStrip() {
               {data.seasonEmphasis.map((item) => <span key={item} className="rounded-full border border-white/10 bg-white/10 px-2 py-1 text-[10px] font-medium text-white/75">{item}</span>)}
             </div>
           </div>
-          <div className="rounded-2xl border border-amber-300/25 bg-black/25 px-3 py-2.5 text-right backdrop-blur-sm">
-            <div className="flex items-center justify-end gap-1.5 text-amber-200"><Award className="h-4 w-4" /><span className="text-base font-black">Level {p.level}</span></div>
-            <p className="mt-0.5 text-[10px] text-white/50">{p.xpIntoLevel}/{p.xpForNextLevel} XP</p>
-            <p className="mt-1 text-[10px] font-semibold text-amber-100/80">{p.totalXp.toLocaleString()} lifetime XP</p>
-          </div>
+          <div className="rounded-2xl border border-amber-300/25 bg-black/25 px-3 py-2.5 text-right backdrop-blur-sm"><p className="text-[10px] font-semibold uppercase tracking-wide text-amber-200/80">Current chapter</p><p className="mt-1 text-sm font-black text-white">Day {data.monthDayNumber} of {data.daysInMonth}</p><p className="mt-1 text-[10px] text-white/50">No score or level</p></div>
         </div>
       </div>
 
@@ -124,10 +119,10 @@ export function AdventureStrip() {
               <div className="min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-300/70">Holiday bonus level</p>
                 <p className="truncate text-sm font-bold text-amber-100">{holiday.name}</p>
-                <p className="text-[11px] text-zinc-400">No obligation to play. Activity earns {holiday.xpMultiplier}× XP, bonus capped at +{holiday.bonusCapXp} XP.</p>
+                <p className="text-[11px] text-zinc-400">No obligation to play. This is a visual calendar landmark, not a performance multiplier.</p>
               </div>
             </div>
-            <div className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1.5 text-[11px] font-semibold text-amber-100">{isRestHoliday ? "Rest day honored" : `+${p.today.holidayBonusXp} bonus XP`}</div>
+            <div className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1.5 text-[11px] font-semibold text-amber-100">Rest day honored</div>
           </div>
         </div>
       )}
@@ -155,15 +150,15 @@ export function AdventureStrip() {
 
           <div className="absolute bottom-[52px] transition-[left] duration-700 ease-out" style={{ left: playerLeft }}>
             <div className="relative -translate-x-1/2">
-              <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-amber-300/30 bg-black/70 px-2 py-1 text-[10px] font-bold text-amber-100 backdrop-blur-sm">{p.today.totalXp} XP</div>
-              <ExplorerSprite moving={p.today.totalXp > 0 && p.dayProgress < 100} />
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-amber-300/30 bg-black/70 px-2 py-1 text-[10px] font-bold text-amber-100 backdrop-blur-sm">Current day</div>
+              <ExplorerSprite moving={p.dayProgress < 100} />
             </div>
           </div>
 
           <div className="absolute left-5 top-4 rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-md">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">Today&apos;s level</p>
             <p className={`mt-0.5 text-base font-black ${theme.accent}`}>{holiday ? holiday.name : theme.landmark}</p>
-            <p className="mt-0.5 text-[10px] text-white/45">{holiday ? "Optional festival route" : "180 XP reaches camp"}</p>
+            <p className="mt-0.5 text-[10px] text-white/45">{holiday ? "Optional festival route" : "A place in the calendar, not a test"}</p>
           </div>
 
           <div className="absolute right-5 top-4 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-right backdrop-blur-md">
@@ -184,27 +179,22 @@ export function AdventureStrip() {
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
-          <ProgressMeter label="Day" value={p.dayProgress} detail={holiday && p.today.baseXp === 0 ? "Rest day honored" : `${p.today.totalXp}/180 XP`} />
-          <ProgressMeter label="Week" value={p.weekProgress} detail={`${p.weekXp}/900 XP`} />
-          <ProgressMeter label="Month" value={p.monthProgress} detail={`${p.monthXp}/3,600 XP`} />
-          <ProgressMeter label="Season" value={p.seasonProgress} detail={`${p.seasonXp}/10,800 XP`} />
+          <ProgressMeter label="Day" value={p.dayProgress} detail="Calendar position" />
+          <ProgressMeter label="Week" value={p.weekProgress} detail={`${p.weekMeaningfulMilestones} meaningful markers`} />
+          <ProgressMeter label="Month" value={p.monthProgress} detail={`${p.monthMeaningfulMilestones} meaningful markers`} />
+          <ProgressMeter label="Season" value={p.seasonProgress} detail={`${p.seasonMeaningfulMilestones} meaningful markers`} />
         </div>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
           <WeeklyMiniMap weekDays={data.weekDays} />
-          <CollectibleShelf xp={p.today.totalXp} collectibles={data.collectibles} />
+          <CollectibleShelf progress={p.dayProgress} collectibles={data.collectibles} />
         </div>
 
         <div className="mt-3">
           <MonthBossCard active={data.monthBoss.active} daysRemaining={data.monthBoss.daysRemaining} title={data.monthBoss.title} prompt={data.monthBoss.prompt} />
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5"><p className="text-[10px] text-zinc-500">Tasks</p><p className="mt-0.5 text-sm font-black text-zinc-100">+{p.today.taskXp} XP</p></div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5"><p className="text-[10px] text-zinc-500">Movement</p><p className="mt-0.5 text-sm font-black text-zinc-100">+{p.today.movementXp} XP</p></div>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5"><p className="text-[10px] text-zinc-500">Check-ins</p><p className="mt-0.5 text-sm font-black text-zinc-100">+{p.today.checkinXp} XP</p></div>
-          <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 p-2.5"><p className="flex items-center gap-1 text-[10px] text-amber-400/70"><Sparkles className="h-3 w-3" /> Bonus</p><p className="mt-0.5 text-sm font-black text-amber-200">+{p.today.holidayBonusXp} XP</p></div>
-        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4"><div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5"><p className="text-[10px] text-zinc-500">Meaningful work</p><p className="mt-0.5 text-sm font-black text-zinc-100">{p.today.meaningfulTaskCount} today</p></div><div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5"><p className="text-[10px] text-zinc-500">Movement</p><p className="mt-0.5 text-sm font-black text-zinc-100">{p.today.hasMovementObservation ? "Observed" : "No entry"}</p></div><div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5"><p className="text-[10px] text-zinc-500">Check-in</p><p className="mt-0.5 text-sm font-black text-zinc-100">{p.today.hasCheckin ? "Recorded" : "Optional"}</p></div><div className="rounded-xl border border-amber-900/60 bg-amber-950/20 p-2.5"><p className="flex items-center gap-1 text-[10px] text-amber-400/70"><Sparkles className="h-3 w-3" /> Landmark</p><p className="mt-0.5 text-sm font-black text-amber-200">{holiday ? holiday.name : "Keep exploring"}</p></div></div>
 
         <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-900/40 bg-amber-950/10 px-3 py-2.5">
           <Trophy className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />

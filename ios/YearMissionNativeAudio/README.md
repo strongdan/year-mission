@@ -37,9 +37,11 @@ If the current app root already owns a HealthKit coordinator/model, keep it and 
 
 ## Server flow
 
-The authenticated PWA requests a short-lived signed ticket from `/api/ideas/native-ticket` and opens:
+The authenticated PWA requests a short-lived signed ticket from the production Health endpoint and opens:
 
-`yearmission://brain-dump?ticket=...&base=https%3A%2F%2Fyear-mission.vercel.app`
+`yearmission://health-sync?ticket=...`
+
+The native HealthKit coordinator always uploads to the pinned Year Mission Workers origin. The deep link carries only the short-lived ticket; it cannot select an upload host.
 
 The native app then:
 

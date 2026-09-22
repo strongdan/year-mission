@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSupabaseServer } from "@/lib/supabaseServer";
 import { verifyNativeCaptureTicket } from "@/services/ideas/native-capture-ticket";
+import { mergeHealthSummary } from "@/domain/health-sync";
 
 export const runtime = "nodejs";
 
@@ -38,42 +39,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: message }, { status: 401 });
   }
 
-  const now = new Date().toISOString();
   const supabaseServer = await getSupabaseServer();
   if (!supabaseServer) return NextResponse.json({ ok: false, error: "Health sync is not configured." }, { status: 503 });
-
-  const dates = body.summaries.map((summary) => summary.date);
+  const now = new Date().toISOString();
+  const dates = [...new Set(body.summaries.map((summary) => summary.date))];
   const { data: existingRows, error: existingError } = await supabaseServer
     .from("health_daily_summaries")
-    .select("date,steps,active_energy_kcal,exercise_minutes,stand_hours,hrv_sdnn_ms,resting_heart_rate_bpm,sleep_minutes")
+    .select("date,steps,active_energy_kcal,exercise_minutes,stand_hours,hrv_sdnn_ms,resting_heart_rate_bpm,sleep_minutes,observed_at")
     .eq("user_id", userId)
     .eq("source", "apple_health")
     .in("date", dates);
-
-  if (existingError) {
-    console.error("Apple Health summary read-before-upsert failed", existingError);
-    return NextResponse.json({ ok: false, error: "Health data could not be read safely." }, { status: 500 });
-  }
-
-  const existingByDate = new Map((existingRows ?? []).map((row) => [row.date, row]));
-  const rows = body.summaries.map((summary) => {
-    const existing = existingByDate.get(summary.date);
-    return {
-      user_id: userId,
-      date: summary.date,
-      steps: summary.steps ?? existing?.steps ?? null,
-      active_energy_kcal: summary.activeEnergyKcal ?? existing?.active_energy_kcal ?? null,
-      exercise_minutes: summary.exerciseMinutes ?? existing?.exercise_minutes ?? null,
-      stand_hours: summary.standHours ?? existing?.stand_hours ?? null,
-      hrv_sdnn_ms: summary.hrvSdnnMs ?? existing?.hrv_sdnn_ms ?? null,
-      resting_heart_rate_bpm: summary.restingHeartRateBpm ?? existing?.resting_heart_rate_bpm ?? null,
-      sleep_minutes: summary.sleepMinutes ?? existing?.sleep_minutes ?? null,
-      observed_at: summary.observedAt ?? now,
-      source: "apple_health",
-      updated_at: now,
-    };
-  });
-
+  if (existingError) return NextResponse.json({ ok: false, error: "Health data could not be read." }, { status: 500 });
+  const existingByDate = new Map((existingRows ?? []).map((row) => [String(row.date), row]));
+  const rows = body.summaries.map((summary) => ({
+    user_id: userId,
+    date: summary.date,
+    ...mergeHealthSummary(existingByDate.get(summary.date), {
+      steps: summary.steps,
+      active_energy_kcal: summary.activeEnergyKcal,
+      exercise_minutes: summary.exerciseMinutes,
+      stand_hours: summary.standHours,
+      hrv_sdnn_ms: summary.hrvSdnnMs,
+      resting_heart_rate_bpm: summary.restingHeartRateBpm,
+      sleep_minutes: summary.sleepMinutes,
+      observed_at: summary.observedAt,
+    }, now),
+    source: "apple_health",
+    updated_at: now,
+  }));
   const { error } = await supabaseServer
     .from("health_daily_summaries")
     .upsert(rows, { onConflict: "user_id,date,source" });

@@ -1,4 +1,4 @@
-# Adventure Gamification
+# Adventure as a visual narrative layer
 
 ## Product goal
 
@@ -12,74 +12,42 @@ The player character represents the user. Real-world movement and meaningful act
 - **Season** — major world / mega-level. Each season rotates through a distinct visual biome.
 - **Month** — chapter / major sub-level, labeled with the current Monthly Focus when one exists.
 - **Week** — a short adventure inside the chapter.
-- **Day** — the mini-level shown on Today. The character physically advances along the path as XP is earned.
+- **Day** — the current position in the calendar trail. The character advances with calendar context and meaningful landmarks, not points.
 
 Current biomes are Evergreen Passage, Wild Coast, High Country, and Aurora Reach. They are deliberately abstract so a later art pass can replace them with sprite sheets or tilemaps without changing progression logic.
 
-## XP economy
+## No points economy
 
-XP is derived from evidence already stored by Year Mission; there is no manual XP button.
+Adventure deliberately has no XP, levels, daily targets, streaks, or activity-volume rewards. It shows calendar position, real completed meaningful milestones, Annual Focus landmarks, health observations as context, and month-end reflection encounters. A rest day is a valid part of the journey.
 
-### Meaningful tasks
+### Evidence shown as context
 
-- low impact: 20 XP
-- medium impact: 35 XP
-- high impact: 55 XP
-- Weekly Win bonus: +40 XP
-- courage task bonus: +20 XP
-- meta-work: 0 XP
-
-This keeps re-organizing the system from being a profitable game strategy.
+Meaningful completed work and check-ins can appear as landmarks. Meta-work is not treated as progress.
 
 ### Movement / Apple Health
 
-Daily movement XP is capped by category:
-
-- steps: up to 40 XP
-- active Move energy: up to 25 XP
-- exercise minutes: up to 40 XP
-- stand hours: up to 24 XP
-- explicit mobility/stretching workouts: up to 25 XP
-
-Health data is used as broad evidence of movement, not as a clinical assessment.
+Health data is used as broad movement context, not a clinical assessment or reward conversion.
 
 ### Check-ins
 
-- morning check-in: +15 XP
-- evening reset target: +20 XP
-- evening reset floor: +10 XP
-
-A skipped check-in never removes XP.
+Check-ins can mark lived progress. Skipping one has no negative effect.
 
 ### Anti-grind constraints
 
-- daily XP is capped at 260
 - there are no streak penalties
 - prior progress is permanent
 - missed days do not create debt
-- day progress is considered substantively complete around 180 XP; additional activity is optional
 - recovery and ordinary life should remain valid reasons not to maximize a day
 
 ## Progress scales
 
-Initial tuning targets:
-
-- day: 180 XP
-- week: 900 XP
-- month: 3,600 XP
-- season: 10,800 XP
-- player level: every 500 accumulated XP
-
-These values are intentionally easy to change after 30 days of observed use.
+Progress meters show calendar position through day, week, month, and season. They are not grades and do not measure activity volume.
 
 ## Rewards
 
 V1 rewards are representational rather than spendable currency:
 
-- trail marker around 100 daily XP
-- day camp around 180 daily XP
-- perfect expedition at the 260 daily cap
-- player level-ups every 500 XP
+- trail markers, camps, and landmarks are tied to calendar position or real milestones
 - existing achievements remain permanent proof points
 
 Future rewards can include cosmetic character gear, companion animals, campsites, map decorations, discovered landmarks, season trophies, and optional collectible artifacts. Avoid pay-to-win, random loot boxes, loss aversion, or punishment mechanics.
@@ -88,7 +56,7 @@ Future rewards can include cosmetic character gear, companion animals, campsites
 
 V1 uses native React + CSS + SVG and the repository's existing open-source Lucide icon set. A game engine is intentionally not added yet: Phaser/Pixi would add bundle weight and lifecycle complexity before we need physics, collisions, tilemaps, or interactive combat.
 
-If the experience evolves into richer exploration, **Phaser 3** is the preferred first evaluation for a true 2D game layer; **PixiJS** is the lighter alternative for sprite-heavy rendering without a full game framework. Keep the XP/progression model in `src/domain/adventure.ts` so either renderer can replace the current scene without rewriting the game rules.
+If the experience evolves into richer exploration, keep the visual layer separate from the evidence and reflection rules in `src/domain/adventure.ts`.
 
 ## Next useful upgrades
 

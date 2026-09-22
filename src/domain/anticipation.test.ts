@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, daysBetween, nextOccurrence, planningHolidays, planningTaskTitle } from "./anticipation";
+import { addDays, daysBetween, effectivePreparationDate, nextOccurrence, planningHolidays, planningTaskTitle } from "./anticipation";
 
 describe("anticipation planning", () => {
   it("rolls yearly dates into the next year after they pass", () => {
@@ -23,5 +23,10 @@ describe("anticipation planning", () => {
   it("makes birthday planning tasks concrete", () => {
     expect(planningTaskTitle({ kind: "birthday", title: "Alex's birthday", personName: "Alex" })).toBe("Plan Alex's birthday");
     expect(planningTaskTitle({ kind: "deadline", title: "Tax filing", personName: null })).toBe("Prepare for deadline: Tax filing");
+  });
+
+  it("clamps a late planning task to today without losing the original window", () => {
+    expect(effectivePreparationDate("2026-09-22", "2026-09-30", 30)).toEqual({ original: "2026-08-31", effective: "2026-09-22" });
+    expect(effectivePreparationDate("2026-09-22", "2026-12-25", 30)).toEqual({ original: "2026-11-25", effective: "2026-11-25" });
   });
 });

@@ -4,8 +4,6 @@ export type GameHoliday = {
   date: string;
   observedDate: string;
   kind: "state" | "special";
-  xpMultiplier: number;
-  bonusCapXp: number;
   scene: "fireworks" | "snow" | "campfire" | "flags" | "alaska" | "memorial" | "spring" | "winter";
   restMessage: string;
 };
@@ -41,10 +39,8 @@ function holiday(id: string, name: string, date: string, scene: GameHoliday["sce
     date,
     observedDate,
     kind,
-    xpMultiplier: 1.5,
-    bonusCapXp: 90,
     scene,
-    restMessage: "Rest day honored — there is no level debt today.",
+    restMessage: "Rest day honored — there is no debt today.",
   };
 }
 
@@ -77,11 +73,4 @@ export function alaskaStateHolidays(year: number): GameHoliday[] {
 export function holidayForDate(date: string): GameHoliday | null {
   const year = Number(date.slice(0, 4));
   return alaskaStateHolidays(year).find((item) => item.observedDate === date) ?? null;
-}
-
-export function holidayAdjustedXp(baseXp: number, holiday: GameHoliday | null): { totalXp: number; bonusXp: number } {
-  if (!holiday || baseXp <= 0) return { totalXp: baseXp, bonusXp: 0 };
-  const rawBonus = Math.round(baseXp * (holiday.xpMultiplier - 1));
-  const bonusXp = Math.min(holiday.bonusCapXp, rawBonus);
-  return { totalXp: baseXp + bonusXp, bonusXp };
 }

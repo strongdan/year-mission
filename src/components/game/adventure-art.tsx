@@ -97,16 +97,16 @@ export function WeeklyMiniMap({ weekDays }: { weekDays: WeekDay[] }) {
   );
 }
 
-export function CollectibleShelf({ xp, collectibles }: { xp: number; collectibles: Array<{ id: string; at: number; label: string; icon: "marker" | "camp" | "summit" }> }) {
+export function CollectibleShelf({ progress, collectibles }: { progress: number; collectibles: Array<{ id: string; at: number; label: string; icon: "marker" | "camp" | "summit" }> }) {
   const icon = (kind: "marker" | "camp" | "summit") => kind === "camp" ? <TentTree className="h-5 w-5" /> : kind === "summit" ? <Gem className="h-5 w-5" /> : <Flag className="h-5 w-5" />;
   return (
     <div className="grid grid-cols-3 gap-2">
       {collectibles.map((item) => {
-        const unlocked = xp >= item.at;
+        const unlocked = progress >= item.at;
         return <div key={item.id} className={`rounded-xl border p-2.5 text-center ${unlocked ? "border-amber-500/35 bg-amber-950/20 text-amber-200" : "border-zinc-800 bg-zinc-900/50 text-zinc-600"}`}>
           <div className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full ${unlocked ? "bg-amber-300/10" : "bg-zinc-950"}`}>{icon(item.icon)}</div>
           <p className="mt-1.5 text-[10px] font-bold">{item.label}</p>
-          <p className="mt-0.5 text-[9px] opacity-70">{unlocked ? "Collected" : `${item.at} XP`}</p>
+          <p className="mt-0.5 text-[9px] opacity-70">{unlocked ? "Reached" : `${item.at}% of this chapter`}</p>
         </div>;
       })}
     </div>

@@ -609,6 +609,12 @@ Initial version:
 
 The app should support reduced expectations without labeling the day a failure.
 
+## Credit score and lab scan progress signals
+
+Credit score progress is an owner-private outcome signal, never a gamified reward. Each entry records its model and bureau provenance; unlike scoring models are not combined as though equivalent. Manual entry is supported without an API, and external API sync is opt-in. Credit data is owner-isolated by RLS.
+
+Lab scan progress accepts user-provided health information as assistive input. Image extraction is only a draft: AI extraction cannot auto-save, and the user must review and correct it before persistence. Source images are not retained unless explicitly required. The feature makes no diagnostic claims, stores provenance, and keeps records owner-isolated by RLS.
+
 ---
 
 # 19. Week Modes

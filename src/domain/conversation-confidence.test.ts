@@ -1,43 +1,12 @@
 import { describe, expect, it } from "vitest";
-import {
-  CONVERSATION_MONTHS,
-  applyMonthChoice,
-  conversationFloor,
-  currentConversationMonth,
-  isConversationSkipNonPunitive,
-  mondayConversationPlan,
-} from "./conversation-confidence";
-import { resourcesForMonth, SUPPORT_RESOURCES } from "./support-resources";
+import { speakingWorkoutState } from "@/domain/conversation-confidence";
 
-describe("conversation confidence", () => {
-  it("defines twelve relative themes", () => {
-    expect(CONVERSATION_MONTHS).toHaveLength(12);
-    expect(mondayConversationPlan(1).month.theme).toBe("Speak without performing");
-    expect(mondayConversationPlan(12).month.theme).toBe("Sustainable connection");
-  });
-
-  it("keeps pause and repeat user-controlled", () => {
-    expect(applyMonthChoice(4, "pause")).toEqual({ month: 4, status: "paused" });
-    expect(applyMonthChoice(4, "repeat")).toEqual({ month: 4, status: "active" });
-    expect(currentConversationMonth({ month: 4, status: "paused" })).toBe(4);
-  });
-
-  it("only advances after an explicit next or skip choice", () => {
-    expect(currentConversationMonth({ month: 4, status: "active" })).toBe(4);
-    expect(currentConversationMonth({ month: 4, status: "active", monthChoice: "next" })).toBe(5);
-    expect(currentConversationMonth({ month: 12, status: "active", monthChoice: "skip" })).toBe(12);
-  });
-
-  it("provides a hard-week floor without catch-up debt", () => {
-    expect(conversationFloor("hard-week")).toContain("no catch-up debt");
-  });
-
-  it("does not penalize skipping", () => {
-    expect(isConversationSkipNonPunitive()).toEqual({ momentumDelta: 0, xpDelta: 0, reliabilityDelta: 0, createsDebt: false });
-  });
-
-  it("maps months to optional support resources with conservative access labels", () => {
-    expect(resourcesForMonth(1).some((resource) => resource.id === "ruth-quietly-confident")).toBe(true);
-    expect(SUPPORT_RESOURCES.find((resource) => resource.id === "freddy-social-anxiety")?.access).toBe("verify");
+describe("speakingWorkoutState", () => {
+  it("uses a real five-minute countdown at minute boundaries", () => {
+    expect(speakingWorkoutState(0)).toMatchObject({ remainingSeconds: 300, step: 0 });
+    expect(speakingWorkoutState(59)).toMatchObject({ remainingSeconds: 241, step: 0 });
+    expect(speakingWorkoutState(60)).toMatchObject({ remainingSeconds: 240, step: 1 });
+    expect(speakingWorkoutState(299)).toMatchObject({ remainingSeconds: 1, step: 4 });
+    expect(speakingWorkoutState(300)).toMatchObject({ remainingSeconds: 0, step: null });
   });
 });

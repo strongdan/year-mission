@@ -131,14 +131,14 @@ export async function getAdventureAction() {
       morningCheckin: !!todayCheckin,
       eveningCheckin: todayCheckin?.evening_reset_completion === "target" || todayCheckin?.evening_reset_completion === "floor",
       collectibles: [
-        { id: "trail-marker", at: 100, label: "Trail Marker", icon: "marker" as const },
-        { id: "day-camp", at: 180, label: "Day Camp", icon: "camp" as const },
-        { id: "summit-token", at: 260, label: "Summit Token", icon: "summit" as const },
+        { id: "trail-marker", at: 25, label: "Trail Marker", icon: "marker" as const },
+        { id: "day-camp", at: 50, label: "Day Camp", icon: "camp" as const },
+        { id: "summit-token", at: 75, label: "Summit Token", icon: "summit" as const },
       ],
       nextRewards: [
-        { at: 100, label: "Trail marker" },
-        { at: 180, label: "Day camp unlocked" },
-        { at: 260, label: "Perfect expedition" },
+        { at: 25, label: "Trail marker" },
+        { at: 50, label: "Day camp" },
+        { at: 75, label: "Summit landmark" },
       ],
     },
   };

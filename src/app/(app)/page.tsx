@@ -13,6 +13,7 @@ export default function TodayPage() {
       <TodayViewV2 />
       <ActionableReminderCard />
       <ConversationConfidenceCard />
+      <ActionableReminderCard />
       <MovementVarietyCard />
       <div className="px-4 pb-4">
         <LifeBalanceCard />
@@ -22,6 +23,10 @@ export default function TodayPage() {
         <MissionChargeCard />
       </div>
       <JournalCard />
+      <div className="flex flex-col gap-4 px-4 pt-4">
+        <MissionChargeCard />
+        <AdventureStrip />
+      </div>
     </>
   );
 }

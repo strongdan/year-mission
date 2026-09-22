@@ -88,3 +88,12 @@ export function mondayConversationPlan(month: number) {
 export function isConversationSkipNonPunitive() {
   return { momentumDelta: 0, xpDelta: 0, reliabilityDelta: 0, createsDebt: false } as const;
 }
+
+export function speakingWorkoutState(elapsedSeconds: number) {
+  const elapsed = Math.max(0, Math.min(300, Math.trunc(elapsedSeconds)));
+  return {
+    elapsedSeconds: elapsed,
+    remainingSeconds: 300 - elapsed,
+    step: elapsed < 300 ? Math.min(SPEAKING_WORKOUT.length - 1, Math.floor(elapsed / 60)) : null,
+  } as const;
+}

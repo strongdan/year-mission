@@ -94,6 +94,20 @@ export async function chooseConversationMonthAction(input: unknown) {
   return savePath({ ...current.data.path, ...next, active: true });
 }
 
+export async function renameConversationFocusAction(input: unknown) {
+  const parsed = z.string().trim().min(1).max(120).safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Focus title is invalid." } as const;
+  const current = await getConversationConfidenceAction();
+  if (!current.ok) return current;
+  return savePath({ ...current.data.path, title: parsed.data });
+}
+
+export async function stopConversationFocusAction() {
+  const current = await getConversationConfidenceAction();
+  if (!current.ok) return current;
+  return savePath({ ...current.data.path, active: false, status: "stopped" });
+}
+
 export async function saveConversationReflectionAction(input: unknown) {
   const parsed = REFLECTION_Z.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Reflection is invalid." } as const;

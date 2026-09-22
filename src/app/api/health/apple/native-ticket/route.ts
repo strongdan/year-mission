@@ -4,14 +4,13 @@ import { issueNativeCaptureTicket } from "@/services/ideas/native-capture-ticket
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request) {
+export async function POST() {
   const { user } = await requireUser();
   if (!user) return NextResponse.json({ ok: false, error: "Not signed in." }, { status: 401 });
 
   try {
     const { ticket, expiresAt } = issueNativeCaptureTicket(user.id);
-    const origin = new URL(request.url).origin;
-    const params = new URLSearchParams({ ticket, base: origin });
+    const params = new URLSearchParams({ ticket });
     return NextResponse.json({
       ok: true,
       data: {

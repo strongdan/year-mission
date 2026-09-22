@@ -108,3 +108,8 @@ export function planningTaskTitle(item: Pick<AnticipationItem, "kind" | "title" 
   if (item.kind === "deadline") return `Prepare for deadline: ${item.title}`;
   return `Prepare for ${item.title}`;
 }
+
+export function effectivePreparationDate(today: string, eventDate: string, leadDays: number): { original: string; effective: string } {
+  const original = addDays(eventDate, -leadDays);
+  return { original, effective: original < today ? today : original };
+}

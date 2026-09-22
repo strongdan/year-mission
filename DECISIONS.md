@@ -270,6 +270,10 @@ Example:
 
 - advances current monthly focus
 - fits available time
+
+### D030 — Credit and lab progress are governed, owner-private signals
+
+The consolidation explicitly includes credit-score and lab-scan progress. Credit data is an outcome signal rather than a reward, requires model/bureau provenance, does not combine unlike scoring models, supports manual entry, and keeps API sync opt-in. Lab scan extraction is assistive only: the user reviews and corrects drafts before saving, source images are not retained by default, no diagnostic claims are made, provenance is stored, and both domains remain owner-isolated under RLS.
 - deferred twice
 - Weekly Win related
 - no blocker
