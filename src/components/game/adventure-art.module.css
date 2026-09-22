@@ -1,0 +1,144 @@
+.explorer {
+  position: relative;
+  width: 42px;
+  height: 62px;
+  filter: drop-shadow(0 8px 8px rgb(0 0 0 / 0.35));
+}
+
+.explorerMoving {
+  animation: explorerBob 0.55s ease-in-out infinite alternate;
+}
+
+.head {
+  position: absolute;
+  left: 12px;
+  top: 1px;
+  width: 19px;
+  height: 19px;
+  border-radius: 999px;
+  background: #d9b38c;
+  border: 2px solid rgb(255 255 255 / 0.75);
+}
+
+.hat {
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 25px;
+  height: 8px;
+  border-radius: 8px 8px 3px 3px;
+  background: #334155;
+  border-bottom: 2px solid #f59e0b;
+}
+
+.body {
+  position: absolute;
+  left: 11px;
+  top: 20px;
+  width: 21px;
+  height: 27px;
+  border-radius: 8px 8px 6px 6px;
+  background: linear-gradient(#f8fafc, #cbd5e1);
+  border: 2px solid rgb(255 255 255 / 0.6);
+}
+
+.pack {
+  position: absolute;
+  left: 5px;
+  top: 23px;
+  width: 11px;
+  height: 23px;
+  border-radius: 5px;
+  background: #92400e;
+  border: 1px solid rgb(251 191 36 / 0.55);
+}
+
+.arm,
+.leg {
+  position: absolute;
+  width: 7px;
+  border-radius: 999px;
+  transform-origin: top center;
+}
+
+.arm {
+  top: 24px;
+  height: 23px;
+  background: #94a3b8;
+}
+
+.armLeft { left: 7px; transform: rotate(16deg); }
+.armRight { right: 6px; transform: rotate(-18deg); }
+.leg { top: 43px; height: 19px; background: #27272a; }
+.legLeft { left: 13px; transform: rotate(5deg); }
+.legRight { right: 10px; transform: rotate(-5deg); }
+
+.explorerMoving .armLeft,
+.explorerMoving .legRight { animation: limbForward 0.55s ease-in-out infinite alternate; }
+.explorerMoving .armRight,
+.explorerMoving .legLeft { animation: limbBack 0.55s ease-in-out infinite alternate; }
+
+.wave { animation: waveDrift 4s ease-in-out infinite alternate; }
+.waveDelay { animation-delay: 1.2s; }
+.aurora { animation: auroraFlow 7s ease-in-out infinite alternate; }
+.auroraDelay { animation-delay: 1.6s; }
+.star { animation: twinkle 2.4s ease-in-out infinite alternate; }
+.firework { animation: fireworkPulse 1.6s ease-out infinite; }
+.snow { animation: snowfall 3.8s linear infinite; }
+
+@keyframes explorerBob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-3px); }
+}
+
+@keyframes limbForward {
+  from { transform: rotate(18deg); }
+  to { transform: rotate(-20deg); }
+}
+
+@keyframes limbBack {
+  from { transform: rotate(-18deg); }
+  to { transform: rotate(20deg); }
+}
+
+@keyframes waveDrift {
+  from { transform: translateX(-2%); opacity: 0.45; }
+  to { transform: translateX(2%); opacity: 0.85; }
+}
+
+@keyframes auroraFlow {
+  from { transform: translateX(-3%) rotate(-6deg) scaleX(0.96); opacity: 0.55; }
+  to { transform: translateX(4%) rotate(-2deg) scaleX(1.05); opacity: 0.95; }
+}
+
+@keyframes twinkle {
+  from { opacity: 0.2; transform: scale(0.7); }
+  to { opacity: 0.9; transform: scale(1.25); }
+}
+
+@keyframes fireworkPulse {
+  0% { transform: scale(0.5); opacity: 0; }
+  35% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+@keyframes snowfall {
+  from { transform: translateY(-8px) translateX(0); opacity: 0; }
+  12% { opacity: 0.9; }
+  to { transform: translateY(230px) translateX(16px); opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explorerMoving,
+  .explorerMoving .armLeft,
+  .explorerMoving .armRight,
+  .explorerMoving .legLeft,
+  .explorerMoving .legRight,
+  .wave,
+  .aurora,
+  .star,
+  .firework,
+  .snow {
+    animation: none !important;
+  }
+}

@@ -26,6 +26,10 @@ function mondayOf(date: string) {
   return addDays(date, -offset);
 }
 
+function dayLabel(date: string) {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+}
+
 export async function getAdventureAction() {
   const { user } = await requireUser();
   if (!user) return { ok: false as const, error: "Not signed in." };
@@ -64,10 +68,34 @@ export async function getAdventureAction() {
   const weekStart = mondayOf(today);
   const weekEnd = addDays(weekStart, 6);
   const weekOfMonth = Math.ceil(currentDate.getUTCDate() / 7);
+  const dayOfWeekIndex = (currentDate.getUTCDay() + 6) % 7;
+  const daysInMonth = new Date(Date.UTC(currentYear, currentMonth, 0)).getUTCDate();
+  const monthDayNumber = currentDate.getUTCDate();
   const holiday = holidayForDate(today);
   const upcomingHoliday = alaskaStateHolidays(currentYear).find((item) => item.observedDate > today)
     ?? alaskaStateHolidays(currentYear + 1)[0]
     ?? null;
+
+  const weekDays = Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(weekStart, index);
+    return {
+      date,
+      label: dayLabel(date),
+      isToday: date === today,
+      isPast: date < today,
+      holiday: holidayForDate(date),
+    };
+  });
+
+  const daysRemaining = Math.max(0, daysInMonth - monthDayNumber);
+  const monthBoss = {
+    active: daysRemaining <= 3,
+    daysRemaining,
+    title: `${monthName} Gate`,
+    prompt: monthlyFocus?.title
+      ? `What did ${monthlyFocus.title} actually change, and what should carry into next month?`
+      : "What changed this month, what mattered, and what should carry forward?",
+  };
 
   return {
     ok: true as const,
@@ -76,8 +104,12 @@ export async function getAdventureAction() {
       today,
       dayName,
       monthDay,
+      dayOfWeekIndex,
+      monthDayNumber,
+      daysInMonth,
       weekStart,
       weekEnd,
+      weekDays,
       gameTimeZone: GAME_TIME_ZONE,
       seasonName: calendarSeason.name,
       seasonObjective: calendarSeason.objective,
@@ -87,6 +119,7 @@ export async function getAdventureAction() {
       seasonEmphasis: calendarSeason.emphasis,
       monthName,
       monthFocus: monthlyFocus?.title ?? null,
+      monthBoss,
       weekLabel: `${monthName} · Adventure ${weekOfMonth}`,
       progress,
       todayHealth,
@@ -94,6 +127,11 @@ export async function getAdventureAction() {
       upcomingHoliday,
       morningCheckin: !!todayCheckin,
       eveningCheckin: todayCheckin?.evening_reset_completion === "target" || todayCheckin?.evening_reset_completion === "floor",
+      collectibles: [
+        { id: "trail-marker", at: 100, label: "Trail Marker", icon: "marker" as const },
+        { id: "day-camp", at: 180, label: "Day Camp", icon: "camp" as const },
+        { id: "summit-token", at: 260, label: "Summit Token", icon: "summit" as const },
+      ],
       nextRewards: [
         { at: 100, label: "Trail marker" },
         { at: 180, label: "Day camp unlocked" },

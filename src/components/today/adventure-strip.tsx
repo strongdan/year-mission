@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Award, CalendarDays, Dumbbell, Flag, Footprints, Gift, HeartPulse, Moon, Sparkles, Sunrise, Trophy } from "lucide-react";
 import { getAdventureAction } from "@/app/adventure-actions";
 import { Card } from "@/components/ui/card";
+import { CollectibleShelf, ExplorerSprite, HolidayScenery, MonthBossCard, SeasonalForeground, WeeklyMiniMap } from "@/components/game/adventure-art";
 
 type AdventureResult = Awaited<ReturnType<typeof getAdventureAction>>;
 type AdventureData = Extract<AdventureResult, { ok: true }>["data"];
@@ -34,16 +35,6 @@ function ProgressMeter({ label, value, detail }: { label: string; value: number;
         <div className="h-full rounded-full bg-gradient-to-r from-amber-300 via-orange-300 to-yellow-200 transition-[width] duration-500" style={{ width: `${value}%` }} />
       </div>
       <p className="mt-1.5 truncate text-[10px] text-white/45">{detail}</p>
-    </div>
-  );
-}
-
-function Pine({ left, scale = 1 }: { left: string; scale?: number }) {
-  return (
-    <div className="absolute bottom-10" style={{ left, transform: `scale(${scale})`, transformOrigin: "bottom center" }} aria-hidden="true">
-      <div className="mx-auto h-8 w-1 bg-amber-950/70" />
-      <div className="-mt-9 h-0 w-0 border-x-[14px] border-b-[26px] border-x-transparent border-b-emerald-900" />
-      <div className="-mt-4 ml-1 h-0 w-0 border-x-[11px] border-b-[22px] border-x-transparent border-b-emerald-700" />
     </div>
   );
 }
@@ -81,6 +72,7 @@ export function AdventureStrip() {
   const holiday = data.holiday;
   const isRestHoliday = Boolean(holiday && p.today.baseXp === 0);
   const playerLeft = `${5 + p.dayProgress * 0.9}%`;
+  const nextReward = data.nextRewards.find((reward) => p.today.totalXp < reward.at)?.label ?? "Expedition complete";
 
   return (
     <Card className="overflow-hidden border-zinc-800 bg-zinc-950 p-0 shadow-2xl shadow-black/20">
@@ -110,7 +102,7 @@ export function AdventureStrip() {
         <div className="bg-zinc-950 px-4 py-3">
           <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500"><CalendarDays className="h-3.5 w-3.5" /> Current day</p>
           <p className="mt-1 text-sm font-bold text-zinc-100">{data.dayName}, {data.monthDay}</p>
-          <p className="mt-0.5 text-[10px] text-zinc-600">Today&apos;s mini-level</p>
+          <p className="mt-0.5 text-[10px] text-zinc-600">Mini-level {data.dayOfWeekIndex + 1} of 7</p>
         </div>
         <div className="bg-zinc-950 px-4 py-3">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Current week</p>
@@ -119,7 +111,7 @@ export function AdventureStrip() {
         </div>
         <div className="bg-zinc-950 px-4 py-3">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Current month</p>
-          <p className="mt-1 text-sm font-bold text-zinc-100">{data.monthName}</p>
+          <p className="mt-1 text-sm font-bold text-zinc-100">{data.monthName} · Day {data.monthDayNumber}/{data.daysInMonth}</p>
           <p className="mt-0.5 truncate text-[10px] text-zinc-600">{data.monthFocus ? `Quest: ${data.monthFocus}` : "Monthly chapter"}</p>
         </div>
       </div>
@@ -141,17 +133,16 @@ export function AdventureStrip() {
       )}
 
       <div ref={scrollerRef} className="overflow-x-auto overscroll-x-contain" aria-label="Side-scrolling daily adventure progress">
-        <div className={`relative h-64 min-w-[980px] overflow-hidden bg-gradient-to-b ${theme.sky}`}>
+        <div className={`relative h-72 min-w-[980px] overflow-hidden bg-gradient-to-b ${theme.sky}`}>
           <div className={`absolute right-16 top-8 h-14 w-14 rounded-full ${theme.orb} opacity-80 blur-[1px]`} aria-hidden="true" />
-          <div className="absolute inset-x-0 bottom-14 h-28 opacity-70" aria-hidden="true">
+          <div className="absolute inset-x-0 bottom-14 h-28 opacity-55" aria-hidden="true">
             <svg viewBox="0 0 980 120" className="h-full w-full" preserveAspectRatio="none">
               <path d="M0 100 L90 48 L165 88 L260 24 L350 92 L445 36 L530 88 L640 18 L730 78 L820 36 L900 78 L980 52 L980 120 L0 120 Z" fill="currentColor" className="text-slate-700/80" />
               <path d="M0 112 L120 76 L210 103 L320 62 L420 104 L520 72 L630 100 L760 58 L860 98 L980 76 L980 120 L0 120 Z" fill="currentColor" className="text-slate-900/80" />
             </svg>
           </div>
-          {data.seasonTheme === "forest" && <><Pine left="8%" scale={1.1} /><Pine left="28%" scale={0.8} /><Pine left="70%" scale={1.2} /><Pine left="88%" scale={0.9} /></>}
-          {data.seasonTheme === "coast" && <div className="absolute inset-x-0 bottom-12 h-10 bg-cyan-500/15" aria-hidden="true"><div className="mt-2 h-px bg-cyan-100/30" /><div className="mt-3 h-px bg-cyan-100/20" /></div>}
-          {data.seasonTheme === "aurora" && <div className="absolute left-24 top-6 h-12 w-[520px] -rotate-3 rounded-[50%] bg-emerald-300/10 blur-2xl" aria-hidden="true" />}
+          <SeasonalForeground theme={data.seasonTheme} />
+          <HolidayScenery holiday={holiday} />
           <div className={`absolute inset-x-0 bottom-0 h-16 ${theme.ground}`} />
           <div className="absolute inset-x-8 bottom-12 h-2 rounded-full border border-white/5 bg-black/35 shadow-inner" />
           <div className="absolute left-8 bottom-12 h-2 rounded-full bg-gradient-to-r from-amber-300 via-orange-300 to-yellow-200" style={{ width: `${Math.max(0, Math.min(92, p.dayProgress * 0.92))}%` }} />
@@ -162,13 +153,10 @@ export function AdventureStrip() {
             </div>
           ))}
 
-          <div className="absolute bottom-[54px] transition-[left] duration-700 ease-out" style={{ left: playerLeft }}>
+          <div className="absolute bottom-[52px] transition-[left] duration-700 ease-out" style={{ left: playerLeft }}>
             <div className="relative -translate-x-1/2">
-              <div className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-amber-300/30 bg-black/70 px-2 py-1 text-[10px] font-bold text-amber-100 backdrop-blur-sm">{p.today.totalXp} XP</div>
-              <div className="relative flex h-14 w-10 items-center justify-center rounded-t-[18px] rounded-b-xl border-2 border-white/70 bg-gradient-to-b from-zinc-100 to-zinc-300 text-xl shadow-xl shadow-black/40" aria-label="Player character">
-                <span aria-hidden="true">🧭</span>
-                <div className="absolute -bottom-1 left-0 h-2 w-3 rounded-full bg-zinc-800" /><div className="absolute -bottom-1 right-0 h-2 w-3 rounded-full bg-zinc-800" />
-              </div>
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-amber-300/30 bg-black/70 px-2 py-1 text-[10px] font-bold text-amber-100 backdrop-blur-sm">{p.today.totalXp} XP</div>
+              <ExplorerSprite moving={p.today.totalXp > 0 && p.dayProgress < 100} />
             </div>
           </div>
 
@@ -180,7 +168,7 @@ export function AdventureStrip() {
 
           <div className="absolute right-5 top-4 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-right backdrop-blur-md">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-white/50">Next landmark</p>
-            <p className="mt-0.5 text-xs font-bold text-white">{data.nextRewards.find((reward) => p.today.totalXp < reward.at)?.label ?? "Expedition complete"}</p>
+            <p className="mt-0.5 text-xs font-bold text-white">{nextReward}</p>
             <p className="mt-0.5 text-[10px] text-white/45">{data.upcomingHoliday ? `${data.upcomingHoliday.name} · ${formatDate(data.upcomingHoliday.observedDate)}` : "Keep exploring"}</p>
           </div>
         </div>
@@ -202,6 +190,15 @@ export function AdventureStrip() {
           <ProgressMeter label="Season" value={p.seasonProgress} detail={`${p.seasonXp}/10,800 XP`} />
         </div>
 
+        <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+          <WeeklyMiniMap weekDays={data.weekDays} />
+          <CollectibleShelf xp={p.today.totalXp} collectibles={data.collectibles} />
+        </div>
+
+        <div className="mt-3">
+          <MonthBossCard active={data.monthBoss.active} daysRemaining={data.monthBoss.daysRemaining} title={data.monthBoss.title} prompt={data.monthBoss.prompt} />
+        </div>
+
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5"><p className="text-[10px] text-zinc-500">Tasks</p><p className="mt-0.5 text-sm font-black text-zinc-100">+{p.today.taskXp} XP</p></div>
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2.5"><p className="text-[10px] text-zinc-500">Movement</p><p className="mt-0.5 text-sm font-black text-zinc-100">+{p.today.movementXp} XP</p></div>
@@ -211,7 +208,7 @@ export function AdventureStrip() {
 
         <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-900/40 bg-amber-950/10 px-3 py-2.5">
           <Trophy className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-          <p className="text-[11px] leading-relaxed text-zinc-400">The map rewards living the season, not grinding it. Holidays can be zero-play rest days, missed days create no debt, and an uneven Body / Career / Self / Money radar can be exactly right.</p>
+          <p className="text-[11px] leading-relaxed text-zinc-400">The map rewards living the season, not grinding it. Holidays can be zero-play rest days, missed days create no debt, collectibles mark lived progress, and month-end boss encounters are reflections rather than workload tests.</p>
         </div>
       </div>
     </Card>
