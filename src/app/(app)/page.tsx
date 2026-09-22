@@ -10,16 +10,16 @@ import { ConversationConfidenceCard } from "@/components/today/conversation-conf
 export default function TodayPage() {
   return (
     <>
-      <div className="flex flex-col gap-4 px-4 pt-4">
-        <AdventureStrip />
-        <MissionChargeCard />
-      </div>
-      <ActionableReminderCard />
       <TodayViewV2 />
+      <ActionableReminderCard />
       <ConversationConfidenceCard />
       <MovementVarietyCard />
       <div className="px-4 pb-4">
         <LifeBalanceCard />
+      </div>
+      <div className="flex flex-col gap-4 px-4 pb-4">
+        <AdventureStrip />
+        <MissionChargeCard />
       </div>
       <JournalCard />
     </>
