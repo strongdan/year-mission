@@ -137,7 +137,7 @@ Year Mission retains richer metadata such as:
 
 ---
 
-# D008 — Deploy with Next.js on Vercel
+# D008 — Deploy with Next.js-compatible vinext on Cloudflare Workers
 
 **Status:** Accepted
 
@@ -146,7 +146,7 @@ Target architecture:
 ```text
 iPhone / Browser
         ↓
-Next.js PWA on Vercel
+Next.js-compatible PWA on Cloudflare Workers via vinext
         ↓
  ┌──────────┬────────────┬──────────┐
  ↓          ↓            ↓

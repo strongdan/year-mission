@@ -125,7 +125,7 @@ Build as:
 
 Deployment:
 
-- Vercel
+- Cloudflare Workers via vinext and Workers Builds
 
 Database and auth:
 
