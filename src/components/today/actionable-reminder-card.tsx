@@ -32,6 +32,8 @@ export function ActionableReminderCard() {
     setCount(due.length);
   }
 
+  // Loading server data is the intended synchronization point for this client view.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, []);
 
   if (!item) return null;

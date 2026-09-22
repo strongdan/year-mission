@@ -1,4 +1,4 @@
-import { Campfire, Flag, Gem, Mountain, Sparkles, TentTree } from "lucide-react";
+import { Flag, Flame, Gem, Mountain, Sparkles, TentTree } from "lucide-react";
 import type { GameHoliday } from "@/domain/holidays";
 import styles from "./adventure-art.module.css";
 
@@ -67,7 +67,7 @@ export function HolidayScenery({ holiday }: { holiday: GameHoliday | null }) {
   if (holiday.scene === "snow" || holiday.scene === "winter") return <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
     {Array.from({ length: 16 }, (_, index) => <span key={index} className={`${styles.snow} absolute top-0 block h-1.5 w-1.5 rounded-full bg-white/70`} style={{ left: `${4 + index * 6}%`, animationDelay: `${(index % 5) * 0.32}s` }} />)}
   </div>;
-  if (holiday.scene === "campfire") return <div className="pointer-events-none absolute bottom-11 right-[17%] text-amber-300" aria-hidden="true"><Campfire className="h-11 w-11 drop-shadow-[0_0_12px_rgba(251,191,36,0.45)]" /></div>;
+  if (holiday.scene === "campfire") return <div className="pointer-events-none absolute bottom-11 right-[17%] text-amber-300" aria-hidden="true"><Flame className="h-11 w-11 drop-shadow-[0_0_12px_rgba(251,191,36,0.45)]" /></div>;
   if (holiday.scene === "alaska") return <div className="pointer-events-none absolute bottom-14 right-[12%] rounded-lg border border-sky-200/20 bg-sky-950/50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-sky-100" aria-hidden="true">Alaska</div>;
   return <div className="pointer-events-none absolute bottom-11 right-[15%]" aria-hidden="true"><Flag className="h-10 w-10 text-white/70" /></div>;
 }

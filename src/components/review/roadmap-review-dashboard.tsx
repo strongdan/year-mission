@@ -134,9 +134,9 @@ export function RoadmapReviewDashboard() {
                         <div key={id} className="rounded-xl bg-zinc-900/60 p-3">
                           <div className="flex items-start justify-between gap-3">
                             <div><p className="text-sm text-zinc-200">{String(item.decision)}</p><p className="mt-1 text-[11px] text-zinc-600">{String(item.decided_at)}{item.confidence != null ? ` · ${String(item.confidence)}% confidence` : ""}</p></div>
-                            {item.review_date && <span className="text-[10px] text-zinc-600">Review {String(item.review_date)}</span>}
+                            {item.review_date != null && <span className="text-[10px] text-zinc-600">Review {String(item.review_date)}</span>}
                           </div>
-                          {item.reasoning && <p className="mt-2 text-xs leading-5 text-zinc-500">{String(item.reasoning)}</p>}
+                          {item.reasoning != null && <p className="mt-2 text-xs leading-5 text-zinc-500">{String(item.reasoning)}</p>}
                           {outcome ? <p className="mt-2 rounded-lg border border-zinc-800 px-2.5 py-2 text-xs text-zinc-400">Outcome: {outcome}</p> : (
                             <div className="mt-2 flex gap-2">
                               <input value={outcomes[id] ?? ""} onChange={(e) => setOutcomes((current) => ({ ...current, [id]: e.target.value }))} placeholder="What actually happened?" className="min-w-0 flex-1 rounded-lg border border-zinc-800 bg-zinc-950 px-2.5 py-2 text-xs text-zinc-300" />

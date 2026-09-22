@@ -5,6 +5,7 @@ import { JournalCard } from "@/components/today/journal-card";
 import { MovementVarietyCard } from "@/components/today/movement-variety-card";
 import { TodayViewV2 } from "@/components/today/today-view-v2";
 import { LifeBalanceCard } from "@/components/today/life-balance-card";
+import { ConversationConfidenceCard } from "@/components/today/conversation-confidence-card";
 
 export default function TodayPage() {
   return (
@@ -15,6 +16,7 @@ export default function TodayPage() {
       </div>
       <ActionableReminderCard />
       <TodayViewV2 />
+      <ConversationConfidenceCard />
       <MovementVarietyCard />
       <div className="px-4 pb-4">
         <LifeBalanceCard />

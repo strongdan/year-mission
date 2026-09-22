@@ -7,7 +7,7 @@ import {
   setCreditScoreAutomationAction,
 } from "@/app/credit-score-actions";
 
-type ProgressData = Awaited<ReturnType<typeof getCreditScoreProgressAction>> extends { ok: true; data: infer D } ? D : never;
+type ProgressData = Extract<Awaited<ReturnType<typeof getCreditScoreProgressAction>>, { ok: true }>['data'];
 
 function today() {
   return new Date().toISOString().slice(0, 10);

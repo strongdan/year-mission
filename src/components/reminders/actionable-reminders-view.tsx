@@ -50,6 +50,8 @@ export function ActionableRemindersView() {
     setMigrationReady(result.migrationReady);
   }, []);
 
+  // Loading server data is the intended synchronization point for this client view.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
   const due = useMemo(() => items.filter((item) => isReminderDue(item.next_due_date, today)), [items, today]);

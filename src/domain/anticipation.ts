@@ -45,7 +45,7 @@ export function daysBetween(from: string, to: string): number {
 export function nextOccurrence(eventDate: string, recurrence: "none" | "yearly", today: string): string {
   if (recurrence === "none") return eventDate;
   const [, month, day] = eventDate.split("-");
-  let year = Number(today.slice(0, 4));
+  const year = Number(today.slice(0, 4));
   let candidate = `${year}-${month}-${day}`;
   if (candidate < today) candidate = `${year + 1}-${month}-${day}`;
   return candidate;
