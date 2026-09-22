@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Flame, RotateCcw, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { getGameLoopAction } from "@/app/game-actions";
+import { BigFourRadar } from "@/components/game/big-four-radar";
 import { Card } from "@/components/ui/card";
 
 type GameLoopResult = Awaited<ReturnType<typeof getGameLoopAction>>;
@@ -51,39 +52,48 @@ export function MissionChargeCard() {
 
   if (!data) return null;
 
-  const { charge, comeback, bonusMission } = data;
+  const { charge, comeback, bonusMission, bigFour } = data;
   const allProtected = charge.protectedAreas >= 4;
 
   return (
     <Card className="overflow-hidden border-zinc-800 bg-gradient-to-br from-zinc-900/90 to-zinc-950/75">
-      <div className="flex items-start justify-between gap-3">
+      <div className="grid gap-4 sm:grid-cols-[1fr_190px] sm:items-start">
         <div>
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-            <Zap className="h-3 w-3" /> Mission charge
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                <Zap className="h-3 w-3" /> Mission charge
+              </div>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className="text-3xl font-semibold tabular-nums text-zinc-50">{charge.charge}</span>
+                <span className="text-xs text-zinc-600">/ 100</span>
+              </div>
+            </div>
+            <div className="rounded-full border border-zinc-700 bg-zinc-950/50 px-2.5 py-1 text-xs font-semibold text-zinc-200">
+              {charge.label}
+            </div>
           </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-3xl font-semibold tabular-nums text-zinc-50">{charge.charge}</span>
-            <span className="text-xs text-zinc-600">/ 100</span>
+
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800">
+            <div
+              className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-500 ${chargeTone(charge.charge)}`}
+              style={{ width: `${charge.charge}%` }}
+            />
           </div>
+
+          <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-zinc-500">
+            <span>{charge.meaningfulActions} meaningful action{charge.meaningfulActions === 1 ? "" : "s"} today</span>
+            {charge.nextTarget !== null ? <span>{charge.pointsToNext} to {charge.nextTarget}</span> : <span>Maxed</span>}
+          </div>
+
+          <p className="mt-3 text-xs leading-relaxed text-zinc-300">{tierCopy(charge.tier)}</p>
         </div>
-        <div className="rounded-full border border-zinc-700 bg-zinc-950/50 px-2.5 py-1 text-xs font-semibold text-zinc-200">
-          {charge.label}
+
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/35 px-2 py-1.5">
+          <p className="text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-600">Big Four radar</p>
+          <BigFourRadar bigFour={bigFour} compact />
         </div>
       </div>
-
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800">
-        <div
-          className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-500 ${chargeTone(charge.charge)}`}
-          style={{ width: `${charge.charge}%` }}
-        />
-      </div>
-
-      <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-zinc-500">
-        <span>{charge.meaningfulActions} meaningful action{charge.meaningfulActions === 1 ? "" : "s"} today</span>
-        {charge.nextTarget !== null ? <span>{charge.pointsToNext} to {charge.nextTarget}</span> : <span>Maxed</span>}
-      </div>
-
-      <p className="mt-3 text-xs leading-relaxed text-zinc-300">{tierCopy(charge.tier)}</p>
 
       {comeback.active && (
         <div className="mt-3 flex gap-2 rounded-xl border border-emerald-900/60 bg-emerald-950/20 px-3 py-2.5">
@@ -115,7 +125,7 @@ export function MissionChargeCard() {
       ) : null}
 
       <div className="mt-3 flex items-center gap-1.5 border-t border-zinc-800 pt-2.5 text-[10px] text-zinc-600">
-        <Flame className="h-3 w-3" /> No streak to protect · meta-work earns nothing · garden growth stays permanent
+        <Flame className="h-3 w-3" /> No streak to protect · meta-work earns nothing · uneven weeks are allowed
       </div>
     </Card>
   );
