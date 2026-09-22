@@ -654,7 +654,16 @@ Initial metrics:
 - Career Evidence
 - simple Momentum indicator
 
-Do not build a massive quantified-self dashboard.
+Optional secondary evidence tools are also in scope when the user explicitly uses them:
+
+- credit-score trend, preserving score model and bureau provenance so unlike scores are not silently mixed;
+- user-confirmed lab-result history extracted from a photo with AI assistance.
+
+Credit-score tracking is an outcome signal, not a reward. Automatic provider retrieval remains opt-in and provider-agnostic.
+
+Lab extraction must never auto-save AI output. The user reviews/corrects every value before persistence; the source image is not retained after extraction; missing units/ranges/codes must not be invented; and Year Mission does not present lab history as medical diagnosis or treatment advice.
+
+Keep these secondary cards compact and below the core Progress evidence. Do not build a massive quantified-self dashboard.
 
 ---
 
@@ -1158,7 +1167,7 @@ Use subtle progress and meaningful milestones.
 
 Keep gamification restrained.
 
-Initial mechanisms:
+Core mechanisms:
 
 - Momentum
 - Weekly Win
@@ -1167,7 +1176,18 @@ Initial mechanisms:
 - Career Evidence
 - personal bests when naturally available
 
-Do not add XP or coins.
+The optional **Year Mission Adventure** presentation is a deliberate exception to the general no-XP rule. It may translate bounded evidence of real-world work, movement, and check-ins into XP/levels/landmarks as a visual campaign metaphor, subject to all of these constraints:
+
+- no coins or spendable economy;
+- no leaderboards;
+- no streak loss, missed-day penalty, catch-up debt, or level regression;
+- meta-work earns no XP;
+- holiday/rest days may be zero-play without failure;
+- real-world activity is capped so grinding volume is not the objective;
+- the core Today execution view appears before the Adventure presentation;
+- Conversation Confidence, hypnosis/guided audio, and speaking practice never earn XP merely for listening or practicing.
+
+Do not create additional XP systems outside this explicitly scoped Adventure layer without another SPEC decision.
 
 Do not reward app interaction itself.
 
