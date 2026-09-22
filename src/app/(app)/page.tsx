@@ -3,6 +3,7 @@ import { ActionableReminderCard } from "@/components/today/actionable-reminder-c
 import { JournalCard } from "@/components/today/journal-card";
 import { MovementVarietyCard } from "@/components/today/movement-variety-card";
 import { TodayViewV2 } from "@/components/today/today-view-v2";
+import { LifeBalanceCard } from "@/components/today/life-balance-card";
 
 export default function TodayPage() {
   return (
@@ -13,6 +14,9 @@ export default function TodayPage() {
       <ActionableReminderCard />
       <TodayViewV2 />
       <MovementVarietyCard />
+      <div className="px-4 pb-4">
+        <LifeBalanceCard />
+      </div>
       <JournalCard />
     </>
   );
