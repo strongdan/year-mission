@@ -251,11 +251,19 @@ export async function planAnticipationItemAction(input: {
     if (existing?.task_id) return { ok: true as const, data: { taskId: existing.task_id, alreadyPlanned: true } };
 
     const prepDate = addDays(parsed.data.date, -parsed.data.leadDays);
+    const todayParts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Anchorage",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+    const today = `${todayParts.find((part) => part.type === "year")?.value}-${todayParts.find((part) => part.type === "month")?.value}-${todayParts.find((part) => part.type === "day")?.value}`;
+    const actionableDate = prepDate < today ? today : prepDate;
     const taskResult = await taskService.create(user.id, {
       title: planningTaskTitle({ kind: parsed.data.kind, title: parsed.data.title, personName: parsed.data.personName }),
       notes: `Upcoming: ${parsed.data.title} on ${parsed.data.date}. Created by Coming Up so there is time to prepare.`,
-      scheduledDate: prepDate,
-      dueDate: prepDate,
+      scheduledDate: actionableDate,
+      dueDate: actionableDate,
       impact: parsed.data.kind === "deadline" ? "high" : "medium",
       source: "anticipation",
     });
