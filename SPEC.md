@@ -1367,6 +1367,12 @@ Optional guided audio or hypnosis is an external support resource only. Listenin
 
 Conversation practice has no speech score, confidence grade, eye-contact requirement, talk-time target, behavioral debt, or punitive streak. A hard week is complete enough with one meaningful interaction or a few minutes of speaking practice. Skipping has zero Momentum, XP, or Reliability penalty.
 
+# 48. Life Balance + Apple Health
+
+Life Balance is an owner-approved, visibility-first Today support surface. It combines read-only Google Calendar load context with a deliberately small menu of restorative options and optional daily aggregate Apple Health observations. Calendar failure or disconnection must not invent open days or block the Life Menu.
+
+The native iPhone companion may read only the approved daily HealthKit aggregates needed by this surface. It must not store raw heart-rate samples, workout GPS, or psychological inferences. Health sync is production-only and uses the pinned Year Mission production origin. Partial syncs preserve previously stored metrics atomically; omitted values are not deletions. Life Balance does not create streaks, quotas, scores, or completion pressure.
+
 Year Mission should not become another system the user has to maintain.
 
 It should reduce the amount of mental work required to operate the year.
