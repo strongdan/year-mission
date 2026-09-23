@@ -5,8 +5,9 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { createServerClientForApp } from "@/integrations/supabase/server";
 import { getProfile } from "@/repositories/supabase-repository";
-import { CONVERSATION_CONFIDENCE_OBJECTIVE, CONVERSATION_CONFIDENCE_TITLE, applyMonthChoice, getConversationMonth, mondayConversationPlan, type MonthChoice } from "@/domain/conversation-confidence";
+import { applyMonthChoice, getConversationMonth, mondayConversationPlan, type MonthChoice } from "@/domain/conversation-confidence";
 import { resourcesForMonth } from "@/domain/support-resources";
+import { parseStoredConversationPath, type StoredConversationPath } from "@/domain/conversation-confidence-storage";
 
 const PATH_Z = z.object({
   active: z.boolean(),
@@ -26,24 +27,10 @@ const REFLECTION_Z = z.object({
   note: z.string().trim().max(500).optional().default(""),
 });
 
-type StoredPath = z.infer<typeof PATH_Z> & { reflections?: Record<string, z.infer<typeof REFLECTION_Z>> };
+type StoredPath = StoredConversationPath;
 
 function objectValue(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
-}
-
-function storedPath(preferences: unknown): StoredPath {
-  const raw = objectValue(objectValue(preferences).conversationConfidence);
-  const parsed = PATH_Z.safeParse(raw);
-  if (parsed.success) return parsed.data as StoredPath;
-  return {
-    active: false,
-    title: CONVERSATION_CONFIDENCE_TITLE,
-    objective: CONVERSATION_CONFIDENCE_OBJECTIVE,
-    month: 1,
-    status: "active",
-    reflections: {},
-  };
 }
 
 async function savePath(path: StoredPath) {
@@ -64,7 +51,7 @@ export async function getConversationConfidenceAction() {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." } as const;
   const profile = await getProfile(user.id);
-  const path = storedPath(profile?.preferences);
+  const path = parseStoredConversationPath(profile?.preferences);
   const month = getConversationMonth(path.month)!;
   return {
     ok: true,
@@ -92,6 +79,20 @@ export async function chooseConversationMonthAction(input: unknown) {
   if (!current.ok) return current;
   const next = applyMonthChoice(current.data.path.month, choice.data as MonthChoice);
   return savePath({ ...current.data.path, ...next, active: true });
+}
+
+export async function renameConversationFocusAction(title: unknown) {
+  const parsed = z.string().trim().min(1).max(120).safeParse(title);
+  if (!parsed.success) return { ok: false, error: "Focus title must be between 1 and 120 characters." } as const;
+  const current = await getConversationConfidenceAction();
+  if (!current.ok) return current;
+  return savePath({ ...current.data.path, title: parsed.data, active: true, status: current.data.path.status === "stopped" ? "active" : current.data.path.status });
+}
+
+export async function stopConversationFocusAction() {
+  const current = await getConversationConfidenceAction();
+  if (!current.ok) return current;
+  return savePath({ ...current.data.path, active: false, status: "stopped" });
 }
 
 export async function saveConversationReflectionAction(input: unknown) {

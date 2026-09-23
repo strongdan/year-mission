@@ -4,6 +4,7 @@ import {
   applyMonthChoice,
   conversationFloor,
   currentConversationMonth,
+  formatWorkoutCountdown,
   isConversationSkipNonPunitive,
   mondayConversationPlan,
 } from "./conversation-confidence";
@@ -39,5 +40,13 @@ describe("conversation confidence", () => {
   it("maps months to optional support resources with conservative access labels", () => {
     expect(resourcesForMonth(1).some((resource) => resource.id === "ruth-quietly-confident")).toBe(true);
     expect(SUPPORT_RESOURCES.find((resource) => resource.id === "freddy-social-anxiety")?.access).toBe("verify");
+  });
+
+  it("formats the five-minute workout without a sixty-second display", () => {
+    expect(formatWorkoutCountdown(0)).toBe("05:00");
+    expect(formatWorkoutCountdown(59)).toBe("04:01");
+    expect(formatWorkoutCountdown(60)).toBe("04:00");
+    expect(formatWorkoutCountdown(299)).toBe("00:01");
+    expect(formatWorkoutCountdown(300)).toBe("00:00");
   });
 });
