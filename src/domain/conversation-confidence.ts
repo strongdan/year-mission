@@ -29,6 +29,13 @@ export const SPEAKING_WORKOUT = [
   "Speak freely",
 ] as const;
 
+export function formatWorkoutCountdown(elapsedSeconds: number): string {
+  const remaining = Math.max(0, Math.min(300, Math.trunc(elapsedSeconds)));
+  const minutes = Math.floor((300 - remaining) / 60);
+  const seconds = (300 - remaining) % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 export const CONVERSATION_LOOP = [
   { label: "Notice", prompt: "Respond to something they said." },
   { label: "Ask", prompt: "Ask one natural follow-up." },
