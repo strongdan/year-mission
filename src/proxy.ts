@@ -4,6 +4,7 @@ import { createServerClientForMiddleware } from "@/integrations/supabase/server"
 import { hasSupabaseConfig } from "@/lib/env";
 
 const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/google-tasks/callback", "/native-callback", "/api/notifications/cron"];
+const AASA_PATH = "/.well-known/apple-app-site-association";
 
 function applySupabaseResponse(target: NextResponse, source: NextResponse) {
   source.cookies.getAll().forEach((cookie) => {
@@ -20,6 +21,14 @@ function applySupabaseResponse(target: NextResponse, source: NextResponse) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Apple fetches this association document without an app session. Keep the
+  // exact endpoint outside auth/session handling, including for authenticated
+  // requests, so it can never be replaced by a redirect or app shell.
+  if (pathname === AASA_PATH) {
+    return NextResponse.next();
+  }
+
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   const isAuthCallback = pathname.startsWith("/auth/callback");
   const isGoogleServiceCallback = pathname.startsWith("/auth/google-tasks/callback");
