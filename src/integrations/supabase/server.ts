@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
-import { env, hasSupabaseConfig } from "@/lib/env";
+import { env, hasSupabaseConfig, publicSupabaseAnonKey, publicSupabaseUrl } from "@/lib/env";
 
 export async function createServerClientForApp() {
   if (!hasSupabaseConfig) {
@@ -9,7 +9,7 @@ export async function createServerClientForApp() {
   }
   const cookieStore = await cookies();
 
-  return createServerClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+  return createServerClient(publicSupabaseUrl, publicSupabaseAnonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -32,8 +32,8 @@ export function createServerClientForMiddleware(request: NextRequest) {
   if (!hasSupabaseConfig) {
     return null;
   }
-  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseUrl = publicSupabaseUrl;
+  const supabaseKey = publicSupabaseAnonKey;
 
   let supabaseResponse = NextResponse.next({ request });
   const client = createServerClient(supabaseUrl, supabaseKey, {

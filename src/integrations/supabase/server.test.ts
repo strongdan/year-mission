@@ -12,6 +12,8 @@ vi.mock("@/lib/env", () => ({
     NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
     NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
   },
+  publicSupabaseUrl: "https://example.supabase.co",
+  publicSupabaseAnonKey: "anon-key",
   hasSupabaseConfig: true,
 }));
 

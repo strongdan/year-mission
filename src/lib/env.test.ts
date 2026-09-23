@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseEnv } from "./env";
+import { canonicalSupabaseUrl, hasSupabaseConfig, parseEnv, publicSupabaseAnonKey, publicSupabaseUrl } from "./env";
 
 describe("parseEnv", () => {
   it("keeps valid Supabase config when optional AI settings are malformed", () => {
@@ -87,5 +87,14 @@ describe("parseEnv", () => {
     expect(groq.env.GROQ_API_KEY).toBe("groq-key");
     expect(openRouter.issues).toEqual([]);
     expect(groq.issues).toEqual([]);
+  });
+});
+
+describe("public Supabase configuration", () => {
+  it("has a canonical public configuration available to the build", () => {
+    expect(canonicalSupabaseUrl).toMatch(/^https:\/\/.+\.supabase\.co$/);
+    expect(publicSupabaseUrl).toMatch(/^https:\/\/.+\.supabase\.co$/);
+    expect(publicSupabaseAnonKey.length).toBeGreaterThan(20);
+    expect(hasSupabaseConfig).toBe(true);
   });
 });

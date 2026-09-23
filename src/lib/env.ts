@@ -72,7 +72,16 @@ if (parsed.issues.length > 0) {
 
 export const env = parsed.env;
 
+// These are public Supabase project identifiers, not secrets. Cloudflare Workers
+// runtime vars are not reliably present while the client bundle is built, so the
+// canonical project needs a safe build-time fallback for auth to render/work.
+export const canonicalSupabaseUrl = "https://vdkfiqejhyhrqsagjqbs.supabase.co";
+export const canonicalSupabaseAnonKey = "sb_publishable_LsVPEPpoMeEyzOT4zsqrkw_PnvuyMAO";
+
+export const publicSupabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL ?? canonicalSupabaseUrl;
+export const publicSupabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? canonicalSupabaseAnonKey;
+
 export const hasSupabaseConfig =
-  Boolean(env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  Boolean(publicSupabaseUrl) && Boolean(publicSupabaseAnonKey);
 
 export const aiMockMode = env.AI_MOCK_MODE;
