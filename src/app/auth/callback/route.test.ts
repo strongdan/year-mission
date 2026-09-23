@@ -28,6 +28,24 @@ describe("auth callback route", () => {
     expect(response.headers.get("location")).toBe("https://year.test/");
   });
 
+  it("does not allow an OAuth callback to redirect off-site", async () => {
+    callbackMocks.exchangeCodeForSession.mockResolvedValue({ error: null });
+
+    const response = await GET(
+      new Request("https://year.test/auth/callback?code=abc&next=https%3A%2F%2Fevil.example%2Fsteal"),
+    );
+
+    expect(response.headers.get("location")).toBe("https://year.test/");
+  });
+
+  it("allows an internal callback destination", async () => {
+    callbackMocks.exchangeCodeForSession.mockResolvedValue({ error: null });
+
+    const response = await GET(new Request("https://year.test/auth/callback?code=abc&next=%2Fsettings%3Ftab%3Daccount"));
+
+    expect(response.headers.get("location")).toBe("https://year.test/settings?tab=account");
+  });
+
   it("redirects callback failures to a visible non-secret auth error", async () => {
     callbackMocks.exchangeCodeForSession.mockResolvedValue({
       error: { message: "Invalid OAuth callback code." },

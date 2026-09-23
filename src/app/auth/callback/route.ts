@@ -16,7 +16,11 @@ function authErrorMessage(error: { message?: string } | null | undefined) {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const next = url.searchParams.get("next") ?? "/";
+  const requestedNext = url.searchParams.get("next") ?? "/";
+  // OAuth redirects must stay inside Year Mission. In particular, URL's
+  // second argument would otherwise turn an absolute `next` value into an
+  // external redirect after a successful sign-in.
+  const next = requestedNext.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/";
 
   if (code) {
     const supabase = await createServerClientForApp();
