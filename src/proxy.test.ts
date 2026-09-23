@@ -66,6 +66,11 @@ describe("auth proxy", () => {
     expect(response.headers.get("location")).toBeNull();
   });
 
+  it("keeps the native Google callback public until it establishes the session", async () => {
+    const response = await proxy(request("/native-callback#access_token=token"));
+    expect(response.status).not.toBe(307);
+  });
+
   it("preserves refreshed cookies on the returned response", async () => {
     proxyMocks.claimsResult = { data: { claims: { sub: "user-1" } }, error: null };
     proxyMocks.configureResponse = (response) => {

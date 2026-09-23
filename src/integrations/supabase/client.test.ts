@@ -21,9 +21,15 @@ describe("Supabase browser client", () => {
     const client = createBrowserClient();
 
     expect(client).toEqual({ auth: {} });
-    expect(createSupabaseBrowserClient).toHaveBeenCalledWith(
+    expect(createSupabaseBrowserClient).toHaveBeenCalledWith("https://example.supabase.co", "anon-key", undefined);
+  });
+
+  it("passes the native implicit flow option when requested", () => {
+    createBrowserClient({ flowType: "implicit" });
+    expect(createSupabaseBrowserClient).toHaveBeenLastCalledWith(
       "https://example.supabase.co",
-      "anon-key"
+      "anon-key",
+      { auth: { flowType: "implicit" } }
     );
   });
 });
