@@ -85,6 +85,15 @@ export function ConversationConfidenceCard() {
     setBusy(false);
   }
 
+  function toggleWorkout() {
+    if (workoutStep === null) {
+      setElapsedSeconds(0);
+      setWorkoutStep(0);
+    } else {
+      setWorkoutStep(null);
+    }
+  }
+
   if (!view.path.active) {
     return (
       <div className="px-4 pb-4">
@@ -103,7 +112,7 @@ export function ConversationConfidenceCard() {
         <CardHeader title="Today’s thread" subtitle={`${view.path.title} · Month ${current.number}`} right={<Sparkles className="h-4 w-4 text-violet-400" />} />
         {view.path.status === "paused" ? <><p className="text-sm font-medium text-zinc-200">This path is paused.</p><p className="mt-1 text-xs leading-relaxed text-zinc-400">No practice debt or missed-month penalty. Resume when it is useful.</p></> : <><p className="text-sm font-medium text-zinc-200">{current.theme}</p><p className="mt-1 text-xs leading-relaxed text-zinc-400">{view.monday.skill}</p></>}
         <div className="mt-3 flex flex-wrap gap-2">
-          {view.path.status !== "paused" && <Button size="sm" variant="secondary" onClick={() => setWorkoutStep(workoutStep === null ? 0 : null)}><Play className="mr-1 h-3.5 w-3.5" />5-minute practice</Button>}
+          {view.path.status !== "paused" && <Button size="sm" variant="secondary" onClick={toggleWorkout}><Play className="mr-1 h-3.5 w-3.5" />5-minute practice</Button>}
           <Button size="sm" variant="ghost" onClick={() => setDismissed(true)}>Not today</Button>
         </div>
         {workoutStep !== null && <div className="mt-3 rounded-xl border border-violet-900/50 bg-zinc-950/30 p-3"><p className="text-xs text-violet-200">{SPEAKING_WORKOUT[workoutStep]} · {formatWorkoutCountdown(elapsedSeconds)}</p><p className="mt-1 text-[11px] text-zinc-500">Pauses are allowed. No microphone or recording.</p></div>}
