@@ -508,6 +508,14 @@ Social Ease & Expression is implemented as an optional 12-month Annual Focus thr
 
 The application may link to curated third-party guided audio as optional support. It never copies or rehosts audio, treats listening as progress, requests microphone access for speaking practice, or infers psychological state from health or audio data. Real-world participation remains the primary practice.
 
+# D030 — Life Balance is visibility-first and production-scoped
+
+**Status:** Accepted
+
+Life Balance + Apple Health is an explicitly approved support surface, not a new scored domain. Calendar data is read-only context and open-day language is shown only after a successful Calendar load. Missing or failed Calendar access produces a calm unavailable/reconnect state while leaving the Life Menu usable.
+
+Apple Health is read-only, owner-isolated, and limited to daily aggregates. The native sync origin is pinned to the production Year Mission Worker; previews and local environments do not issue native HealthKit tickets. Partial updates are merged atomically in PostgreSQL so concurrent uploads cannot erase omitted historical metrics. No HealthKit value is used to infer psychological state.
+
 **Status:** Accepted
 
 Year Mission tells the user to:

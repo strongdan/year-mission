@@ -41,8 +41,8 @@ export async function getLifeBalanceAction() {
 
   const health = (healthResult.data ?? []) as HealthSummary[];
   const todayKey = new Date().toISOString().slice(0, 10);
-  const today = health.find((row) => row.date === todayKey) ?? health[0] ?? null;
-  const history = health.filter((row) => row !== today);
+  const today = health.find((row) => row.date === todayKey) ?? null;
+  const history = health.filter((row) => row.date !== todayKey);
   const recovery = recoverySignal(today, history);
 
   const eventsByDay = new Map<string, number>();
@@ -51,8 +51,9 @@ export async function getLifeBalanceAction() {
     eventsByDay.set(key, (eventsByDay.get(key) ?? 0) + 1);
   }
 
+  const calendarAvailable = calendar.outcome === "ok";
   const monday = new Date(`${mondayOf()}T12:00:00`);
-  const weekShape = Array.from({ length: 7 }, (_, index) => {
+  const weekShape = calendarAvailable ? Array.from({ length: 7 }, (_, index) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + index);
     const key = d.toISOString().slice(0, 10);
@@ -63,10 +64,12 @@ export async function getLifeBalanceAction() {
       eventCount,
       load: eventCount >= 5 ? "busy" : eventCount >= 3 ? "moderate" : "open",
     } as const;
-  });
+  }) : [];
 
   const openDays = weekShape.filter((d) => d.load === "open").map((d) => d.label);
-  const balancePrompt = openDays.length
+  const balancePrompt = !calendarAvailable
+    ? "Calendar availability is unavailable right now. The Life Menu is still here as a set of options, not commitments."
+    : openDays.length
     ? `You have lighter calendar space on ${openDays.join(", ")}. Protect one of those openings for something you actually want to do.`
     : "This week is calendar-heavy. Look for one small reset that can fit around what is already there instead of adding another obligation.";
 
@@ -81,6 +84,7 @@ export async function getLifeBalanceAction() {
       todayHealth: today,
       weekShape,
       balancePrompt,
+      calendarAvailable,
       healthConnected: health.length > 0,
       calendarOutcome: calendar.outcome,
     },

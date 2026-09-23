@@ -91,7 +91,7 @@ export function LifeBalanceCard() {
               <p className="mt-1 text-xs leading-relaxed text-zinc-400">{data.balancePrompt}</p>
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-7 gap-1">
+          {data.calendarAvailable ? <div className="mt-3 grid grid-cols-7 gap-1">
             {data.weekShape.map((day) => (
               <div key={day.date} className="text-center">
                 <p className="text-[10px] text-zinc-500">{day.label}</p>
@@ -109,7 +109,7 @@ export function LifeBalanceCard() {
                 </div>
               </div>
             ))}
-          </div>
+          </div> : <p className="mt-3 text-[11px] text-zinc-500">Calendar is unavailable or disconnected. Reconnect it when useful; the Life Menu remains available below.</p>}
         </div>
 
         <div>
