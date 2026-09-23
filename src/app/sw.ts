@@ -22,7 +22,9 @@ interface NotificationContextResponse {
 }
 
 const appPageCache = new NetworkFirst({
-  cacheName: "year-mission-pages-v1",
+  // Bump this when the app shell/auth flow changes so an installed PWA does
+  // not keep serving a stale login page after the new worker activates.
+  cacheName: "year-mission-pages-v2",
   networkTimeoutSeconds: 3,
   plugins: [
     new ExpirationPlugin({
