@@ -1,27 +1,41 @@
-import { describe, expect, it, vi } from "vitest";
-import { createBrowserClient as createSupabaseBrowserClient } from "@supabase/ssr";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createBrowserClient } from "./client";
 
+const createSupabaseBrowserClient = vi.hoisted(() => vi.fn(() => ({ auth: {} })));
+
+vi.mock("@supabase/ssr", () => ({
+  createBrowserClient: createSupabaseBrowserClient,
+}));
+
 vi.mock("@/lib/env", () => ({
+  hasSupabaseConfig: true,
   env: {
     NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
     NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",
   },
-  hasSupabaseConfig: true,
 }));
 
-vi.mock("@supabase/ssr", () => ({
-  createBrowserClient: vi.fn(() => ({ auth: {} })),
-}));
+describe("createBrowserClient", () => {
+  beforeEach(() => {
+    createSupabaseBrowserClient.mockClear();
+  });
 
-describe("Supabase browser client", () => {
-  it("uses the PKCE-compatible @supabase/ssr browser client", () => {
-    const client = createBrowserClient();
+  it("preserves the default Supabase browser client behavior", () => {
+    createBrowserClient();
 
-    expect(client).toEqual({ auth: {} });
     expect(createSupabaseBrowserClient).toHaveBeenCalledWith(
       "https://example.supabase.co",
-      "anon-key"
+      "anon-key",
+    );
+  });
+
+  it("enables implicit flow only when explicitly requested", () => {
+    createBrowserClient({ flowType: "implicit" });
+
+    expect(createSupabaseBrowserClient).toHaveBeenCalledWith(
+      "https://example.supabase.co",
+      "anon-key",
+      { auth: { flowType: "implicit" } },
     );
   });
 });

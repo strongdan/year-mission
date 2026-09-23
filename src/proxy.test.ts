@@ -66,6 +66,29 @@ describe("auth proxy", () => {
     expect(response.headers.get("location")).toBeNull();
   });
 
+  it("keeps the native callback public and out of authenticated-page redirects", async () => {
+    proxyMocks.claimsResult = { data: { claims: { sub: "user-1" } }, error: null };
+
+    const response = await proxy(request("/native-callback#access_token=abc"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+  });
+
+  it("serves only the exact AASA path without auth handling", async () => {
+    const response = await proxy(request("/.well-known/apple-app-site-association"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+  });
+
+  it("does not make neighboring well-known paths public", async () => {
+    const response = await proxy(request("/.well-known/other.json"));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://year.test/login?redirect=%2F.well-known%2Fother.json");
+  });
+
   it("preserves refreshed cookies on the returned response", async () => {
     proxyMocks.claimsResult = { data: { claims: { sub: "user-1" } }, error: null };
     proxyMocks.configureResponse = (response) => {
