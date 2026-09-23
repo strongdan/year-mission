@@ -500,6 +500,14 @@ Not because it is intellectually interesting.
 
 # D028 — The product should practice its own philosophy
 
+# D029 — Conversation Confidence is an optional, user-controlled Annual Focus
+
+**Status:** Accepted
+
+Social Ease & Expression is implemented as an optional 12-month Annual Focus thread. Its month themes are relative prompts, not deadlines, and progression requires explicit user choice. The feature reuses profile-owned preferences and existing planning surfaces rather than introducing a separate behavior-tracking subsystem.
+
+The application may link to curated third-party guided audio as optional support. It never copies or rehosts audio, treats listening as progress, requests microphone access for speaking practice, or infers psychological state from health or audio data. Real-world participation remains the primary practice.
+
 **Status:** Accepted
 
 Year Mission tells the user to:

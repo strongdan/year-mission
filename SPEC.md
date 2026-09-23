@@ -1357,6 +1357,16 @@ E2E:
 
 # 46. Final Standard
 
+# 47. Optional Conversation Confidence Focus
+
+An Annual Focus may optionally use the **Social Ease & Expression** 12-month pathway. Its default objective is to become more comfortable around people, express thoughts clearly, sustain conversations more naturally, and build closer relationships without feeling like performance is required.
+
+The pathway is a set of relative monthly themes, not deadlines. The user may rename it, pause it, repeat a month, skip a month, move forward explicitly, or stop it. Elapsed time never advances it automatically. Weekly orientation is light: one current-month skill and one natural opportunity, with a five-minute speaking workout available without microphone access or recording.
+
+Optional guided audio or hypnosis is an external support resource only. Listening is never progress by itself, never a streak, and never required before real-world practice. Year Mission stores source links, not copied audio or microphone data.
+
+Conversation practice has no speech score, confidence grade, eye-contact requirement, talk-time target, behavioral debt, or punitive streak. A hard week is complete enough with one meaningful interaction or a few minutes of speaking practice. Skipping has zero Momentum, XP, or Reliability penalty.
+
 Year Mission should not become another system the user has to maintain.
 
 It should reduce the amount of mental work required to operate the year.
