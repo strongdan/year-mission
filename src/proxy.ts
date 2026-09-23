@@ -3,7 +3,8 @@ import type { NextRequest } from "next/server";
 import { createServerClientForMiddleware } from "@/integrations/supabase/server";
 import { hasSupabaseConfig } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/google-tasks/callback", "/api/notifications/cron"];
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/google-tasks/callback", "/native-callback", "/api/notifications/cron"];
+const AASA_PATH = "/.well-known/apple-app-site-association";
 
 function applySupabaseResponse(target: NextResponse, source: NextResponse) {
   source.cookies.getAll().forEach((cookie) => {
@@ -20,10 +21,15 @@ function applySupabaseResponse(target: NextResponse, source: NextResponse) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (pathname === AASA_PATH) {
+    return NextResponse.next();
+  }
+
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   const isAuthCallback = pathname.startsWith("/auth/callback");
   const isGoogleServiceCallback = pathname.startsWith("/auth/google-tasks/callback");
-  const isCallback = isAuthCallback || isGoogleServiceCallback;
+  const isNativeCallback = pathname.startsWith("/native-callback");
+  const isCallback = isAuthCallback || isGoogleServiceCallback || isNativeCallback;
 
   if (!hasSupabaseConfig) {
     return NextResponse.next();
