@@ -7,7 +7,7 @@ import { createBrowserClient } from "@/integrations/supabase/client";
 import { hasSupabaseConfig } from "@/lib/env";
 import { getAuthErrorMessage } from "@/domain/auth-errors";
 
-type LoginProvider = Extract<Provider, "google" | "apple">;
+type LoginProvider = Extract<Provider, "google">;
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -59,15 +59,6 @@ function LoginContent() {
         <div className="mt-8 flex flex-col gap-3">
           <button
             type="button"
-            onClick={() => void signInWithProvider("apple")}
-            disabled={loading}
-            className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white disabled:opacity-50"
-          >
-            {loadingProvider === "apple" ? "Signing in..." : "Continue with Apple"}
-          </button>
-
-          <button
-            type="button"
             onClick={() => void signInWithProvider("google")}
             disabled={loading}
             className="w-full rounded-xl border border-zinc-700 bg-zinc-900 py-3 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-800 disabled:opacity-50"
@@ -75,10 +66,6 @@ function LoginContent() {
             {loadingProvider === "google" ? "Signing in..." : "Continue with Google"}
           </button>
         </div>
-
-        <p className="mt-4 text-center text-[11px] leading-relaxed text-zinc-500">
-          Apple may let you hide your email address. Year Mission only receives the account information Apple shares through sign-in.
-        </p>
 
         {message && <p className="mt-4 text-center text-sm text-red-400">{message}</p>}
       </div>
