@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Check, Moon, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Clock3, Moon, Sparkles } from "lucide-react";
 import {
   checkinAction,
   completeTaskAction,
@@ -71,6 +71,8 @@ export function TodayViewV2() {
   const [loading, setLoading] = useState(true);
   const [usingCachedData, setUsingCachedData] = useState(false);
   const [resistingTask, setResistingTask] = useState<string | null>(null);
+  const [busyTask, setBusyTask] = useState<string | null>(null);
+  const [taskActionError, setTaskActionError] = useState<string | null>(null);
   const [alcoholFree, setAlcoholFree] = useState<boolean | null>(null);
   const [loggingWalk, setLoggingWalk] = useState(false);
 
@@ -138,6 +140,21 @@ export function TodayViewV2() {
     await load();
   }
 
+  async function completeTask(taskId: string) {
+    if (busyTask || (usingCachedData && !navigator.onLine)) return;
+    setTaskActionError(null);
+    setBusyTask(taskId);
+    try {
+      const result = await completeTaskAction(taskId);
+      if (!result.ok) throw new Error(result.error ?? "Could not mark that task done.");
+      await load();
+    } catch (caught) {
+      setTaskActionError(caught instanceof Error ? caught.message : "Could not mark that task done.");
+    } finally {
+      setBusyTask(null);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3 p-4 pb-8">
       <header className="flex items-start justify-between gap-3">
@@ -185,23 +202,43 @@ export function TodayViewV2() {
             {primary.defer_count > 0 && <span className="text-orange-300">Deferred ×{primary.defer_count}</span>}
           </div>
           <Link href={primaryHref} className="mt-4 flex w-full items-center justify-between rounded-xl bg-zinc-100 px-4 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white"><span>{primaryLaunch?.label ?? "Start for 10 minutes"}</span><ArrowRight className="h-4 w-4" /></Link>
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <button onClick={() => setResistingTask(resistingTask === primary.id ? null : primary.id)} className="text-xs text-zinc-500 underline-offset-4 hover:text-zinc-200 hover:underline">I don&apos;t feel like doing this</button>
-            <button disabled={usingCachedData && !navigator.onLine} onClick={() => completeTaskAction(primary.id).then(load)} className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-emerald-400 disabled:opacity-40"><Check className="h-3.5 w-3.5" /> Already done</button>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              disabled={Boolean(busyTask) || (usingCachedData && !navigator.onLine)}
+              onClick={() => void completeTask(primary.id)}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-800/80 bg-emerald-950/40 px-3 text-sm font-medium text-emerald-200 transition-colors hover:border-emerald-600 hover:bg-emerald-900/50 disabled:opacity-50"
+            >
+              <Check className="h-4 w-4" /> {busyTask === primary.id ? "Saving…" : "Done"}
+            </button>
+            <button
+              disabled={Boolean(busyTask) || (usingCachedData && !navigator.onLine)}
+              onClick={() => setResistingTask(resistingTask === primary.id ? null : primary.id)}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-950/35 px-3 text-sm font-medium text-zinc-300 transition-colors hover:border-zinc-500 hover:bg-zinc-900 disabled:opacity-50"
+            >
+              <Clock3 className="h-4 w-4" /> Defer
+            </button>
           </div>
         </Card>
       ) : (
         <WhatShouldIDo onChange={load} />
       )}
 
-      {primary && resistingTask === primary.id && <ResistancePanel task={primary} onChange={load} onClose={() => setResistingTask(null)} />}
+      {resistingTask && data.todayTasks.some((task) => task.id === resistingTask) && (
+        <ResistancePanel
+          task={data.todayTasks.find((task) => task.id === resistingTask)!}
+          onChange={load}
+          onClose={() => setResistingTask(null)}
+        />
+      )}
+
+      {taskActionError && <p role="alert" className="rounded-lg border border-red-900/60 bg-red-950/20 px-3 py-2 text-xs text-red-300">{taskActionError}</p>}
 
       <NextCalendarEvent />
 
       {remaining.length > 0 && (
         <Card>
           <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-sm font-semibold text-zinc-200">Later today</p><p className="mt-0.5 text-[11px] text-zinc-500">{remaining.length} thing{remaining.length === 1 ? "" : "s"} after the current action</p></div><Link href="/tasks" className="text-xs text-zinc-500 hover:text-zinc-200">Manage</Link></div>
-          <div className="mt-3 divide-y divide-zinc-800/80">{remaining.map((task) => <div key={task.id} className="flex items-center gap-3 py-2.5"><button disabled={usingCachedData && !navigator.onLine} onClick={() => completeTaskAction(task.id).then(load)} aria-label={`Complete ${task.title}`} className="h-5 w-5 shrink-0 rounded-full border border-zinc-700 text-[11px] text-zinc-700 transition-colors hover:border-emerald-500 hover:text-emerald-400 disabled:opacity-40">✓</button><div className="min-w-0 flex-1"><p className="truncate text-sm text-zinc-300">{task.title}</p><p className="mt-0.5 text-[11px] text-zinc-600">{[task.domain ? domainLabel(task.domain.slug) : null, task.estimated_minutes ? `${task.estimated_minutes} min` : null].filter(Boolean).join(" · ")}</p></div></div>)}</div>
+          <div className="mt-3 divide-y divide-zinc-800/80">{remaining.map((task) => <div key={task.id} className="flex items-center gap-3 py-2.5"><div className="min-w-0 flex-1"><p className="truncate text-sm text-zinc-300">{task.title}</p><p className="mt-0.5 text-[11px] text-zinc-600">{[task.domain ? domainLabel(task.domain.slug) : null, task.estimated_minutes ? `${task.estimated_minutes} min` : null].filter(Boolean).join(" · ")}</p></div><button disabled={Boolean(busyTask) || (usingCachedData && !navigator.onLine)} onClick={() => void completeTask(task.id)} aria-label={`Complete ${task.title}`} className="min-h-10 rounded-lg border border-emerald-900/70 px-2.5 text-xs font-medium text-emerald-300 transition-colors hover:border-emerald-600 hover:bg-emerald-950/40 disabled:opacity-40">{busyTask === task.id ? "Saving…" : "Done"}</button><button disabled={Boolean(busyTask) || (usingCachedData && !navigator.onLine)} onClick={() => setResistingTask(resistingTask === task.id ? null : task.id)} aria-label={`Defer ${task.title}`} className="min-h-10 rounded-lg border border-zinc-700 px-2.5 text-xs font-medium text-zinc-400 transition-colors hover:border-zinc-500 hover:bg-zinc-900 disabled:opacity-40">Defer</button></div>)}</div>
         </Card>
       )}
 
