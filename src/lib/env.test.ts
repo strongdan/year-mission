@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { parseEnv } from "./env";
+import { canonicalSupabaseAnonKey, canonicalSupabaseUrl, hasSupabaseConfig, parseEnv, publicSupabaseAnonKey, publicSupabaseUrl } from "./env";
 
 describe("parseEnv", () => {
+  it("uses the canonical public Supabase project when build variables are absent", () => {
+    expect(publicSupabaseUrl).toBe(canonicalSupabaseUrl);
+    expect(publicSupabaseAnonKey).toBe(canonicalSupabaseAnonKey);
+    expect(hasSupabaseConfig).toBe(true);
+  });
+
   it("keeps valid Supabase config when optional AI settings are malformed", () => {
     const parsed = parseEnv({
       NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
