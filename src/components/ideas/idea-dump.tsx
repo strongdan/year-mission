@@ -143,6 +143,8 @@ export function IdeaDump({ initialIdeas }: { initialIdeas: Idea[] }) {
             {busy === "save-organize" || busy === "organize" ? "Organizing…" : "Save & organize"}
           </Button>
         </div>
+        {message && <p className="mt-2 text-xs text-emerald-400">{message}</p>}
+        {error && <p className="mt-2 text-xs leading-relaxed text-amber-300">{error}</p>}
       </Card>
 
       {organized && activeIdeaId && (
@@ -172,9 +174,6 @@ export function IdeaDump({ initialIdeas }: { initialIdeas: Idea[] }) {
           )}
         </Card>
       )}
-
-      {message && <p className="text-xs text-emerald-400">{message}</p>}
-      {error && <p className="text-xs leading-relaxed text-amber-300">{error}</p>}
 
       <section className="flex flex-col gap-2">
         <div>
