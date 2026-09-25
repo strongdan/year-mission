@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   addImportantDateAction,
@@ -42,16 +42,19 @@ export function AnticipationPlanner() {
   const [recurrence, setRecurrence] = useState<"none" | "yearly">("yearly");
   const [isPending, startTransition] = useTransition();
 
-  const load = () => {
+  const load = useCallback(() => {
     startTransition(async () => {
       const result = await getAnticipationAction(localToday(), 120);
       if (!result.ok) return setMessage(result.error);
       setItems(result.data.items);
       setPlanningNow(result.data.planningNow);
     });
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(load);
+    return () => window.cancelAnimationFrame(frame);
+  }, [load]);
 
   const grouped = useMemo(() => {
     const result: Array<{ label: string; items: AnticipationItem[] }> = [];
