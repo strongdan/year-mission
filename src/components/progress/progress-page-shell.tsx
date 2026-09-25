@@ -5,6 +5,7 @@ import { ProgressView } from "./progress-view";
 import { ProgressGrowthPanel } from "./progress-growth-panel";
 import { CategoryMomentumPanel } from "./category-momentum-panel";
 import { AchievementShelf } from "./achievement-shelf";
+import { CreditScoreProgressCard } from "./credit-score-progress-card";
 
 export function ProgressPageShell() {
   return (
@@ -24,6 +25,7 @@ export function ProgressPageShell() {
       <div className="[&>div>header:first-child]:hidden [&>div]:pt-0">
         <ProgressView />
       </div>
+      <CreditScoreProgressCard />
     </div>
   );
 }
