@@ -17,7 +17,7 @@ const CREATE_Z = z.object({
   defaultRescheduleDays: z.number().int().min(1).max(365).default(7),
 });
 const ID_Z = z.string().uuid();
-const RESCHEDULE_Z = z.object({ id: ID_Z, date: DATE_Z.nullable().optional(), today: DATE_Z });
+const RESCHEDULE_Z = z.object({ id: ID_Z, date: DATE_Z.nullable().optional(), today: DATE_Z, expectedDueDate: DATE_Z });
 const COMPLETE_Z = z.object({ id: ID_Z, completedOn: DATE_Z, expectedDueDate: DATE_Z });
 
 export interface ActionableReminderRecord {
@@ -116,21 +116,38 @@ export async function rescheduleActionableReminderAction(input: unknown) {
 
   const { data, error: readError } = await supabase
     .from("actionable_reminders")
-    .select("id,default_reschedule_days")
+    .select("id,default_reschedule_days,next_due_date")
     .eq("id", parsed.data.id)
     .eq("user_id", user.id)
     .maybeSingle();
   if (readError || !data) return { ok: false as const, error: readError?.message ?? "Reminder not found." };
 
+  if ((data as { next_due_date?: string }).next_due_date && (data as { next_due_date: string }).next_due_date !== parsed.data.expectedDueDate) {
+    return { ok: true as const, data: { nextDueDate: (data as { next_due_date: string }).next_due_date, alreadyChanged: true } };
+  }
+
   const next = parsed.data.date ?? rescheduleDate({ default_reschedule_days: data.default_reschedule_days }, parsed.data.today);
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("actionable_reminders")
     .update({ next_due_date: next, updated_at: new Date().toISOString() })
     .eq("id", parsed.data.id)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .eq("active", true)
+    .eq("next_due_date", parsed.data.expectedDueDate)
+    .select("next_due_date")
+    .maybeSingle();
   if (error) return { ok: false as const, error: error.message };
+  if (!updated) {
+    const { data: current } = await supabase
+      .from("actionable_reminders")
+      .select("next_due_date")
+      .eq("id", parsed.data.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    return { ok: true as const, data: { nextDueDate: current?.next_due_date ?? next, alreadyChanged: true } };
+  }
   revalidate();
-  return { ok: true as const, data: { nextDueDate: next } };
+  return { ok: true as const, data: { nextDueDate: updated.next_due_date, alreadyChanged: false } };
 }
 
 export async function completeActionableReminderAction(input: unknown) {
