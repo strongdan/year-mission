@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
-import { escapeIlikeLiteral } from "@/domain/credit-score";
+import { escapeIlikeLiteral, localDateInTimeZone } from "@/domain/credit-score";
 
 const scoreInput = z.object({
   score: z.coerce.number().int().min(300).max(850),
@@ -17,20 +17,6 @@ function refresh() {
   revalidatePath("/progress");
 }
 
-function localDateInTimeZone(timeZone: string): string | null {
-  try {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(new Date());
-    const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
-    return `${get("year")}-${get("month")}-${get("day")}`;
-  } catch {
-    return null;
-  }
-}
 
 function cleanIdentifier(value: string): string {
   return value.trim().replace(/\s+/g, " ");
