@@ -106,7 +106,7 @@ export function MissionGrowth({ bigFour }: Props) {
       <CardHeader title="Mission growth" subtitle="This week shows balance. Durable evidence shows what has accumulated without a streak to protect." />
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <p className="mb-2 text-xs font-medium text-zinc-500">This week's shape</p>
+          <p className="mb-2 text-xs font-medium text-zinc-500">This week&apos;s shape</p>
           <BalanceRadar bigFour={bigFour} />
         </div>
         <div>
