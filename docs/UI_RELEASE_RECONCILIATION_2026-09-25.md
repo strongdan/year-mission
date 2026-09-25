@@ -79,13 +79,14 @@ Keep:
 - AASA/native callback behavior required for the current Google/native handoff and HealthKit flows;
 - Apple platform configuration needed for those non-auth capabilities.
 
-Pre-merge identity gate:
-- verify the current owner can sign in with Google and reaches the same existing Year Mission data/user identity before merging this cleanup;
-- if Google creates a different Supabase user or the existing data is Apple-only, do not merge until account linking/migration is resolved.
+Account-safety transition:
+- the normal login surface is Google-only;
+- until the Google identity is confirmed to reach the same existing Year Mission account/data, a temporary non-advertised recovery path remains at `/login?recovery=apple`;
+- this recovery path is not part of normal navigation and exists only to prevent accidental lockout during provider retirement.
 
 Post-merge operational follow-up:
-- verify Google login in Safari/PWA/native flow;
-- only then disable the Apple OAuth provider/configuration if desired;
+- verify Google login in Safari/PWA/native flow and confirm the expected existing data;
+- then remove the temporary `?recovery=apple` path and disable the Apple OAuth provider/configuration if desired;
 - do not remove Apple Health entitlements or native associated-domain setup as part of auth cleanup.
 
 ## Release discipline
