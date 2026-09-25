@@ -69,9 +69,14 @@ const LOCAL_DAY_Z = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   return Math.abs(inputDay - todayDay) <= 1;
 }, "Date must be the current local calendar day.");
 
-function validatedLocalDay(value?: string): string {
+function parseLocalDay(value: string | undefined): string | null {
+  if (!value) return null;
   const parsed = LOCAL_DAY_Z.safeParse(value);
-  return parsed.success ? parsed.data : todayISO();
+  return parsed.success ? parsed.data : null;
+}
+
+function localDayForRead(value?: string): string {
+  return parseLocalDay(value) ?? todayISO();
 }
 
 function mondayOfDay(day: string): string {
@@ -271,7 +276,8 @@ export async function checkinAction(input: {
 }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const date = validatedLocalDay(input.date);
+  const date = input.date ? parseLocalDay(input.date) : todayISO();
+  if (!date) return { ok: false, error: "Invalid local date." };
   const existing = await getDailyCheckin(user.id, date);
   await upsertDailyCheckin({
     user_id: user.id,
@@ -298,7 +304,8 @@ export async function logEveningResetAction(input: { completion: z.infer<typeof 
   if (!parsed.success) return { ok: false, error: "Invalid completion value." };
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const date = validatedLocalDay(input.date);
+  const date = input.date ? parseLocalDay(input.date) : todayISO();
+  if (!date) return { ok: false, error: "Invalid local date." };
   const existing = await getDailyCheckin(user.id, date);
   const variant = input.variant ?? existing?.evening_reset_variant ?? null;
   await upsertDailyCheckin({
@@ -322,9 +329,11 @@ export async function logEveningResetAction(input: { completion: z.infer<typeof 
 export async function logWorkoutAction(input: { type: string; durationMinutes?: number; notes?: string; date?: string }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
+  const date = input.date ? parseLocalDay(input.date) : todayISO();
+  if (!date) return { ok: false, error: "Invalid local date." };
   await insertWorkout({
     user_id: user.id,
-    date: validatedLocalDay(input.date),
+    date,
     type: input.type,
     duration_minutes: input.durationMinutes ?? null,
     notes: input.notes ?? null,
@@ -417,7 +426,7 @@ export async function logFrictionAction(input: { taskId?: string | null; reason:
 export async function coachAction(message: string, conversationId?: string | null, dateInput?: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const contextDate = validatedLocalDay(dateInput);
+  const contextDate = localDayForRead(dateInput);
   const contextWeekStart = mondayOfDay(contextDate);
 
   const [domains, plan] = await Promise.all([
@@ -657,7 +666,7 @@ export async function getTasksAction() {
 export async function getDashboardAction(dateInput?: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const dashboardDate = validatedLocalDay(dateInput);
+  const dashboardDate = localDayForRead(dateInput);
   const weekStart = mondayOfDay(dashboardDate);
   const [domains, todayTasks, weeklyCommitments, completedTasks, workouts, financial, todayCheckin, promises, experiments, evidence, milestones, momentumHistory, ideas, weeklyReview, houseProgress, weekCheckins] = await Promise.all([
     listDomains(user.id),
