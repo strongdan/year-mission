@@ -20,10 +20,11 @@ function when(item: AnticipationItem): string {
 export function ComingUpCard() {
   const [items, setItems] = useState<AnticipationItem[]>([]);
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     startTransition(async () => {
-      const result = await getAnticipationAction(localToday(), 45);
+      const result = await getAnticipationAction(localToday(), 45, Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
       if (result.ok) setItems(result.data.items.slice(0, 4));
     });
   }, []);
@@ -50,9 +51,18 @@ export function ComingUpCard() {
   const actionable = items.find((item) => item.planningNow && !item.plannedTaskId);
 
   function plan(item: AnticipationItem) {
+    setError(null);
     startTransition(async () => {
-      await planAnticipationItemAction({ key: item.key, title: item.title, date: item.date, kind: item.kind, leadDays: item.leadDays, personName: item.personName });
-      load();
+      try {
+        const result = await planAnticipationItemAction({ key: item.key, title: item.title, date: item.date, kind: item.kind, leadDays: item.leadDays, personName: item.personName });
+        if (!result.ok) {
+          setError(result.error ?? "Could not create the planning task.");
+          return;
+        }
+        load();
+      } catch {
+        setError("Could not create the planning task.");
+      }
     });
   }
 
@@ -72,6 +82,7 @@ export function ComingUpCard() {
           <button disabled={isPending} onClick={() => plan(actionable)} className="shrink-0 rounded-lg border border-amber-800/60 px-2 py-1 text-[10px] text-amber-200 disabled:opacity-50">Create plan task</button>
         </div>
       )}
+      {error && <p role="alert" className="mt-2 text-[11px] text-red-300">{error}</p>}
     </div>
   );
 }
