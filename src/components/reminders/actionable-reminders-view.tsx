@@ -41,13 +41,18 @@ export function ActionableRemindersView() {
 
 
   const load = useCallback(async () => {
-    const result = await listActionableRemindersAction();
-    if (!result.ok) {
-      setError(result.error ?? "Could not load reminders.");
-      return;
+    try {
+      const result = await listActionableRemindersAction();
+      if (!result.ok) {
+        setError(result.error ?? "Could not load reminders.");
+        return;
+      }
+      setItems(result.data);
+      setMigrationReady(result.migrationReady);
+      setError(null);
+    } catch {
+      setError("Could not load reminders.");
     }
-    setItems(result.data);
-    setMigrationReady(result.migrationReady);
   }, []);
 
   useEffect(() => {
@@ -153,6 +158,7 @@ export function ActionableRemindersView() {
   }
 
   async function remove(item: ActionableReminderRecord) {
+    if (!window.confirm(`Delete “${item.title}”? This cannot be undone.`)) return;
     setBusy(item.id);
     setError(null);
     try {
@@ -180,7 +186,7 @@ export function ActionableRemindersView() {
               {item.recurrence_days ? ` · repeats every ${item.recurrence_days} days` : " · one time"}
             </p>
           </div>
-          <button onClick={() => void remove(item)} disabled={busy === item.id} aria-label={`Delete ${item.title}`} className="rounded-lg p-1.5 text-zinc-700 hover:bg-zinc-900 hover:text-red-400 disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" /></button>
+          <button onClick={() => void remove(item)} disabled={busy === item.id} aria-label={`Delete ${item.title}`} className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-zinc-700 hover:bg-zinc-900 hover:text-red-400 disabled:opacity-50"><Trash2 className="h-4 w-4" /></button>
         </div>
         {dueNow && (
           <div className="mt-3 flex flex-wrap gap-2">
