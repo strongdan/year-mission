@@ -190,9 +190,9 @@ export function ActionableRemindersView() {
         </div>
         {dueNow && (
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => void launch(item)} disabled={busy === item.id}><Play className="h-3.5 w-3.5" /> {item.launch_url ? "Launch now" : "I started"}</Button>
-            <Button size="sm" variant="secondary" onClick={() => void complete(item)} disabled={busy === item.id}><Check className="h-3.5 w-3.5" /> Done</Button>
-            <Button size="sm" variant="ghost" onClick={() => void reschedule(item)} disabled={busy === item.id}>Not now → {item.default_reschedule_days}d</Button>
+            <Button size="sm" className="min-h-11" onClick={() => void launch(item)} disabled={busy === item.id}><Play className="h-3.5 w-3.5" /> {item.launch_url ? "Launch now" : "I started"}</Button>
+            <Button size="sm" className="min-h-11" variant="secondary" onClick={() => void complete(item)} disabled={busy === item.id}><Check className="h-3.5 w-3.5" /> Done</Button>
+            <Button size="sm" className="min-h-11" variant="ghost" onClick={() => void reschedule(item)} disabled={busy === item.id}>Not now → {item.default_reschedule_days}d</Button>
             {item.launch_url && <a href={item.launch_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-zinc-500 hover:text-zinc-200">Open link <ExternalLink className="h-3 w-3" /></a>}
           </div>
         )}
