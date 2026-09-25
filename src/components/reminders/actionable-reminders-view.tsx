@@ -83,32 +83,60 @@ export function ActionableRemindersView() {
   }
 
   async function launch(item: ActionableReminderRecord) {
-    setBusy(item.id);
-    await markActionableReminderLaunchedAction(item.id);
     if (item.launch_url) window.open(item.launch_url, "_blank", "noopener,noreferrer");
-    setBusy(null);
-    await load();
+    setBusy(item.id);
+    setError(null);
+    try {
+      const result = await markActionableReminderLaunchedAction(item.id);
+      if (!result.ok) setError(result.error ?? "Could not record that the reminder was started.");
+      else await load();
+    } catch {
+      setError("Could not record that the reminder was started.");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function reschedule(item: ActionableReminderRecord) {
     setBusy(item.id);
-    await rescheduleActionableReminderAction({ id: item.id, today });
-    setBusy(null);
-    await load();
+    setError(null);
+    try {
+      const result = await rescheduleActionableReminderAction({ id: item.id, today });
+      if (!result.ok) setError(result.error ?? "Could not reschedule the reminder.");
+      else await load();
+    } catch {
+      setError("Could not reschedule the reminder.");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function complete(item: ActionableReminderRecord) {
     setBusy(item.id);
-    await completeActionableReminderAction({ id: item.id, completedOn: today });
-    setBusy(null);
-    await load();
+    setError(null);
+    try {
+      const result = await completeActionableReminderAction({ id: item.id, completedOn: today, expectedDueDate: item.next_due_date });
+      if (!result.ok) setError(result.error ?? "Could not complete the reminder.");
+      else await load();
+    } catch {
+      setError("Could not complete the reminder.");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function remove(item: ActionableReminderRecord) {
     setBusy(item.id);
-    await deleteActionableReminderAction(item.id);
-    setBusy(null);
-    await load();
+    setError(null);
+    try {
+      const result = await deleteActionableReminderAction(item.id);
+      if (!result.ok) setError(result.error ?? "Could not delete the reminder.");
+      else await load();
+    } catch {
+      setError("Could not delete the reminder.");
+    } finally {
+      setBusy(null);
+    }
   }
 
   function ReminderCard({ item }: { item: ActionableReminderRecord }) {
