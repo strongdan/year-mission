@@ -9,10 +9,30 @@ const scoreInput = z.object({
   bureau: z.string().trim().min(2).max(80),
   scoreModel: z.string().trim().min(2).max(120),
   measuredAt: z.string().date(),
+  timeZone: z.string().trim().min(1).max(120),
 });
 
 function refresh() {
   revalidatePath("/progress");
+}
+
+function localDateInTimeZone(timeZone: string): string | null {
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+    const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+    return `${get("year")}-${get("month")}-${get("day")}`;
+  } catch {
+    return null;
+  }
+}
+
+function cleanIdentifier(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
 }
 
 export async function getCreditScoreProgressAction() {
@@ -41,8 +61,8 @@ export async function getCreditScoreProgressAction() {
     .from("credit_score_snapshots")
     .select("id,score,bureau,score_model,source,measured_at,created_at")
     .eq("user_id", user.id)
-    .eq("bureau", latest.bureau)
-    .eq("score_model", latest.score_model)
+    .ilike("bureau", latest.bureau)
+    .ilike("score_model", latest.score_model)
     .order("measured_at", { ascending: false })
     .order("created_at", { ascending: false });
 
@@ -67,8 +87,9 @@ export async function addCreditScoreSnapshotAction(input: unknown) {
   const parsed = scoreInput.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Enter a valid score, bureau, model, and date." };
 
-  const todayUtc = new Date().toISOString().slice(0, 10);
-  if (parsed.data.measuredAt > todayUtc) {
+  const localToday = localDateInTimeZone(parsed.data.timeZone);
+  if (!localToday) return { ok: false as const, error: "Check the device time zone." };
+  if (parsed.data.measuredAt > localToday) {
     return { ok: false as const, error: "The measurement date cannot be in the future." };
   }
 
@@ -79,8 +100,8 @@ export async function addCreditScoreSnapshotAction(input: unknown) {
     {
       user_id: user.id,
       score: parsed.data.score,
-      bureau: parsed.data.bureau,
-      score_model: parsed.data.scoreModel,
+      bureau: cleanIdentifier(parsed.data.bureau),
+      score_model: cleanIdentifier(parsed.data.scoreModel),
       measured_at: parsed.data.measuredAt,
       source: "manual",
       factors: [],
