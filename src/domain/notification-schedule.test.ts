@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dueWithinWindow, localClock, reminderWindowsDue } from "./notification-schedule";
+import { dueWithinWindow, localClock, reminderWindowsDue, shouldSendDailyCheckinReminder } from "./notification-schedule";
 
 describe("notification scheduling", () => {
   it("accepts the configured time and the following 19 minutes only", () => {
@@ -50,5 +50,11 @@ describe("notification scheduling", () => {
     };
     expect(reminderWindowsDue(base, { date: "2026-08-23", hour: 8, minute: 5 })).toEqual({ morningDue: true, eveningDue: false });
     expect(reminderWindowsDue(base, { date: "2026-08-23", hour: 20, minute: 35 })).toEqual({ morningDue: false, eveningDue: true });
+  });
+
+  it("suppresses the daily check-in reminder once today's check-in exists", () => {
+    expect(shouldSendDailyCheckinReminder(true, false)).toBe(true);
+    expect(shouldSendDailyCheckinReminder(true, true)).toBe(false);
+    expect(shouldSendDailyCheckinReminder(false, false)).toBe(false);
   });
 });
