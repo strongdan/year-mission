@@ -31,7 +31,8 @@ export function CreditScoreProgressCard() {
   const [data, setData] = useState<ProgressData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const [measuredAt, setMeasuredAt] = useState("");
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [dateState, setDateState] = useState({ selected: "", max: "" });
 
   const load = () => {
     startTransition(async () => {
@@ -41,15 +42,30 @@ export function CreditScoreProgressCard() {
         setError(null);
         setData(result.data as ProgressData);
       }
+      setInitialLoading(false);
     });
   };
 
   useEffect(() => {
+    const refreshLocalDate = () => {
+      const next = localToday();
+      setDateState((current) => ({
+        max: next,
+        selected: !current.selected || current.selected === current.max ? next : current.selected,
+      }));
+    };
     const frame = window.requestAnimationFrame(() => {
-      setMeasuredAt(localToday());
+      refreshLocalDate();
       load();
     });
-    return () => window.cancelAnimationFrame(frame);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshLocalDate();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   const trend = useMemo(() => {
@@ -107,7 +123,7 @@ export function CreditScoreProgressCard() {
           <div><div className="text-xs text-zinc-500">Best comparable</div><div className="text-zinc-200">{data?.best ?? latest.score}</div></div>
           <div><div className="text-xs text-zinc-500">Updated</div><div className="text-zinc-200">{latest.measured_at}</div></div>
         </div>
-      ) : data === null && pending ? (
+      ) : data === null && initialLoading ? (
         <p className="mt-4 text-sm text-zinc-400">Loading credit score history…</p>
       ) : data === null && error ? null : (
         <p className="mt-4 text-sm text-zinc-400">No score history yet. Add a snapshot if you want this context in Year Mission.</p>
@@ -146,7 +162,7 @@ export function CreditScoreProgressCard() {
         <div className="flex items-end gap-2">
           <label className="flex min-w-0 flex-1 flex-col gap-1 text-[11px] text-zinc-500">
             Measurement date
-            <input name="measuredAt" type="date" value={measuredAt} max={measuredAt || undefined} onChange={(event) => setMeasuredAt(event.target.value)} required disabled={!measuredAt} className="min-w-0 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-2 text-sm text-zinc-100 disabled:opacity-60" />
+            <input name="measuredAt" type="date" value={dateState.selected} max={dateState.max || undefined} onChange={(event) => setDateState((current) => ({ ...current, selected: event.target.value }))} required disabled={!dateState.max} className="min-w-0 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-2 text-sm text-zinc-100 disabled:opacity-60" />
           </label>
           <button disabled={pending} className="rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-950 disabled:opacity-50">Add</button>
         </div>
