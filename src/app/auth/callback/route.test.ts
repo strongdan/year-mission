@@ -40,4 +40,13 @@ describe("auth callback route", () => {
     expect(location.searchParams.get("error")).toBe("callback");
     expect(location.searchParams.get("message")).toBe("Invalid OAuth callback code.");
   });
+  it("preserves the temporary Apple recovery marker on callback failure", async () => {
+    exchangeCodeForSession.mockResolvedValueOnce({ error: { message: "expired code" } });
+    const response = await GET(new Request("https://year.test/auth/callback?code=abc&next=/&recovery=apple"));
+    const location = response.headers.get("location") ?? "";
+    expect(location).toContain("/login?");
+    expect(location).toContain("recovery=apple");
+    expect(location).toContain("error=callback");
+  });
+
 });
