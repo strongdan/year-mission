@@ -108,7 +108,7 @@ export async function getAnticipationAction(todayInput?: string, horizonDays = 1
     const timeZone = validTimeZone(timeZoneInput);
     const start = localMidnightUtc(today, timeZone);
     const endExclusive = localMidnightUtc(addDays(through, 1), timeZone);
-    const calendarEvents = await listUpcomingPrimaryCalendarEvents(user.id, start, endExclusive);
+    const calendar = await listUpcomingPrimaryCalendarEvents(user.id, start, endExclusive);
     const plannedByKey = new Map((plans ?? []).map((row) => [String(row.event_key), typeof row.task_id === "string" ? row.task_id : null]));
 
     const raw: Array<Omit<AnticipationItem, "prepDate" | "daysAway" | "planningNow" | "plannedTaskId">> = [];
@@ -134,7 +134,7 @@ export async function getAnticipationAction(todayInput?: string, horizonDays = 1
       const date = String(row.due_date ?? "");
       if (!DATE_Z.safeParse(date).success || date < today || date > through) continue;
       raw.push({
-        key: `task:${row.id}:${date}`,
+        key: `task:${row.id}`,
         title: String(row.title),
         date,
         kind: "deadline",
@@ -144,7 +144,7 @@ export async function getAnticipationAction(todayInput?: string, horizonDays = 1
       });
     }
 
-    for (const event of calendarEvents) {
+    for (const event of calendar.events) {
       const date = event.start.slice(0, 10);
       if (!DATE_Z.safeParse(date).success || date < today || date > through) continue;
       const classified = classifyCalendarTitle(event.title);
@@ -189,6 +189,8 @@ export async function getAnticipationAction(todayInput?: string, horizonDays = 1
         through,
         items,
         planningNow: items.filter((item) => item.planningNow && !item.plannedTaskId),
+        calendarOutcome: calendar.outcome,
+        calendarError: calendar.error ?? null,
       },
     };
   } catch (error) {
