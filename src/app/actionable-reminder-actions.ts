@@ -18,7 +18,7 @@ const CREATE_Z = z.object({
 });
 const ID_Z = z.string().uuid();
 const RESCHEDULE_Z = z.object({ id: ID_Z, date: DATE_Z.nullable().optional(), today: DATE_Z });
-const COMPLETE_Z = z.object({ id: ID_Z, completedOn: DATE_Z });
+const COMPLETE_Z = z.object({ id: ID_Z, completedOn: DATE_Z, expectedDueDate: DATE_Z });
 
 export interface ActionableReminderRecord {
   id: string;
@@ -149,18 +149,29 @@ export async function completeActionableReminderAction(input: unknown) {
     .maybeSingle();
   if (readError || !data) return { ok: false as const, error: readError?.message ?? "Reminder not found." };
 
+  if (data.next_due_date !== parsed.data.expectedDueDate) {
+    return { ok: true as const, data: { nextDueDate: data.next_due_date, alreadyCompleted: true } };
+  }
+
   const next = nextDateAfterCompletion(data, parsed.data.completedOn);
   const patch = next
     ? { next_due_date: next, last_completed_at: new Date().toISOString(), updated_at: new Date().toISOString() }
     : { active: false, last_completed_at: new Date().toISOString(), updated_at: new Date().toISOString() };
-  const { error } = await supabase
+
+  const { data: updated, error } = await supabase
     .from("actionable_reminders")
     .update(patch)
     .eq("id", parsed.data.id)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .eq("active", true)
+    .eq("next_due_date", parsed.data.expectedDueDate)
+    .select("id")
+    .maybeSingle();
+
   if (error) return { ok: false as const, error: error.message };
+  if (!updated) return { ok: true as const, data: { nextDueDate: next, alreadyCompleted: true } };
   revalidate();
-  return { ok: true as const, data: { nextDueDate: next } };
+  return { ok: true as const, data: { nextDueDate: next, alreadyCompleted: false } };
 }
 
 export async function deleteActionableReminderAction(id: string) {
