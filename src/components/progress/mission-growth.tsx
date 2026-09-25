@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Leaf } from "lucide-react";
 import { getMissionGrowthAction, type DomainGrowth } from "@/app/growth-actions";
 import { Card, CardHeader } from "@/components/ui/card";
 
@@ -21,48 +20,6 @@ const LABELS: Record<(typeof DOMAIN_ORDER)[number], string> = {
   home: "Self",
   money: "Money",
 };
-
-function plantStageLabel(stage: DomainGrowth["stage"]): string {
-  if (stage === "seed") return "Seed";
-  if (stage === "sprout") return "Sprout";
-  if (stage === "growing") return "Growing";
-  if (stage === "rooted") return "Rooted";
-  return "Flourishing";
-}
-
-function Plant({ score, label }: { score: number; label: string }) {
-  const stemTop = 72 - Math.max(8, Math.round(score * 0.52));
-  const leafCount = score >= 85 ? 6 : score >= 60 ? 5 : score >= 35 ? 4 : score >= 15 ? 2 : 0;
-  const leaves = Array.from({ length: leafCount }, (_, index) => {
-    const y = Math.max(stemTop + 8, 62 - index * 8);
-    const right = index % 2 === 0;
-    return { y, right };
-  });
-  return (
-    <svg viewBox="0 0 80 86" role="img" aria-label={`${label} growth ${score} percent`} className="h-24 w-full max-w-[88px]">
-      <path d="M15 76 C28 70 52 70 65 76" className="fill-none stroke-zinc-700" strokeWidth="3" strokeLinecap="round" />
-      {score < 15 ? (
-        <ellipse cx="40" cy="70" rx="5" ry="3.5" className="fill-amber-700/70" />
-      ) : (
-        <>
-          <path d={`M40 70 C39 56 41 42 40 ${stemTop}`} className="fill-none stroke-emerald-700" strokeWidth="3" strokeLinecap="round" />
-          {leaves.map((leaf, index) => (
-            <ellipse
-              key={`${leaf.y}-${index}`}
-              cx={leaf.right ? 49 : 31}
-              cy={leaf.y}
-              rx={10}
-              ry={5}
-              transform={`rotate(${leaf.right ? -28 : 28} ${leaf.right ? 49 : 31} ${leaf.y})`}
-              className={score >= 60 ? "fill-emerald-500/75" : "fill-emerald-700/70"}
-            />
-          ))}
-          {score >= 85 && <circle cx="40" cy={stemTop} r="7" className="fill-emerald-400/80" />}
-        </>
-      )}
-    </svg>
-  );
-}
 
 function BalanceRadar({ bigFour }: { bigFour: Record<string, WeeklyValue> }) {
   const cx = 90;
@@ -107,6 +64,32 @@ function BalanceRadar({ bigFour }: { bigFour: Record<string, WeeklyValue> }) {
   );
 }
 
+function DurableEvidence({ growth }: { growth: DomainGrowth[] | null }) {
+  if (!growth) {
+    return <p className="text-xs leading-relaxed text-zinc-500">Durable progress appears after meaningful actions accumulate.</p>;
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {growth.map((item) => (
+        <div key={item.slug} className="rounded-xl border border-zinc-800 bg-zinc-900/35 p-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-xs font-medium text-zinc-300">{item.label}</p>
+            <span className="text-sm font-semibold tabular-nums text-zinc-200">{item.score}%</span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-800">
+            <div className="h-full rounded-full bg-emerald-600" style={{ width: `${item.score}%` }} />
+          </div>
+          <p className="mt-2 text-[10px] leading-relaxed text-zinc-600">
+            {item.meaningfulActions} meaningful action{item.meaningfulActions === 1 ? "" : "s"}
+            {item.comebacks > 0 ? ` · ${item.comebacks} comeback${item.comebacks === 1 ? "" : "s"}` : ""}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function MissionGrowth({ bigFour }: Props) {
   const [growth, setGrowth] = useState<DomainGrowth[] | null>(null);
 
@@ -120,27 +103,20 @@ export function MissionGrowth({ bigFour }: Props) {
 
   return (
     <Card>
-      <CardHeader title="Mission growth" subtitle="This week shows balance. The garden shows durable evidence of change." right={<Leaf className="h-4 w-4 text-emerald-500" />} />
+      <CardHeader title="Mission growth" subtitle="This week shows balance. Durable evidence shows what has accumulated without a streak to protect." />
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <p className="mb-2 text-xs font-medium text-zinc-500">This week&apos;s shape</p>
+          <p className="mb-2 text-xs font-medium text-zinc-500">This week's shape</p>
           <BalanceRadar bigFour={bigFour} />
         </div>
         <div>
-          <p className="mb-2 text-xs font-medium text-zinc-500">Mission garden</p>
-          <div className="grid grid-cols-2 gap-2">
-            {(growth ?? DOMAIN_ORDER.map((slug) => ({ slug, label: LABELS[slug], score: 0, stage: "seed", points: 0, meaningfulActions: 0, comebacks: 0 }) as DomainGrowth)).map((item) => (
-              <div key={item.slug} className="rounded-xl border border-zinc-800 bg-zinc-900/35 px-2 py-2 text-center">
-                <Plant score={item.score} label={item.label} />
-                <p className="text-xs font-medium text-zinc-300">{item.label}</p>
-                <p className="mt-0.5 text-[10px] text-zinc-600">{plantStageLabel(item.stage)} · {item.score}%</p>
-                {item.comebacks > 0 && <p className="mt-1 text-[10px] text-emerald-500">{item.comebacks} comeback{item.comebacks === 1 ? "" : "s"}</p>}
-              </div>
-            ))}
-          </div>
+          <p className="mb-2 text-xs font-medium text-zinc-500">Durable evidence</p>
+          <DurableEvidence growth={growth} />
         </div>
       </div>
-      <p className="mt-4 border-t border-zinc-800 pt-3 text-[11px] leading-relaxed text-zinc-600">Self growth is evidence, not affirmation: courage, returning after avoidance, learning from friction, and doing things the old version of you would have avoided. Plants never wilt because a hard day is not lost progress.</p>
+      <p className="mt-4 border-t border-zinc-800 pt-3 text-[11px] leading-relaxed text-zinc-600">
+        Progress is evidence of meaningful action, learning, and returning after a gap. A hard day does not erase what already happened.
+      </p>
     </Card>
   );
 }
