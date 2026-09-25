@@ -55,9 +55,7 @@ export async function GET(request: Request) {
         .from("daily_checkins")
         .select("date")
         .eq("user_id", preference.user_id)
-        // daily_checkins currently uses the app-wide UTC todayISO() convention.
-        // Match that storage key here; last_*_sent_on remains local-date scheduling state.
-        .eq("date", now.toISOString().slice(0, 10))
+        .eq("date", clock.date)
         .maybeSingle();
 
       dailyCheckinAlreadyDone = Boolean(checkin);
