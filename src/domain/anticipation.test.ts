@@ -28,4 +28,8 @@ describe("anticipation planning", () => {
     expect(nextOccurrence("2024-02-29", "yearly", "2026-01-10")).toBe("2026-02-28");
     expect(nextOccurrence("2024-02-29", "yearly", "2028-01-10")).toBe("2028-02-29");
   });
+  it("does not invent a yearly occurrence before the stored start year", () => {
+    expect(nextOccurrence("2027-12-01", "yearly", "2026-09-01")).toBe("2027-12-01");
+  });
+
 });
