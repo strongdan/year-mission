@@ -1373,6 +1373,16 @@ Life Balance is an owner-approved, visibility-first Today support surface. It co
 
 The native iPhone companion may read only the approved daily HealthKit aggregates needed by this surface. It must not store raw heart-rate samples, workout GPS, or psychological inferences. Health sync is production-only and uses the pinned Year Mission production origin. Partial syncs preserve previously stored metrics atomically; omitted values are not deletions. Life Balance does not create streaks, quotas, scores, or completion pressure.
 
+# 49. Coming Up
+
+Year Mission may provide a secondary **Coming Up** planning surface so birthdays, anniversaries, deadlines, travel, selected holidays, active task due dates, and read-only Google Calendar constraints can be seen early enough to prepare.
+
+Important dates may be saved manually with an explicit preparation lead time. Yearly recurrence is supported; Feb 29 recurring dates are observed on Feb 28 in non-leap years unless a future owner decision changes that policy.
+
+A **Plan** action may create one ordinary Year Mission task at the start of the preparation window. Nothing is silently added to Today, and repeated planning attempts must not create duplicate tasks.
+
+Coming Up is anticipatory context, not an extensive notification engine. Google Calendar remains read-only and the feature must stay useful when Google is disconnected.
+
 Year Mission should not become another system the user has to maintain.
 
 It should reduce the amount of mental work required to operate the year.
