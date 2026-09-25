@@ -32,7 +32,20 @@ export function ComingUpCard() {
     const frame = window.requestAnimationFrame(load);
     return () => window.cancelAnimationFrame(frame);
   }, [load]);
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-950/30 px-3 py-2.5">
+        <div className="flex items-center gap-3">
+          <CalendarClock className="h-4 w-4 shrink-0 text-zinc-500" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] text-zinc-500">Coming up</p>
+            <p className="text-sm text-zinc-400">Nothing in the near-term horizon.</p>
+          </div>
+          <Link href="/upcoming" className="shrink-0 text-[11px] text-zinc-500 hover:text-zinc-300">Plan ahead</Link>
+        </div>
+      </div>
+    );
+  }
 
   const actionable = items.find((item) => item.planningNow && !item.plannedTaskId);
 
