@@ -24,4 +24,8 @@ describe("anticipation planning", () => {
     expect(planningTaskTitle({ kind: "birthday", title: "Alex's birthday", personName: "Alex" })).toBe("Plan Alex's birthday");
     expect(planningTaskTitle({ kind: "deadline", title: "Tax filing", personName: null })).toBe("Prepare for deadline: Tax filing");
   });
+  it("observes Feb 29 yearly dates on Feb 28 in non-leap years", () => {
+    expect(nextOccurrence("2024-02-29", "yearly", "2026-01-10")).toBe("2026-02-28");
+    expect(nextOccurrence("2024-02-29", "yearly", "2028-01-10")).toBe("2028-02-29");
+  });
 });
