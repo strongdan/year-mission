@@ -109,11 +109,23 @@ export function CreditScoreProgressCard() {
       ) : null}
 
       <form onSubmit={addScore} className="mt-5 grid gap-2 sm:grid-cols-4">
-        <input name="score" type="number" min={300} max={850} required placeholder="742" className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" />
-        <input name="bureau" required placeholder="Experian" className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" />
-        <input name="scoreModel" required placeholder="VantageScore 3.0" className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" />
-        <div className="flex gap-2">
-          <input name="measuredAt" type="date" defaultValue={localToday()} required className="min-w-0 flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-2 text-sm text-zinc-100" />
+        <label className="flex flex-col gap-1 text-[11px] text-zinc-500">
+          Score
+          <input name="score" type="number" min={300} max={850} required placeholder="742" className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" />
+        </label>
+        <label className="flex flex-col gap-1 text-[11px] text-zinc-500">
+          Bureau
+          <input name="bureau" required placeholder="Experian" className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" />
+        </label>
+        <label className="flex flex-col gap-1 text-[11px] text-zinc-500">
+          Score model
+          <input name="scoreModel" required placeholder="VantageScore 3.0" className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" />
+        </label>
+        <div className="flex items-end gap-2">
+          <label className="flex min-w-0 flex-1 flex-col gap-1 text-[11px] text-zinc-500">
+            Measurement date
+            <input name="measuredAt" type="date" defaultValue={localToday()} max={localToday()} required className="min-w-0 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-2 text-sm text-zinc-100" />
+          </label>
           <button disabled={pending} className="rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-950 disabled:opacity-50">Add</button>
         </div>
       </form>
