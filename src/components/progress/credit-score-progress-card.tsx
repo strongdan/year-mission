@@ -3,7 +3,23 @@
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import { addCreditScoreSnapshotAction, getCreditScoreProgressAction } from "@/app/credit-score-actions";
 
-type ProgressData = Awaited<ReturnType<typeof getCreditScoreProgressAction>> extends { ok: true; data: infer D } ? D : never;
+interface CreditScoreSnapshot {
+  id: string;
+  score: number;
+  bureau: string;
+  score_model: string;
+  source: string;
+  measured_at: string;
+  created_at: string;
+}
+
+interface ProgressData {
+  snapshots: CreditScoreSnapshot[];
+  latest: CreditScoreSnapshot | null;
+  previous: CreditScoreSnapshot | null;
+  delta: number | null;
+  best: number | null;
+}
 
 function localToday(): string {
   const now = new Date();
@@ -21,7 +37,7 @@ export function CreditScoreProgressCard() {
       if (!result.ok) setError(result.error);
       else {
         setError(null);
-        setData(result.data);
+        setData(result.data as ProgressData);
       }
     });
   };
