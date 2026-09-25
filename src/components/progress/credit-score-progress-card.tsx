@@ -46,8 +46,13 @@ export function CreditScoreProgressCard() {
 
   const trend = useMemo(() => {
     if (!data?.latest) return [];
+    const latestBureau = data.latest.bureau.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+    const latestModel = data.latest.score_model.trim().replace(/\s+/g, " ").toLocaleLowerCase();
     return data.snapshots
-      .filter((item) => item.bureau === data.latest?.bureau && item.score_model === data.latest?.score_model)
+      .filter((item) =>
+        item.bureau.trim().replace(/\s+/g, " ").toLocaleLowerCase() === latestBureau
+        && item.score_model.trim().replace(/\s+/g, " ").toLocaleLowerCase() === latestModel
+      )
       .slice(0, 12)
       .reverse();
   }, [data]);
