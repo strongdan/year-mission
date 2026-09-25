@@ -66,7 +66,7 @@ export async function getAnticipationAction(todayInput?: string, horizonDays = 1
 
     const [{ data: importantDates, error: importantError }, { data: taskRows, error: taskError }, { data: plans, error: plansError }] = await Promise.all([
       admin.from("important_dates").select("id,title,kind,event_date,recurrence,lead_days,person_name,notes").eq("user_id", user.id).limit(500),
-      admin.from("tasks").select("id,title,due_date,notes,status").eq("user_id", user.id).not("due_date", "is", null).not("status", "in", '(completed,dropped)').limit(500),
+      admin.from("tasks").select("id,title,due_date,notes,status,source").eq("user_id", user.id).not("due_date", "is", null).not("status", "in", '(completed,dropped)').neq("source", "anticipation").limit(500),
       admin.from("anticipation_plans").select("event_key,task_id").eq("user_id", user.id).limit(1000),
     ]);
     if (importantError) throw importantError;
@@ -241,39 +241,29 @@ export async function planAnticipationItemAction(input: {
 
   try {
     const { user, admin } = await context();
-    const { data: existing, error: existingError } = await admin
-      .from("anticipation_plans")
-      .select("task_id")
-      .eq("user_id", user.id)
-      .eq("event_key", parsed.data.key)
-      .maybeSingle();
-    if (existingError) throw existingError;
-    if (existing?.task_id) return { ok: true as const, data: { taskId: existing.task_id, alreadyPlanned: true } };
-
     const prepDate = addDays(parsed.data.date, -parsed.data.leadDays);
-    const taskResult = await taskService.create(user.id, {
-      title: planningTaskTitle({ kind: parsed.data.kind, title: parsed.data.title, personName: parsed.data.personName }),
-      notes: `Upcoming: ${parsed.data.title} on ${parsed.data.date}. Created by Coming Up so there is time to prepare.`,
-      scheduledDate: prepDate,
-      dueDate: prepDate,
-      impact: parsed.data.kind === "deadline" ? "high" : "medium",
-      source: "anticipation",
+    const taskTitle = planningTaskTitle({ kind: parsed.data.kind, title: parsed.data.title, personName: parsed.data.personName });
+    const taskNotes = `Upcoming: ${parsed.data.title} on ${parsed.data.date}. Created by Coming Up so there is time to prepare.`;
+
+    const { data: planRows, error: planError } = await admin.rpc("create_anticipation_plan_task", {
+      p_user_id: user.id,
+      p_event_key: parsed.data.key,
+      p_title: taskTitle,
+      p_notes: taskNotes,
+      p_prep_date: prepDate,
+      p_impact: parsed.data.kind === "deadline" ? "high" : "medium",
     });
-    if (!taskResult.ok || !taskResult.data || typeof taskResult.data !== "object" || !("id" in taskResult.data)) {
-      throw new Error(taskResult.error ?? "Planning task could not be created.");
-    }
-    const taskId = String((taskResult.data as { id: string }).id);
-    const { error: planError } = await admin.from("anticipation_plans").upsert({
-      user_id: user.id,
-      event_key: parsed.data.key,
-      task_id: taskId,
-    }, { onConflict: "user_id,event_key" });
     if (planError) throw planError;
+
+    const plan = Array.isArray(planRows) ? planRows[0] : planRows;
+    if (!plan?.task_id) throw new Error("Planning task could not be created.");
+    const taskId = String(plan.task_id);
+    const alreadyPlanned = Boolean(plan.already_planned);
 
     revalidatePath("/upcoming");
     revalidatePath("/");
     revalidatePath("/tasks");
-    return { ok: true as const, data: { taskId, alreadyPlanned: false } };
+    return { ok: true as const, data: { taskId, alreadyPlanned } };
   } catch (error) {
     return { ok: false as const, error: error instanceof Error ? error.message : "Planning task could not be created." };
   }
