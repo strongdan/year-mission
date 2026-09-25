@@ -28,7 +28,9 @@ export function EveningResetCard({ completion, date, onChange }: EveningResetCar
   async function handle(completionValue: EveningResetCompletion) {
     if (busy) return;
     setBusy(completionValue);
-    const res = await logEveningResetAction({ completion: completionValue, variant: variant.name, date: localToday() });
+    const tapDate = new Date();
+    const tapVariant = getEveningResetForDate(tapDate);
+    const res = await logEveningResetAction({ completion: completionValue, variant: tapVariant.name, date: localToday() });
     setBusy(null);
     if (res.ok) onChange?.();
   }
