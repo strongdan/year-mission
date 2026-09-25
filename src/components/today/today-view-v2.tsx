@@ -133,14 +133,14 @@ export function TodayViewV2() {
     if (usingCachedData && !navigator.onLine) return;
     const next = !alcoholFree;
     setAlcoholFree(next);
-    await checkinAction({ date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`, alcoholFree: next });
+    await checkinAction({ date: localToday(), alcoholFree: next });
   }
 
   async function logWalk() {
     const currentData = data;
     if (!currentData || loggingWalk || currentData.walkToday || (usingCachedData && !navigator.onLine)) return;
     setLoggingWalk(true);
-    await logWorkoutAction({ type: "walking", durationMinutes: 10 });
+    await logWorkoutAction({ type: "walking", durationMinutes: 10, date: localToday() });
     setLoggingWalk(false);
     await load();
   }
