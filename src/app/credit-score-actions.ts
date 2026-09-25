@@ -19,22 +19,37 @@ export async function getCreditScoreProgressAction() {
   const { user, supabase } = await requireUser();
   if (!user || !supabase) return { ok: false as const, error: "Not signed in." };
 
-  const { data, error } = await supabase
+  const { data: latestRows, error: latestError } = await supabase
     .from("credit_score_snapshots")
     .select("id,score,bureau,score_model,source,measured_at,created_at")
     .eq("user_id", user.id)
     .order("measured_at", { ascending: false })
     .order("created_at", { ascending: false })
-    .limit(24);
+    .limit(1);
 
-  if (error) return { ok: false as const, error: error.message };
+  if (latestError) return { ok: false as const, error: latestError.message };
 
-  const snapshots = data ?? [];
-  const latest = snapshots[0] ?? null;
-  const comparable = latest
-    ? snapshots.filter((item) => item.bureau === latest.bureau && item.score_model === latest.score_model)
-    : [];
-  const previous = latest ? comparable.find((item) => item.id !== latest.id) ?? null : null;
+  const latest = latestRows?.[0] ?? null;
+  if (!latest) {
+    return {
+      ok: true as const,
+      data: { snapshots: [], latest: null, previous: null, delta: null, best: null },
+    };
+  }
+
+  const { data: comparableRows, error: comparableError } = await supabase
+    .from("credit_score_snapshots")
+    .select("id,score,bureau,score_model,source,measured_at,created_at")
+    .eq("user_id", user.id)
+    .eq("bureau", latest.bureau)
+    .eq("score_model", latest.score_model)
+    .order("measured_at", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (comparableError) return { ok: false as const, error: comparableError.message };
+
+  const snapshots = comparableRows ?? [];
+  const previous = snapshots.find((item) => item.id !== latest.id) ?? null;
 
   return {
     ok: true as const,
@@ -42,8 +57,8 @@ export async function getCreditScoreProgressAction() {
       snapshots,
       latest,
       previous,
-      delta: latest && previous ? latest.score - previous.score : null,
-      best: comparable.length ? Math.max(...comparable.map((item) => item.score)) : null,
+      delta: previous ? latest.score - previous.score : null,
+      best: snapshots.length ? Math.max(...snapshots.map((item) => item.score)) : latest.score,
     },
   };
 }
@@ -51,6 +66,11 @@ export async function getCreditScoreProgressAction() {
 export async function addCreditScoreSnapshotAction(input: unknown) {
   const parsed = scoreInput.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Enter a valid score, bureau, model, and date." };
+
+  const todayUtc = new Date().toISOString().slice(0, 10);
+  if (parsed.data.measuredAt > todayUtc) {
+    return { ok: false as const, error: "The measurement date cannot be in the future." };
+  }
 
   const { user, supabase } = await requireUser();
   if (!user || !supabase) return { ok: false as const, error: "Not signed in." };
