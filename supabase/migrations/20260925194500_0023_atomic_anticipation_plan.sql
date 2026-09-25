@@ -72,7 +72,7 @@ begin
     p_impact,
     'medium',
     p_prep_date,
-    p_prep_date,
+    null,
     'anticipation'
   )
   returning id into v_task_id;
