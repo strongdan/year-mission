@@ -15,6 +15,11 @@ interface EveningResetCardProps {
   onChange?: () => void;
 }
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 export function EveningResetCard({ completion, date, onChange }: EveningResetCardProps) {
   const [busy, setBusy] = useState<EveningResetCompletion | null>(null);
   const today = useMemo(() => date ?? new Date(), [date]);
@@ -23,7 +28,7 @@ export function EveningResetCard({ completion, date, onChange }: EveningResetCar
   async function handle(completionValue: EveningResetCompletion) {
     if (busy) return;
     setBusy(completionValue);
-    const res = await logEveningResetAction({ completion: completionValue, variant: variant.name });
+    const res = await logEveningResetAction({ completion: completionValue, variant: variant.name, date: localToday() });
     setBusy(null);
     if (res.ok) onChange?.();
   }
