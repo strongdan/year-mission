@@ -516,6 +516,17 @@ Life Balance + Apple Health is an explicitly approved support surface, not a new
 
 Apple Health is read-only, owner-isolated, and limited to daily aggregates. The native sync origin is pinned to the production Year Mission Worker; previews and local environments do not issue native HealthKit tickets. Partial updates are merged atomically in PostgreSQL so concurrent uploads cannot erase omitted historical metrics. No HealthKit value is used to infer psychological state.
 
+
+# D031 — Coming Up anticipates without silently scheduling
+
+**Status:** Accepted
+
+Coming Up combines manual important dates, task due dates, planning-oriented holidays, and read-only Google Calendar constraints. It exists to create preparation time, not another obligations dashboard.
+
+Only an explicit Plan action may create a task, and duplicate planning for the same event is idempotent. Google Calendar remains read-only. Yearly Feb 29 dates use Feb 28 in non-leap years.
+
+---
+
 **Status:** Accepted
 
 Year Mission tells the user to:
