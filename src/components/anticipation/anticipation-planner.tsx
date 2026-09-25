@@ -44,7 +44,7 @@ export function AnticipationPlanner() {
 
   const load = useCallback(() => {
     startTransition(async () => {
-      const result = await getAnticipationAction(localToday(), 120);
+      const result = await getAnticipationAction(localToday(), 120, Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
       if (!result.ok) return setMessage(result.error);
       setItems(result.data.items);
       setPlanningNow(result.data.planningNow);
