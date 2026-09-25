@@ -3,7 +3,7 @@
 Last updated: 2026-09-04
 
 > [!NOTE]
-> All P0 recovery items **YM-RM-001** through **YM-RM-010** (Google connection idempotency, Google invalid_grant recovery, Sign in with Apple, AI provider pool & failover, Cloudflare cutover, Seasonal visual identity, Night Shift, Today journaling with AI reflection, and read-only Plaid banking integration) have been fully implemented, tested, merged into `main` via PR #34, applied in Supabase production (`0013_journal.sql`, `0014_plaid_finance.sql`), and deployed to Cloudflare Workers (`https://year-mission.dangaston.workers.dev`). See `docs/BACKLOG_RECOVERY_STATUS.md` for details.
+> The original P0 recovery program was implemented and deployed. Later owner decisions supersede historical feature choices: Sign in with Apple is now retired from the user-facing product, while Apple Health / HealthKit remains separate and supported. See `docs/BACKLOG_RECOVERY_STATUS.md` and the current reconciliation issue for present-state authority.
 
 
 ## Purpose
@@ -93,25 +93,11 @@ Acceptance criteria:
 
 # P1 — Authentication, AI resilience, and infrastructure cost
 
-## YM-RM-003 — Finish Sign in with Apple activation
+## YM-RM-003 — Sign in with Apple
 
-**Status:** `DONE-CODE / ACTIVATE`
+**Status:** `RETIRED`
 
-The Sign in with Apple implementation has landed in the repository. Remaining roadmap work is operational qualification.
-
-Requirements:
-
-- Enable/configure the Apple provider in the production Supabase project.
-- Configure the Apple Developer identifiers, key, redirect URLs, and private-key handling without committing secrets.
-- Verify Sign in with Apple in Safari and the installed iPhone PWA.
-- Verify existing Google-login users are not accidentally split into duplicate Year Mission identities when Apple uses the same or a private-relay email.
-- Document recovery/account-linking behavior for provider changes.
-
-Acceptance criteria:
-
-- Apple sign-in works in production on iPhone Safari and installed PWA.
-- Login failures are actionable and provider-neutral where appropriate.
-- No auth secret is exposed client-side or committed to Git.
+Apple OAuth was previously implemented and qualified, but a later owner decision removes it from the user-facing login surface. Do not reintroduce Apple sign-in without a new explicit owner decision. This retirement does **not** remove Apple Health / HealthKit integration.
 
 ---
 
@@ -181,7 +167,7 @@ Requirements:
 - Choose the appropriate supported Cloudflare runtime for the current Next.js application and document any framework/runtime incompatibilities.
 - Preserve Supabase auth/database behavior, OAuth callbacks, PWA/service-worker behavior, server routes, AI calls, and Google Tasks integration.
 - Configure environment variables/secrets, caching, headers, CSP/security headers, SPA/navigation behavior, and custom-domain routing.
-- Update Google, Apple, and Supabase redirect/allowed-origin configuration for the Cloudflare hostname before production cutover.
+- Update Google and Supabase redirect/allowed-origin configuration for the Cloudflare hostname before production cutover.
 - Compare production-critical flows against the existing Vercel deployment.
 - Rehearse rollback before DNS cutover.
 - Stop unnecessary Vercel builds once Cloudflare has qualified; retain Vercel only as a temporary rollback path until the stabilization window closes.
@@ -190,7 +176,6 @@ Requirements:
 Qualification flows:
 
 - Google login
-- Apple login
 - Google Tasks connect/reconnect/sync
 - AI Coach and fallback chain
 - task CRUD and Today flow
@@ -358,7 +343,6 @@ Note: this roadmap item intentionally revisits the older V1 non-goal of financia
 
 1. `YM-RM-001` Google connection unique-constraint remediation.
 2. `YM-RM-002` `invalid_grant` recovery and reconnect UX.
-3. `YM-RM-003` production activation/smoke qualification for Sign in with Apple.
 4. `YM-RM-004` expand the low/no-cost AI model registry.
 5. `YM-RM-005` AI fallback/circuit-breaker behavior.
 6. `YM-RM-006` Cloudflare pilot, parity qualification, rollback rehearsal, then cutover.
