@@ -18,6 +18,11 @@ type AiStatus = NonNullable<Awaited<ReturnType<typeof getAiStatusAction>>["data"
 
 const SUGGESTED = ["Plan my week", "What should I do now?", "Analyze my deferrals", "Break this task down"];
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 export function CoachView() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -59,7 +64,7 @@ export function CoachView() {
     setMessages((m) => [...m, { role: "user", content: message }]);
 
     try {
-      const res = await coachAction(message, conversationId);
+      const res = await coachAction(message, conversationId, localToday());
       if (!res.ok || !res.data) {
         setError(res.error ?? "Coach failed. Try again.");
         setMessages((m) => m.slice(0, -1));
