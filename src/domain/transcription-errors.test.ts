@@ -17,4 +17,10 @@ describe("safeTranscriptionError", () => {
     );
     expect(result.message).not.toMatch(/provider secret|upstream/i);
   });
+  it("turns empty transcripts into a re-record prompt", () => {
+    expect(safeTranscriptionError(new Error("Gemini returned an empty transcript."))).toEqual({
+      status: 400,
+      message: "No speech could be transcribed from that recording. Try recording again.",
+    });
+  });
 });
