@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { CalendarClock } from "lucide-react";
 import { getAnticipationAction, planAnticipationItemAction } from "@/app/anticipation-actions";
 import type { AnticipationItem } from "@/domain/anticipation";
@@ -21,14 +21,17 @@ export function ComingUpCard() {
   const [items, setItems] = useState<AnticipationItem[]>([]);
   const [isPending, startTransition] = useTransition();
 
-  const load = () => {
+  const load = useCallback(() => {
     startTransition(async () => {
       const result = await getAnticipationAction(localToday(), 45);
       if (result.ok) setItems(result.data.items.slice(0, 4));
     });
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(load);
+    return () => window.cancelAnimationFrame(frame);
+  }, [load]);
   if (items.length === 0) return null;
 
   const actionable = items.find((item) => item.planningNow && !item.plannedTaskId);
