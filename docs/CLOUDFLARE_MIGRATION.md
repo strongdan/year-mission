@@ -74,7 +74,6 @@ For the Cloudflare candidate hostname, add—do not replace—the required retur
 - Supabase Auth Site URL / redirect allowlist
 - Google account-login OAuth configuration
 - Google Tasks/Calendar OAuth redirect configuration
-- Apple Services ID web return URLs
 
 Retain the Vercel URLs during rollback qualification.
 
@@ -103,7 +102,7 @@ The `next/offline` compatibility warning makes the installed-PWA/offline tests a
 1. Merge the repository migration configuration only after normal CI and Cloudflare Worker build pass.
 2. Deploy to a non-production `workers.dev` hostname.
 3. Configure Cloudflare secrets/variables.
-4. Add the candidate hostname to Supabase/Google/Apple allowlists.
+4. Add the candidate hostname to Supabase/Google allowlists.
 5. Run parity smoke tests against both Cloudflare and the existing Vercel deployment.
 6. Rehearse rollback by confirming the Vercel deployment remains usable with the old callbacks still allowed.
 7. Make Cloudflare canonical only after parity passes.
