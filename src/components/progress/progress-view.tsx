@@ -112,7 +112,7 @@ export function ProgressView() {
   }
 
   async function load() {
-    const res = await getDashboardAction(localToday());
+    const res = await getDashboardAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
     if (!res.ok || !res.data) {
       setError(res.error ?? "Failed to load.");
       return;
@@ -125,7 +125,7 @@ export function ProgressView() {
 
   useEffect(() => {
     let cancelled = false;
-    getDashboardAction(localToday()).then((res) => {
+    getDashboardAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC").then((res) => {
       if (cancelled) return;
       if (!res.ok || !res.data) {
         setError(res.error ?? "Failed to load.");
