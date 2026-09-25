@@ -61,6 +61,7 @@ export function CreditScoreProgressCard() {
         bureau: form.get("bureau"),
         scoreModel: form.get("scoreModel"),
         measuredAt: form.get("measuredAt"),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
       });
       if (!result.ok) setError(result.error);
       else load();
@@ -95,17 +96,27 @@ export function CreditScoreProgressCard() {
           <div><div className="text-xs text-zinc-500">Best comparable</div><div className="text-zinc-200">{data?.best ?? latest.score}</div></div>
           <div><div className="text-xs text-zinc-500">Updated</div><div className="text-zinc-200">{latest.measured_at}</div></div>
         </div>
-      ) : (
+      ) : data === null && pending ? (
+        <p className="mt-4 text-sm text-zinc-400">Loading credit score history…</p>
+      ) : data === null && error ? null : (
         <p className="mt-4 text-sm text-zinc-400">No score history yet. Add a snapshot if you want this context in Year Mission.</p>
       )}
 
       {trend.length > 1 ? (
-        <div className="mt-4 flex items-end gap-1 rounded-xl bg-zinc-900/60 p-3" aria-label="Comparable credit score history">
-          {trend.map((item) => {
-            const height = Math.max(12, Math.min(64, 12 + (item.score - 600) * 0.16));
-            return <div key={item.id} className="min-w-2 flex-1 rounded-sm bg-zinc-500" style={{ height }} title={`${item.measured_at}: ${item.score}`} />;
-          })}
-        </div>
+        <>
+          <div className="mt-4 flex items-end gap-1 rounded-xl bg-zinc-900/60 p-3" aria-hidden="true">
+            {trend.map((item) => {
+              const height = Math.max(12, Math.min(64, 12 + (item.score - 600) * 0.16));
+              return <div key={item.id} className="min-w-2 flex-1 rounded-sm bg-zinc-500" style={{ height }} />;
+            })}
+          </div>
+          <div className="mt-2">
+            <p className="text-[11px] font-medium text-zinc-500">Comparable history</p>
+            <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-zinc-600">
+              {trend.map((item) => <li key={`history-${item.id}`}><span>{item.measured_at}</span>: <span>{item.score}</span></li>)}
+            </ul>
+          </div>
+        </>
       ) : null}
 
       <form onSubmit={addScore} className="mt-5 grid gap-2 sm:grid-cols-4">
