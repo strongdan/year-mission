@@ -50,7 +50,10 @@ export function ActionableRemindersView() {
     setMigrationReady(result.migrationReady);
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => { void load(); });
+    return () => window.cancelAnimationFrame(frame);
+  }, [load]);
 
   const due = useMemo(() => items.filter((item) => isReminderDue(item.next_due_date, today)), [items, today]);
   const later = useMemo(() => items.filter((item) => !isReminderDue(item.next_due_date, today)), [items, today]);
