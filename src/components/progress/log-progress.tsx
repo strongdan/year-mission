@@ -119,7 +119,7 @@ export function LogProgress({ checkin, debt, house, onSaved }: LogProgressProps)
           </div>
           <div className="flex items-end gap-3">
             <NumberInput label="Minutes" value={workoutMinutes} onChange={setWorkoutMinutes} placeholder="e.g. 45" />
-            <Button size="sm" variant="secondary" disabled={busy || !workoutMinutes} onClick={() => run(() => logWorkoutAction({ type: workoutType, durationMinutes: Number(workoutMinutes) }), "Workout logged")}>
+            <Button size="sm" variant="secondary" disabled={busy || !workoutMinutes} onClick={() => run(() => logWorkoutAction({ type: workoutType, durationMinutes: Number(workoutMinutes), date: localToday() }), "Workout logged")}>
               Log workout
             </Button>
           </div>
