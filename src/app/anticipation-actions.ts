@@ -149,7 +149,7 @@ export async function getAnticipationAction(todayInput?: string, horizonDays = 1
       if (!DATE_Z.safeParse(date).success || date < today || date > through) continue;
       const classified = classifyCalendarTitle(event.title);
       raw.push({
-        key: `gcal:${event.id}:${date}`,
+        key: `gcal:${event.id}`,
         title: event.title,
         date,
         kind: classified.kind,
