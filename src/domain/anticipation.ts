@@ -42,12 +42,25 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((b - a) / 86_400_000);
 }
 
+function isLeapYear(year: number): boolean {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+}
+
+function yearlyDateFor(year: number, month: string, day: string): string {
+  // Explicit policy: a Feb 29 recurring date is observed on Feb 28 in non-leap years.
+  if (month === "02" && day === "29" && !isLeapYear(year)) return `${year}-02-28`;
+  return `${year}-${month}-${day}`;
+}
+
 export function nextOccurrence(eventDate: string, recurrence: "none" | "yearly", today: string): string {
   if (recurrence === "none") return eventDate;
   const [, month, day] = eventDate.split("-");
   let year = Number(today.slice(0, 4));
-  let candidate = `${year}-${month}-${day}`;
-  if (candidate < today) candidate = `${year + 1}-${month}-${day}`;
+  let candidate = yearlyDateFor(year, month, day);
+  if (candidate < today) {
+    year += 1;
+    candidate = yearlyDateFor(year, month, day);
+  }
   return candidate;
 }
 
