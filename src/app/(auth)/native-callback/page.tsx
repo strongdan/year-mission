@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@/integrations/supabase/client";
 
 function clearCallbackFragment() {
@@ -15,7 +15,6 @@ export function isNativeShellHandoff(value: string | null): boolean {
 
 export default function NativeCallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [message, setMessage] = useState("Completing sign-in…");
 
   useEffect(() => {
@@ -26,7 +25,8 @@ export default function NativeCallbackPage() {
       const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
       const accessToken = params.get("access_token");
       const refreshToken = params.get("refresh_token");
-      const nativeShell = isNativeShellHandoff(searchParams.get("handoff"));
+      const query = new URLSearchParams(window.location.search);
+      const nativeShell = isNativeShellHandoff(query.get("handoff"));
       clearCallbackFragment();
 
       const result = accessToken && refreshToken
@@ -64,7 +64,7 @@ export default function NativeCallbackPage() {
     return () => {
       cancelled = true;
     };
-  }, [router, searchParams]);
+  }, [router]);
 
   return (
     <main className="flex flex-1 items-center justify-center px-6">
