@@ -81,7 +81,7 @@ function DurableEvidence({ growth }: { growth: DomainGrowth[] | null }) {
             <div className="h-full rounded-full bg-emerald-600" style={{ width: `${item.score}%` }} />
           </div>
           <p className="mt-2 text-[10px] leading-relaxed text-zinc-600">
-            {item.meaningfulActions} meaningful action{item.meaningfulActions === 1 ? "" : "s"}
+            {item.meaningfulActions} completed task/workout{item.meaningfulActions === 1 ? "" : "s"}
             {item.comebacks > 0 ? ` · ${item.comebacks} comeback${item.comebacks === 1 ? "" : "s"}` : ""}
           </p>
         </div>
