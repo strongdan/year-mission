@@ -55,5 +55,6 @@ describe("notification scheduling", () => {
     expect(shouldSendDailyCheckinReminder(true, false)).toBe(true);
     expect(shouldSendDailyCheckinReminder(true, true)).toBe(false);
     expect(shouldSendDailyCheckinReminder(false, false)).toBe(false);
+    expect(shouldSendDailyCheckinReminder(true, false, false)).toBe(false);
   });
 });
