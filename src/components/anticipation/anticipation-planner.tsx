@@ -32,6 +32,7 @@ export function AnticipationPlanner() {
   const [items, setItems] = useState<AnticipationItem[]>([]);
   const [planningNow, setPlanningNow] = useState<AnticipationItem[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [calendarOutcome, setCalendarOutcome] = useState<"ok" | "not_connected" | "error" | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [kind, setKind] = useState<Exclude<AnticipationKind, "calendar" | "holiday">>("birthday");
   const [title, setTitle] = useState("");
@@ -44,10 +45,18 @@ export function AnticipationPlanner() {
 
   const load = useCallback(() => {
     startTransition(async () => {
-      const result = await getAnticipationAction(localToday(), 120, Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
-      if (!result.ok) return setMessage(result.error);
-      setItems(result.data.items);
-      setPlanningNow(result.data.planningNow);
+      try {
+        const result = await getAnticipationAction(localToday(), 120, Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+        if (!result.ok) return setMessage(result.error);
+        setItems(result.data.items);
+        setPlanningNow(result.data.planningNow);
+        setCalendarOutcome(result.data.calendarOutcome);
+        if (result.data.calendarOutcome === "error") {
+          setMessage("Google Calendar is temporarily unavailable; saved dates, holidays, and task deadlines are still shown.");
+        }
+      } catch {
+        setMessage("Coming Up could not be loaded. Try again.");
+      }
     });
   }, []);
 
@@ -143,6 +152,11 @@ export function AnticipationPlanner() {
       </header>
 
       {message && <p className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-xs text-zinc-300">{message}</p>}
+      {calendarOutcome === "not_connected" && (
+        <p className="mt-4 rounded-xl border border-amber-950/60 bg-amber-950/10 px-3 py-2 text-xs text-amber-200/80">
+          Google Calendar is not connected. Saved dates, holidays, and task deadlines still work. <Link href="/settings" className="underline underline-offset-2">Connect Google</Link>
+        </p>
+      )}
 
       {showAdd && (
         <section className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4">
