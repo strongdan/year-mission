@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, Check, Play } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import {
@@ -24,18 +24,18 @@ export function ActionableReminderCard() {
   const [busy, setBusy] = useState(false);
   const today = localToday();
 
-  async function load() {
+  const load = useCallback(async () => {
     const result = await listActionableRemindersAction();
     if (!result.ok || !result.migrationReady) return;
     const due = result.data.filter((candidate) => isReminderDue(candidate.next_due_date, today));
     setItem(due[0] ?? null);
     setCount(due.length);
-  }
+  }, [today]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => { void load(); });
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [load]);
 
   if (!item) return null;
 
