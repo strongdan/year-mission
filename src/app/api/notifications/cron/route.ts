@@ -37,6 +37,7 @@ export async function GET(request: Request) {
   let sent = 0;
   let expired = 0;
   let skippedAlreadyCheckedIn = 0;
+  let skippedLookupErrors = 0;
 
   for (const preference of (data ?? []) as PreferenceRow[]) {
     let clock: ReturnType<typeof localClock>;
@@ -50,16 +51,22 @@ export async function GET(request: Request) {
     if (!morningDue && !eveningDue) continue;
 
     let dailyCheckinAlreadyDone = false;
+    let dailyCheckinLookupVerified = true;
     if (eveningDue) {
-      const { data: checkin } = await admin
+      const { data: checkin, error: checkinError } = await admin
         .from("daily_checkins")
         .select("date")
         .eq("user_id", preference.user_id)
         .eq("date", clock.date)
         .maybeSingle();
 
+      if (checkinError) {
+        skippedLookupErrors += 1;
+        dailyCheckinLookupVerified = false;
+      }
+
       dailyCheckinAlreadyDone = Boolean(checkin);
-      if (dailyCheckinAlreadyDone) {
+      if (dailyCheckinLookupVerified && dailyCheckinAlreadyDone) {
         skippedAlreadyCheckedIn += 1;
         await admin
           .from("notification_preferences")
@@ -68,7 +75,11 @@ export async function GET(request: Request) {
       }
     }
 
-    const shouldSendEvening = shouldSendDailyCheckinReminder(eveningDue, dailyCheckinAlreadyDone);
+    const shouldSendEvening = shouldSendDailyCheckinReminder(
+      eveningDue,
+      dailyCheckinAlreadyDone,
+      dailyCheckinLookupVerified
+    );
     if (!morningDue && !shouldSendEvening) continue;
 
     const { data: subscriptions } = await admin
@@ -101,5 +112,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, sent, expired, skippedAlreadyCheckedIn });
+  return NextResponse.json({ ok: true, sent, expired, skippedAlreadyCheckedIn, skippedLookupErrors });
 }
