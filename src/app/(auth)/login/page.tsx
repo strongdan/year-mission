@@ -43,7 +43,7 @@ function LoginContent() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/${provider === "apple" ? "&recovery=apple" : ""}`,
         },
       });
       if (error) setMessage(error.message);
