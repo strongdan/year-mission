@@ -24,6 +24,39 @@ function serverToday(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function validTimeZone(value: string | undefined): string {
+  if (!value) return "UTC";
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value }).format(new Date());
+    return value;
+  } catch {
+    return "UTC";
+  }
+}
+
+function localMidnightUtc(date: string, timeZone: string): Date {
+  const [year, month, day] = date.split("-").map(Number);
+  const targetUtc = Date.UTC(year, month - 1, day, 0, 0, 0);
+  let guess = targetUtc;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(new Date(guess));
+    const get = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value ?? "0");
+    const representedAsUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"), get("second"));
+    guess += targetUtc - representedAsUtc;
+  }
+  return new Date(guess);
+}
+
 function classifyCalendarTitle(title: string): { kind: AnticipationKind; leadDays: number } {
   const normalized = title.toLowerCase();
   if (normalized.includes("birthday") || normalized.includes("bday")) return { kind: "birthday", leadDays: 21 };
@@ -56,7 +89,7 @@ async function context() {
   return { user, admin };
 }
 
-export async function getAnticipationAction(todayInput?: string, horizonDays = 120) {
+export async function getAnticipationAction(todayInput?: string, horizonDays = 120, timeZoneInput?: string) {
   try {
     const { user, admin } = await context();
     const today = DATE_Z.safeParse(todayInput).success ? todayInput! : serverToday();
@@ -72,9 +105,10 @@ export async function getAnticipationAction(todayInput?: string, horizonDays = 1
     if (taskError) throw taskError;
     if (plansError) throw plansError;
 
-    const start = new Date(`${today}T00:00:00Z`);
-    const end = new Date(`${through}T23:59:59Z`);
-    const calendarEvents = await listUpcomingPrimaryCalendarEvents(user.id, start, end);
+    const timeZone = validTimeZone(timeZoneInput);
+    const start = localMidnightUtc(today, timeZone);
+    const endExclusive = localMidnightUtc(addDays(through, 1), timeZone);
+    const calendarEvents = await listUpcomingPrimaryCalendarEvents(user.id, start, endExclusive);
     const plannedByKey = new Map((plans ?? []).map((row) => [String(row.event_key), typeof row.task_id === "string" ? row.task_id : null]));
 
     const raw: Array<Omit<AnticipationItem, "prepDate" | "daysAway" | "planningNow" | "plannedTaskId">> = [];
