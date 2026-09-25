@@ -55,7 +55,7 @@ function yearlyDateFor(year: number, month: string, day: string): string {
 export function nextOccurrence(eventDate: string, recurrence: "none" | "yearly", today: string): string {
   if (recurrence === "none") return eventDate;
   const [, month, day] = eventDate.split("-");
-  let year = Number(today.slice(0, 4));
+  let year = Math.max(Number(today.slice(0, 4)), Number(eventDate.slice(0, 4)));
   let candidate = yearlyDateFor(year, month, day);
   if (candidate < today) {
     year += 1;
