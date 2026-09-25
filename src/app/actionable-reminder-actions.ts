@@ -37,7 +37,7 @@ export interface ActionableReminderRecord {
 }
 
 function missingTable(error: { code?: string; message?: string } | null | undefined): boolean {
-  return error?.code === "42P01" || Boolean(error?.message?.includes("actionable_reminders"));
+  return error?.code === "42P01" || error?.code === "PGRST205";
 }
 
 function revalidate() {
