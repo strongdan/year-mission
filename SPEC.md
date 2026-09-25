@@ -1381,6 +1381,8 @@ Each snapshot must preserve the score model, bureau, date, and source. Trends an
 
 The score is an outcome signal, not a gamification reward, personal worth measure, or basis for predicted score gains. Manual entry is sufficient for the first slice. Do not invent or require a credit-bureau API contract merely to automate retrieval.
 
+Migration `0015_credit_score_progress.sql` is already-applied historical schema and includes a dormant `credit_score_connections` table from an earlier automation concept. The current application must not read, write, configure, or depend on that table. Do not mutate the already-applied migration to rewrite history; any future schema retirement should use a separate gated migration after the migration train is reconciled.
+
 Year Mission should not become another system the user has to maintain.
 
 It should reduce the amount of mental work required to operate the year.
