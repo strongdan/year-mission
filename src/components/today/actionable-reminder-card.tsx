@@ -26,11 +26,25 @@ export function ActionableReminderCard() {
   const [today, setToday] = useState(localToday());
 
   const load = useCallback(async () => {
-    const result = await listActionableRemindersAction();
-    if (!result.ok || !result.migrationReady) return;
-    const due = result.data.filter((candidate) => isReminderDue(candidate.next_due_date, today));
-    setItem(due[0] ?? null);
-    setCount(due.length);
+    try {
+      const result = await listActionableRemindersAction();
+      if (!result.ok) {
+        setError(result.error ?? "Could not load reminders.");
+        return;
+      }
+      if (!result.migrationReady) {
+        setItem(null);
+        setCount(0);
+        setError(null);
+        return;
+      }
+      const due = result.data.filter((candidate) => isReminderDue(candidate.next_due_date, today));
+      setItem(due[0] ?? null);
+      setCount(due.length);
+      setError(null);
+    } catch {
+      setError("Could not load reminders.");
+    }
   }, [today]);
 
   useEffect(() => {
@@ -49,7 +63,16 @@ export function ActionableReminderCard() {
     };
   }, [load]);
 
-  if (!item) return null;
+  if (!item) {
+    return error ? (
+      <div className="px-4 pt-3">
+        <Card className="border-red-950/50 bg-red-950/10">
+          <p role="alert" className="text-xs text-red-300">{error}</p>
+          <button type="button" onClick={() => void load()} className="mt-2 text-[11px] text-zinc-400 hover:text-zinc-200">Try again</button>
+        </Card>
+      </div>
+    ) : null;
+  }
 
   async function launch() {
     if (busy || !item) return;
@@ -86,7 +109,7 @@ export function ActionableReminderCard() {
     setBusy(true);
     setError(null);
     try {
-      const result = await rescheduleActionableReminderAction({ id: item.id, today });
+      const result = await rescheduleActionableReminderAction({ id: item.id, today, expectedDueDate: item.next_due_date });
       if (!result.ok) setError(result.error ?? "Could not reschedule the reminder.");
       else await load();
     } catch {
