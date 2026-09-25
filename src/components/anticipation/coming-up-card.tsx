@@ -74,9 +74,19 @@ export function ComingUpCard() {
           <CalendarClock className="h-4 w-4 shrink-0 text-zinc-500" />
           <div className="min-w-0 flex-1">
             <p className="text-[11px] text-zinc-500">Coming up</p>
-            <p className="text-sm text-zinc-400">Nothing in the near-term horizon.</p>
+            <p className="text-sm text-zinc-400">
+              {calendarOutcome === "ok"
+                ? "Nothing in the near-term horizon."
+                : calendarOutcome === "not_connected"
+                  ? "No saved dates are near; Google Calendar is not connected."
+                  : calendarOutcome === "error"
+                    ? "No saved dates are near; Google Calendar is temporarily unavailable."
+                    : "Nothing in the near-term horizon."}
+            </p>
           </div>
-          <Link href="/upcoming" className="shrink-0 text-[11px] text-zinc-500 hover:text-zinc-300">Plan ahead</Link>
+          <Link href={calendarOutcome === "not_connected" ? "/settings" : "/upcoming"} className="shrink-0 text-[11px] text-zinc-500 hover:text-zinc-300">
+            {calendarOutcome === "not_connected" ? "Connect Google" : "Plan ahead"}
+          </Link>
         </div>
       </div>
     );
