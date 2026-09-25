@@ -8,6 +8,7 @@ import UIKit
 /// A matching HTTPS callback completes the session, which dismisses the system
 /// browser. The callback URL is then loaded by the app's primary full-screen
 /// Year Mission web container with `handoff=native-shell`.
+@available(iOS 17.4, *)
 @MainActor
 final class NativeGoogleAuthCoordinator: NSObject, ASWebAuthenticationPresentationContextProviding {
     static let productionHost = "year-mission.dangaston.workers.dev"
@@ -52,7 +53,8 @@ final class NativeGoogleAuthCoordinator: NSObject, ASWebAuthenticationPresentati
                 }
 
                 if let error {
-                    onFailure("Sign-in could not be completed (\(error._domain):\((error as NSError).code)).")
+                    let nsError = error as NSError
+                    onFailure("Sign-in could not be completed (\(nsError.domain):\(nsError.code)).")
                     return
                 }
 
