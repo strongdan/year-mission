@@ -387,9 +387,10 @@ export async function logFrictionAction(input: { taskId?: string | null; reason:
   return { ok: true };
 }
 
-export async function coachAction(message: string, conversationId?: string | null) {
+export async function coachAction(message: string, conversationId?: string | null, dateInput?: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
+  const contextDate = dateInput && /^\d{4}-\d{2}-\d{2}$/.test(dateInput) ? dateInput : todayISO();
 
   const [domains, plan] = await Promise.all([
     listDomains(user.id),
@@ -401,7 +402,7 @@ export async function coachAction(message: string, conversationId?: string | nul
   const completedTasks = await listTasks(user.id, { status: "completed", limit: 50 });
   const workouts = await listWorkouts(user.id, mondayOf());
   const financial = await listFinancialSnapshots(user.id, 1);
-  const todayCheckin = await getTodayCheckin(user.id, todayISO());
+  const todayCheckin = await getTodayCheckin(user.id, contextDate);
   const promises = await listPromises(user.id);
   const experiments = await listExperiments(user.id);
   const evidence = await listEvidence(user.id, 20);
