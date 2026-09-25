@@ -56,7 +56,7 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(morning ? "Year Mission · Morning" : "Year Mission · Daily check-in", {
       body: morning
         ? "One-minute orientation: open Year Mission and see your next move."
-        : "You haven’t checked in today. Take two minutes to close the loop.",
+        : "Open Year Mission for a brief daily check-in.",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
       tag: morning ? "year-mission-morning" : "year-mission-daily-checkin",
