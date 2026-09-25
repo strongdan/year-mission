@@ -83,19 +83,39 @@ export async function addCreditScoreSnapshotAction(input: unknown) {
   const { user, supabase } = await requireUser();
   if (!user || !supabase) return { ok: false as const, error: "Not signed in." };
 
-  const { error } = await supabase.from("credit_score_snapshots").upsert(
-    {
-      user_id: user.id,
-      score: parsed.data.score,
-      bureau: cleanIdentifier(parsed.data.bureau),
-      score_model: cleanIdentifier(parsed.data.scoreModel),
-      measured_at: parsed.data.measuredAt,
-      source: "manual",
-      factors: [],
-    },
-    { onConflict: "user_id,bureau,score_model,measured_at,source" }
-  );
+  const bureau = cleanIdentifier(parsed.data.bureau);
+  const scoreModel = cleanIdentifier(parsed.data.scoreModel);
+  const { data: existing, error: existingError } = await supabase
+    .from("credit_score_snapshots")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("measured_at", parsed.data.measuredAt)
+    .eq("source", "manual")
+    .ilike("bureau", escapeIlikeLiteral(bureau))
+    .ilike("score_model", escapeIlikeLiteral(scoreModel))
+    .limit(1)
+    .maybeSingle();
 
+  if (existingError) return { ok: false as const, error: existingError.message };
+
+  const mutation = existing?.id
+    ? supabase.from("credit_score_snapshots").update({
+        score: parsed.data.score,
+        bureau,
+        score_model: scoreModel,
+        factors: [],
+      }).eq("id", existing.id).eq("user_id", user.id)
+    : supabase.from("credit_score_snapshots").insert({
+        user_id: user.id,
+        score: parsed.data.score,
+        bureau,
+        score_model: scoreModel,
+        measured_at: parsed.data.measuredAt,
+        source: "manual",
+        factors: [],
+      });
+
+  const { error } = await mutation;
   if (error) return { ok: false as const, error: error.message };
   refresh();
   return { ok: true as const };
