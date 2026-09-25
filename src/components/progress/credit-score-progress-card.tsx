@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import { addCreditScoreSnapshotAction, getCreditScoreProgressAction } from "@/app/credit-score-actions";
+import { normalizeCreditIdentifier } from "@/domain/credit-score";
 
 interface CreditScoreSnapshot {
   id: string;
@@ -30,6 +31,7 @@ export function CreditScoreProgressCard() {
   const [data, setData] = useState<ProgressData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [measuredAt, setMeasuredAt] = useState("");
 
   const load = () => {
     startTransition(async () => {
@@ -42,16 +44,19 @@ export function CreditScoreProgressCard() {
     });
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    setMeasuredAt(localToday());
+    load();
+  }, []);
 
   const trend = useMemo(() => {
     if (!data?.latest) return [];
-    const latestBureau = data.latest.bureau.trim().replace(/\s+/g, " ").toLocaleLowerCase();
-    const latestModel = data.latest.score_model.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+    const latestBureau = normalizeCreditIdentifier(data.latest.bureau);
+    const latestModel = normalizeCreditIdentifier(data.latest.score_model);
     return data.snapshots
       .filter((item) =>
-        item.bureau.trim().replace(/\s+/g, " ").toLocaleLowerCase() === latestBureau
-        && item.score_model.trim().replace(/\s+/g, " ").toLocaleLowerCase() === latestModel
+        normalizeCreditIdentifier(item.bureau) === latestBureau
+        && normalizeCreditIdentifier(item.score_model) === latestModel
       )
       .slice(0, 12)
       .reverse();
@@ -140,7 +145,7 @@ export function CreditScoreProgressCard() {
         <div className="flex items-end gap-2">
           <label className="flex min-w-0 flex-1 flex-col gap-1 text-[11px] text-zinc-500">
             Measurement date
-            <input name="measuredAt" type="date" defaultValue={localToday()} max={localToday()} required className="min-w-0 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-2 text-sm text-zinc-100" />
+            <input name="measuredAt" type="date" value={measuredAt} max={measuredAt || undefined} onChange={(event) => setMeasuredAt(event.target.value)} required disabled={!measuredAt} className="min-w-0 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-2 text-sm text-zinc-100 disabled:opacity-60" />
           </label>
           <button disabled={pending} className="rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-950 disabled:opacity-50">Add</button>
         </div>
