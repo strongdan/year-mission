@@ -22,7 +22,8 @@ export function ActionableReminderCard() {
   const [item, setItem] = useState<ActionableReminderRecord | null>(null);
   const [count, setCount] = useState(0);
   const [busy, setBusy] = useState(false);
-  const today = localToday();
+  const [error, setError] = useState<string | null>(null);
+  const [today, setToday] = useState(localToday());
 
   const load = useCallback(async () => {
     const result = await listActionableRemindersAction();
@@ -33,34 +34,66 @@ export function ActionableReminderCard() {
   }, [today]);
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => { void load(); });
-    return () => window.cancelAnimationFrame(frame);
+    const refreshDate = () => setToday((current) => {
+      const next = localToday();
+      return current === next ? current : next;
+    });
+    const frame = window.requestAnimationFrame(() => { refreshDate(); void load(); });
+    const timer = window.setInterval(refreshDate, 60_000);
+    const onVisible = () => { if (document.visibilityState === "visible") refreshDate(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [load]);
 
   if (!item) return null;
 
   async function launch() {
     if (busy || !item) return;
-    setBusy(true);
-    await markActionableReminderLaunchedAction(item.id);
     if (item.launch_url) window.open(item.launch_url, "_blank", "noopener,noreferrer");
-    setBusy(false);
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await markActionableReminderLaunchedAction(item.id);
+      if (!result.ok) setError(result.error ?? "Could not record that the reminder was started.");
+    } catch {
+      setError("Could not record that the reminder was started.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function complete() {
     if (busy || !item) return;
     setBusy(true);
-    await completeActionableReminderAction({ id: item.id, completedOn: today });
-    setBusy(false);
-    await load();
+    setError(null);
+    try {
+      const result = await completeActionableReminderAction({ id: item.id, completedOn: today, expectedDueDate: item.next_due_date });
+      if (!result.ok) setError(result.error ?? "Could not complete the reminder.");
+      else await load();
+    } catch {
+      setError("Could not complete the reminder.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function reschedule() {
     if (busy || !item) return;
     setBusy(true);
-    await rescheduleActionableReminderAction({ id: item.id, today });
-    setBusy(false);
-    await load();
+    setError(null);
+    try {
+      const result = await rescheduleActionableReminderAction({ id: item.id, today });
+      if (!result.ok) setError(result.error ?? "Could not reschedule the reminder.");
+      else await load();
+    } catch {
+      setError("Could not reschedule the reminder.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -79,6 +112,8 @@ export function ActionableReminderCard() {
           <button onClick={() => void complete()} disabled={busy} className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-300 disabled:opacity-50"><Check className="h-3.5 w-3.5" /> Done</button>
           <button onClick={() => void reschedule()} disabled={busy} className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-300 disabled:opacity-50">Not now → {item.default_reschedule_days}d <ArrowRight className="h-3 w-3" /></button>
         </div>
+        {item.launch_url && <a href={item.launch_url} target="_blank" rel="noreferrer" className="mt-2 block text-[11px] text-zinc-600 hover:text-zinc-300">Open action link directly</a>}
+        {error && <p role="alert" className="mt-2 text-xs text-red-300">{error}</p>}
       </Card>
     </div>
   );
