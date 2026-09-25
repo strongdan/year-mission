@@ -84,7 +84,7 @@ export function TodayViewV2() {
   async function load() {
     setError(null);
     try {
-      const result = await getDashboardAction(localToday());
+      const result = await getDashboardAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
       if (!result.ok || !result.data) throw new Error(result.error ?? "Failed to load.");
       setData(result.data);
       cacheDashboard(result.data);
