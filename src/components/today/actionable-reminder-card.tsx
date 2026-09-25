@@ -131,9 +131,9 @@ export function ActionableReminderCard() {
           <Link href="/reminders" className="shrink-0 text-[11px] text-zinc-600 hover:text-zinc-300">{count > 1 ? `${count} due` : "Manage"}</Link>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button onClick={() => void launch()} disabled={busy} className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-xs font-semibold text-zinc-950 disabled:opacity-50"><Play className="h-3.5 w-3.5" /> {item.launch_url ? "Launch now" : "I started"}</button>
-          <button onClick={() => void complete()} disabled={busy} className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-300 disabled:opacity-50"><Check className="h-3.5 w-3.5" /> Done</button>
-          <button onClick={() => void reschedule()} disabled={busy} className="inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-300 disabled:opacity-50">Not now → {item.default_reschedule_days}d <ArrowRight className="h-3 w-3" /></button>
+          <button onClick={() => void launch()} disabled={busy} className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-xs font-semibold text-zinc-950 disabled:opacity-50"><Play className="h-3.5 w-3.5" /> {item.launch_url ? "Launch now" : "I started"}</button>
+          <button onClick={() => void complete()} disabled={busy} className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-300 disabled:opacity-50"><Check className="h-3.5 w-3.5" /> Done</button>
+          <button onClick={() => void reschedule()} disabled={busy} className="inline-flex min-h-11 items-center gap-1 rounded-lg px-3 text-xs text-zinc-600 hover:bg-zinc-900 hover:text-zinc-300 disabled:opacity-50">Not now → {item.default_reschedule_days}d <ArrowRight className="h-3 w-3" /></button>
         </div>
         {item.launch_url && <a href={item.launch_url} target="_blank" rel="noreferrer" className="mt-2 block text-[11px] text-zinc-600 hover:text-zinc-300">Open action link directly</a>}
         {error && <p role="alert" className="mt-2 text-xs text-red-300">{error}</p>}
