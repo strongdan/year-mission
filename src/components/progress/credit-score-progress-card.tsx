@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import { addCreditScoreSnapshotAction, getCreditScoreProgressAction } from "@/app/credit-score-actions";
-import { normalizeCreditIdentifier } from "@/domain/credit-score";
+import { sameCreditSeries } from "@/domain/credit-score";
 
 interface CreditScoreSnapshot {
   id: string;
@@ -45,19 +45,20 @@ export function CreditScoreProgressCard() {
   };
 
   useEffect(() => {
-    setMeasuredAt(localToday());
-    load();
+    const frame = window.requestAnimationFrame(() => {
+      setMeasuredAt(localToday());
+      load();
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   const trend = useMemo(() => {
     if (!data?.latest) return [];
-    const latestBureau = normalizeCreditIdentifier(data.latest.bureau);
-    const latestModel = normalizeCreditIdentifier(data.latest.score_model);
     return data.snapshots
-      .filter((item) =>
-        normalizeCreditIdentifier(item.bureau) === latestBureau
-        && normalizeCreditIdentifier(item.score_model) === latestModel
-      )
+      .filter((item) => sameCreditSeries(
+        { bureau: item.bureau, scoreModel: item.score_model },
+        { bureau: data.latest!.bureau, scoreModel: data.latest!.score_model },
+      ))
       .slice(0, 12)
       .reverse();
   }, [data]);
@@ -154,7 +155,7 @@ export function CreditScoreProgressCard() {
       <p className="mt-3 text-[11px] leading-relaxed text-zinc-600">
         Year Mission compares only snapshots with the same bureau and score model. A different scoring model is a separate series, not an improvement or decline.
       </p>
-      {error ? <p className="mt-3 text-sm text-red-300">{error}</p> : null}
+      {error ? <p role="alert" aria-live="polite" className="mt-3 text-sm text-red-300">{error}</p> : null}
     </section>
   );
 }
