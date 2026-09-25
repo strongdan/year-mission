@@ -37,18 +37,20 @@ begin
   returning id into v_plan_id;
 
   if v_plan_id is null then
-    select ap.task_id
-      into v_existing_task_id
+    select ap.id, ap.task_id
+      into v_plan_id, v_existing_task_id
       from public.anticipation_plans ap
      where ap.user_id = p_user_id
-       and ap.event_key = p_event_key;
+       and ap.event_key = p_event_key
+     for update;
 
-    if v_existing_task_id is null then
-      raise exception 'Planning request is already in progress';
+    if v_existing_task_id is not null then
+      return query select v_existing_task_id, true;
+      return;
     end if;
-
-    return query select v_existing_task_id, true;
-    return;
+    -- A prior generated task may have been deleted (FK sets task_id null).
+    -- The row lock also waits out a concurrent creator, so a null here is
+    -- an orphaned reservation that this transaction can safely reuse.
   end if;
 
   insert into public.tasks (
