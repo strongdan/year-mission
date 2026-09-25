@@ -625,9 +625,10 @@ export async function getTasksAction() {
   return { ok: true, data: { inbox, week, today, backlog, completed, projects } };
 }
 
-export async function getDashboardAction() {
+export async function getDashboardAction(dateInput?: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
+  const dashboardDate = dateInput && /^\d{4}-\d{2}-\d{2}$/.test(dateInput) ? dateInput : todayISO();
   const weekStart = mondayOf();
   const [domains, todayTasks, weeklyCommitments, completedTasks, workouts, financial, todayCheckin, promises, experiments, evidence, milestones, momentumHistory, ideas, weeklyReview, houseProgress, weekCheckins] = await Promise.all([
     listDomains(user.id),
@@ -636,7 +637,7 @@ export async function getDashboardAction() {
     listTasks(user.id, { status: "completed", limit: 100 }),
     listWorkouts(user.id, weekStart),
     listFinancialSnapshots(user.id, 1),
-    getTodayCheckin(user.id, todayISO()),
+    getTodayCheckin(user.id, dashboardDate),
     listPromises(user.id),
     listExperiments(user.id),
     listEvidence(user.id, 30),
@@ -682,7 +683,7 @@ export async function getDashboardAction() {
       weeklyWin: weeklyCommitments.find((t) => t.weekly_win) ?? null,
       season,
       monthlyFocus,
-      walkToday: workouts.some((w) => w.date === todayISO() && w.type === "walking"),
+      walkToday: workouts.some((w) => w.date === dashboardDate && w.type === "walking"),
       houseReadiness: houseProgress[0]?.readiness_score ?? null,
       houseReadinessDate: houseProgress[0]?.date ?? null,
       alcoholFreeDays: weekCheckins.filter((c) => c.alcohol_free).length,
