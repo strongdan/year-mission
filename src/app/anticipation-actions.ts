@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { createAdminClient } from "@/integrations/supabase/server";
-import { taskService } from "@/services/task-service";
 import { listUpcomingPrimaryCalendarEvents } from "@/services/google/anticipation-calendar";
 import {
   DEFAULT_LEAD_DAYS,
