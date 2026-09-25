@@ -34,11 +34,11 @@ export function ActionableRemindersView() {
   const [title, setTitle] = useState("");
   const [launchStep, setLaunchStep] = useState("");
   const [launchUrl, setLaunchUrl] = useState("");
+  const [today, setToday] = useState(localToday());
   const [nextDueDate, setNextDueDate] = useState(localToday());
   const [recurrenceDays, setRecurrenceDays] = useState("");
   const [rescheduleDays, setRescheduleDays] = useState("7");
 
-  const today = localToday();
 
   const load = useCallback(async () => {
     const result = await listActionableRemindersAction();
@@ -51,8 +51,30 @@ export function ActionableRemindersView() {
   }, []);
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => { void load(); });
-    return () => window.cancelAnimationFrame(frame);
+    const refreshDate = () => {
+      const next = localToday();
+      setToday((current) => {
+        if (current !== next) {
+          setNextDueDate((due) => due === current ? next : due);
+          return next;
+        }
+        return current;
+      });
+    };
+    const frame = window.requestAnimationFrame(() => { refreshDate(); void load(); });
+    const timer = window.setInterval(refreshDate, 60_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        refreshDate();
+        void load();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [load]);
 
   const due = useMemo(() => items.filter((item) => isReminderDue(item.next_due_date, today)), [items, today]);
@@ -62,24 +84,29 @@ export function ActionableRemindersView() {
     if (!title.trim() || !launchStep.trim() || busy) return;
     setBusy("create");
     setError(null);
-    const result = await createActionableReminderAction({
-      title,
-      launchStep,
-      launchUrl: launchUrl.trim() || null,
-      nextDueDate,
-      recurrenceDays: recurrenceDays ? Number(recurrenceDays) : null,
-      defaultRescheduleDays: Number(rescheduleDays) || 7,
-    });
-    setBusy(null);
-    if (!result.ok) {
-      setError(result.error ?? "Could not create reminder.");
-      return;
+    try {
+      const result = await createActionableReminderAction({
+        title,
+        launchStep,
+        launchUrl: launchUrl.trim() || null,
+        nextDueDate,
+        recurrenceDays: recurrenceDays ? Number(recurrenceDays) : null,
+        defaultRescheduleDays: Number(rescheduleDays) || 7,
+      });
+      if (!result.ok) {
+        setError(result.error ?? "Could not create reminder.");
+        return;
+      }
+      setTitle("");
+      setLaunchStep("");
+      setLaunchUrl("");
+      setRecurrenceDays("");
+      await load();
+    } catch {
+      setError("Could not create reminder.");
+    } finally {
+      setBusy(null);
     }
-    setTitle("");
-    setLaunchStep("");
-    setLaunchUrl("");
-    setRecurrenceDays("");
-    await load();
   }
 
   async function launch(item: ActionableReminderRecord) {
@@ -101,7 +128,7 @@ export function ActionableRemindersView() {
     setBusy(item.id);
     setError(null);
     try {
-      const result = await rescheduleActionableReminderAction({ id: item.id, today });
+      const result = await rescheduleActionableReminderAction({ id: item.id, today, expectedDueDate: item.next_due_date });
       if (!result.ok) setError(result.error ?? "Could not reschedule the reminder.");
       else await load();
     } catch {
