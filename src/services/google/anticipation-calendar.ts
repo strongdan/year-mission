@@ -6,20 +6,33 @@ import { decryptToken } from "./encryption";
 import { refreshAccessToken } from "./oauth";
 import { listPrimaryCalendarEvents, type GoogleCalendarEvent } from "./calendar-api";
 
+export type UpcomingCalendarOutcome = "ok" | "not_connected" | "error";
+
+export interface UpcomingCalendarResult {
+  events: GoogleCalendarEvent[];
+  outcome: UpcomingCalendarOutcome;
+  error?: string;
+}
+
 export async function listUpcomingPrimaryCalendarEvents(
   userId: string,
   start: Date,
   end: Date
-): Promise<GoogleCalendarEvent[]> {
+): Promise<UpcomingCalendarResult> {
   try {
     const connection = await getGoogleConnection(userId);
-    if (!connection?.refresh_token) return [];
-    if (!connection.scope?.includes(GOOGLE_CALENDAR_SCOPE)) return [];
+    if (!connection?.refresh_token || !connection.scope?.includes(GOOGLE_CALENDAR_SCOPE)) {
+      return { events: [], outcome: "not_connected" };
+    }
 
     const accessToken = await refreshAccessToken(decryptToken(connection.refresh_token));
-    return await listPrimaryCalendarEvents(accessToken, start.toISOString(), end.toISOString());
-  } catch {
-    // Anticipation should remain useful even when Google is disconnected.
-    return [];
+    const events = await listPrimaryCalendarEvents(accessToken, start.toISOString(), end.toISOString());
+    return { events, outcome: "ok" };
+  } catch (error) {
+    return {
+      events: [],
+      outcome: "error",
+      error: error instanceof Error ? error.message : "Google Calendar could not be loaded.",
+    };
   }
 }
