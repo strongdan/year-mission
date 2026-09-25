@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
 import { getCalendarWeekAction } from "@/app/calendar-actions";
+import { ComingUpCard } from "@/components/anticipation/coming-up-card";
 
 type CalendarData = NonNullable<Awaited<ReturnType<typeof getCalendarWeekAction>>["data"]>;
 type EventItem = CalendarData["events"][number];
@@ -41,17 +42,17 @@ export function NextCalendarEvent() {
     };
   }, []);
 
-  if (!data || data.outcome !== "ok") return null;
-
-  const upcoming = data.events
-    .filter((event) => event.allDay || loadedAt === null || new Date(event.end).getTime() >= loadedAt)
-    .sort((a, b) => eventDate(a).getTime() - eventDate(b).getTime());
+  const upcoming = data?.outcome === "ok"
+    ? data.events
+        .filter((event) => event.allDay || loadedAt === null || new Date(event.end).getTime() >= loadedAt)
+        .sort((a, b) => eventDate(a).getTime() - eventDate(b).getTime())
+    : [];
   const next = upcoming[0];
 
-  if (!next) return null;
-
   return (
-    <div className="rounded-xl border border-sky-950/80 bg-sky-950/10 px-3 py-2.5">
+    <div className="flex flex-col gap-2">
+      {next && (
+        <div className="rounded-xl border border-sky-950/80 bg-sky-950/10 px-3 py-2.5">
       <div className="flex items-center gap-3">
         <CalendarDays className="h-4 w-4 shrink-0 text-sky-400" />
         <div className="min-w-0 flex-1">
@@ -72,8 +73,8 @@ export function NextCalendarEvent() {
         )}
       </div>
 
-      {expanded && (
-        <div className="mt-3 divide-y divide-sky-950/60 border-t border-sky-950/60">
+          {expanded && (
+            <div className="mt-3 divide-y divide-sky-950/60 border-t border-sky-950/60">
           {upcoming.slice(1, 8).map((event) => (
             <div key={event.id} className="grid grid-cols-[74px_1fr] gap-2 py-2.5 text-xs">
               <span className="text-zinc-600">{eventDay(event)}</span>
@@ -85,7 +86,10 @@ export function NextCalendarEvent() {
           ))}
           {upcoming.length > 8 && <p className="pt-2.5 text-[11px] text-zinc-600">Showing the next 8 events.</p>}
         </div>
+          )}
+        </div>
       )}
+      <ComingUpCard />
     </div>
   );
 }
