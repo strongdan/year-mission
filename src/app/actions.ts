@@ -79,6 +79,29 @@ function localDayForRead(value?: string): string {
   return parseLocalDay(value) ?? todayISO();
 }
 
+function safeTimeZone(value?: string): string {
+  if (!value) return "UTC";
+  try {
+    new Intl.DateTimeFormat("en-CA", { timeZone: value }).format(new Date());
+    return value;
+  } catch {
+    return "UTC";
+  }
+}
+
+function dateInTimeZone(value: string, timeZone: string): string | null {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
 function mondayOfDay(day: string): string {
   const [year, month, date] = day.split("-").map(Number);
   const d = new Date(Date.UTC(year, month - 1, date, 12));
@@ -663,10 +686,11 @@ export async function getTasksAction() {
   return { ok: true, data: { inbox, week, today, backlog, completed, projects } };
 }
 
-export async function getDashboardAction(dateInput?: string) {
+export async function getDashboardAction(dateInput?: string, timeZoneInput?: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
   const dashboardDate = localDayForRead(dateInput);
+  const dashboardTimeZone = safeTimeZone(timeZoneInput);
   const weekStart = mondayOfDay(dashboardDate);
   const [domains, todayTasks, weeklyCommitments, completedTasks, workouts, financial, todayCheckin, promises, experiments, evidence, milestones, momentumHistory, ideas, weeklyReview, houseProgress, weekCheckins] = await Promise.all([
     listDomains(user.id),
@@ -706,7 +730,7 @@ export async function getDashboardAction(dateInput?: string) {
       domains,
       todayTasks,
       weeklyCommitments,
-      completedToday: completedTasks.filter((t) => t.completed_at?.slice(0, 10) === dashboardDate),
+      completedToday: completedTasks.filter((t) => t.completed_at && dateInTimeZone(t.completed_at, dashboardTimeZone) === dashboardDate),
       workouts,
       financial,
       todayCheckin,
