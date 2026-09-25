@@ -61,7 +61,7 @@ export function TodayView() {
   const [loggingWalk, setLoggingWalk] = useState(false);
 
   async function load() {
-    const res = await getDashboardAction(localToday());
+    const res = await getDashboardAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
     if (!res.ok || !res.data) {
       setError(res.error ?? "Failed to load.");
       setLoading(false);
@@ -74,7 +74,7 @@ export function TodayView() {
 
   useEffect(() => {
     let cancelled = false;
-    getDashboardAction(localToday()).then((res) => {
+    getDashboardAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC").then((res) => {
       if (cancelled) return;
       if (!res.ok || !res.data) {
         setError(res.error ?? "Failed to load.");
