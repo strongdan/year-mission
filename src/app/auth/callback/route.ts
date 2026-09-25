@@ -5,6 +5,10 @@ function callbackFailureRedirect(request: Request, message: string) {
   const url = new URL("/login", request.url);
   url.searchParams.set("error", "callback");
   url.searchParams.set("message", message);
+  const requestUrl = new URL(request.url);
+  if (requestUrl.searchParams.get("recovery") === "apple") {
+    url.searchParams.set("recovery", "apple");
+  }
   return NextResponse.redirect(url);
 }
 

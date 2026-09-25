@@ -266,7 +266,7 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
       </Card>
 
       <Card>
-        <CardHeader title="Account" subtitle="Sign in with Apple or Google through Supabase Auth." right={<UserRound className="h-4 w-4 text-zinc-500" />} />
+        <CardHeader title="Account" subtitle="Authenticated through Supabase Auth." right={<UserRound className="h-4 w-4 text-zinc-500" />} />
         <div className="flex items-center justify-between gap-3">
           <div><p className="text-sm font-medium text-zinc-200">Signed in</p><p className="mt-0.5 text-xs text-zinc-500">Supabase session is active.</p></div>
           <form action="/auth/signout" method="post"><Button type="submit" size="sm" variant="secondary">Sign out</Button></form>

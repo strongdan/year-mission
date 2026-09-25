@@ -13,11 +13,11 @@ export function getAuthErrorMessage(error: string | null, message: string | null
   return "Sign-in failed. Try again.";
 }
 
-type LoginProvider = Extract<Provider, "google" | "apple">;
+type RecoveryProvider = Extract<Provider, "google" | "apple">;
 
 function LoginContent() {
   const searchParams = useSearchParams();
-  const [loadingProvider, setLoadingProvider] = useState<LoginProvider | null>(null);
+  const [loadingProvider, setLoadingProvider] = useState<RecoveryProvider | null>(null);
   const [message, setMessage] = useState<string | null>(
     getAuthErrorMessage(searchParams.get("error"), searchParams.get("message"))
   );
@@ -35,7 +35,7 @@ function LoginContent() {
     );
   }
 
-  async function signInWithProvider(provider: LoginProvider) {
+  async function signInWithProvider(provider: RecoveryProvider) {
     setLoadingProvider(provider);
     setMessage(null);
     try {
@@ -43,7 +43,7 @@ function LoginContent() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/${provider === "apple" ? "&recovery=apple" : ""}`,
         },
       });
       if (error) setMessage(error.message);
@@ -54,6 +54,7 @@ function LoginContent() {
     }
   }
 
+  const legacyAppleRecovery = searchParams.get("recovery") === "apple";
   const loading = loadingProvider !== null;
 
   return (
@@ -62,16 +63,7 @@ function LoginContent() {
         <h1 className="text-2xl font-semibold">Year Mission</h1>
         <p className="mt-1 text-sm text-zinc-400">A personal execution system.</p>
 
-        <div className="mt-8 flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={() => void signInWithProvider("apple")}
-            disabled={loading}
-            className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white disabled:opacity-50"
-          >
-            {loadingProvider === "apple" ? "Signing in..." : "Continue with Apple"}
-          </button>
-
+        <div className="mt-8">
           <button
             type="button"
             onClick={() => void signInWithProvider("google")}
@@ -82,9 +74,21 @@ function LoginContent() {
           </button>
         </div>
 
-        <p className="mt-4 text-center text-[11px] leading-relaxed text-zinc-500">
-          Apple may let you hide your email address. Year Mission only receives the account information Apple shares through sign-in.
-        </p>
+        {legacyAppleRecovery && (
+          <div className="mt-6 rounded-xl border border-amber-900/50 bg-amber-950/10 p-3">
+            <p className="text-xs leading-relaxed text-amber-200/80">
+              Legacy account recovery only. This path is temporary while the Google identity is verified.
+            </p>
+            <button
+              type="button"
+              onClick={() => void signInWithProvider("apple")}
+              disabled={loading}
+              className="mt-2 w-full rounded-lg border border-amber-800/60 px-3 py-2 text-xs font-medium text-amber-100 disabled:opacity-50"
+            >
+              {loadingProvider === "apple" ? "Signing in..." : "Recover with Apple"}
+            </button>
+          </div>
+        )}
 
         {message && <p className="mt-4 text-center text-sm text-red-400">{message}</p>}
       </div>
