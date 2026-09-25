@@ -230,6 +230,7 @@ export async function createProjectAction(input: { title: string; description?: 
 }
 
 export async function checkinAction(input: {
+  date?: string;
   alcoholFree?: boolean;
   weight?: number | null;
   steps?: number | null;
@@ -243,10 +244,11 @@ export async function checkinAction(input: {
 }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const existing = await getDailyCheckin(user.id, todayISO());
+  const date = input.date && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : todayISO();
+  const existing = await getDailyCheckin(user.id, date);
   await upsertDailyCheckin({
     user_id: user.id,
-    date: todayISO(),
+    date,
     alcohol_free: input.alcoholFree ?? existing?.alcohol_free ?? false,
     weight: input.weight ?? existing?.weight ?? null,
     steps: input.steps ?? existing?.steps ?? null,
@@ -264,16 +266,17 @@ export async function checkinAction(input: {
 
 const EVENING_RESET_Z = z.enum(["target", "floor", "skipped"]);
 
-export async function logEveningResetAction(input: { completion: z.infer<typeof EVENING_RESET_Z>; variant?: string | null }) {
+export async function logEveningResetAction(input: { completion: z.infer<typeof EVENING_RESET_Z>; variant?: string | null; date?: string }) {
   const parsed = EVENING_RESET_Z.safeParse(input.completion);
   if (!parsed.success) return { ok: false, error: "Invalid completion value." };
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const existing = await getDailyCheckin(user.id, todayISO());
+  const date = input.date && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : todayISO();
+  const existing = await getDailyCheckin(user.id, date);
   const variant = input.variant ?? existing?.evening_reset_variant ?? null;
   await upsertDailyCheckin({
     user_id: user.id,
-    date: todayISO(),
+    date,
     alcohol_free: existing?.alcohol_free ?? false,
     weight: existing?.weight ?? null,
     steps: existing?.steps ?? null,
