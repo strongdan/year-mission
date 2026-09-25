@@ -55,6 +55,61 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+const LOCAL_DAY_Z = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) return false;
+  const utcToday = new Date();
+  const todayDay = Date.UTC(utcToday.getUTCFullYear(), utcToday.getUTCMonth(), utcToday.getUTCDate()) / 86_400_000;
+  const inputDay = parsed.getTime() / 86_400_000;
+  return Math.abs(inputDay - todayDay) <= 1;
+}, "Date must be the current local calendar day.");
+
+function parseLocalDay(value: string | undefined): string | null {
+  if (!value) return null;
+  const parsed = LOCAL_DAY_Z.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
+function localDayForRead(value?: string): string {
+  return parseLocalDay(value) ?? todayISO();
+}
+
+function safeTimeZone(value?: string): string {
+  if (!value) return "UTC";
+  try {
+    new Intl.DateTimeFormat("en-CA", { timeZone: value }).format(new Date());
+    return value;
+  } catch {
+    return "UTC";
+  }
+}
+
+function dateInTimeZone(value: string, timeZone: string): string | null {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+function mondayOfDay(day: string): string {
+  const [year, month, date] = day.split("-").map(Number);
+  const d = new Date(Date.UTC(year, month - 1, date, 12));
+  const weekday = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - weekday);
+  return d.toISOString().slice(0, 10);
+}
+
 function mondayOf(date = new Date()): string {
   const d = new Date(date);
   const day = (d.getDay() + 6) % 7;
@@ -230,6 +285,7 @@ export async function createProjectAction(input: { title: string; description?: 
 }
 
 export async function checkinAction(input: {
+  date?: string;
   alcoholFree?: boolean;
   weight?: number | null;
   steps?: number | null;
@@ -243,10 +299,12 @@ export async function checkinAction(input: {
 }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const existing = await getDailyCheckin(user.id, todayISO());
+  const date = input.date ? parseLocalDay(input.date) : todayISO();
+  if (!date) return { ok: false, error: "Invalid local date." };
+  const existing = await getDailyCheckin(user.id, date);
   await upsertDailyCheckin({
     user_id: user.id,
-    date: todayISO(),
+    date,
     alcohol_free: input.alcoholFree ?? existing?.alcohol_free ?? false,
     weight: input.weight ?? existing?.weight ?? null,
     steps: input.steps ?? existing?.steps ?? null,
@@ -264,16 +322,18 @@ export async function checkinAction(input: {
 
 const EVENING_RESET_Z = z.enum(["target", "floor", "skipped"]);
 
-export async function logEveningResetAction(input: { completion: z.infer<typeof EVENING_RESET_Z>; variant?: string | null }) {
+export async function logEveningResetAction(input: { completion: z.infer<typeof EVENING_RESET_Z>; variant?: string | null; date?: string }) {
   const parsed = EVENING_RESET_Z.safeParse(input.completion);
   if (!parsed.success) return { ok: false, error: "Invalid completion value." };
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const existing = await getDailyCheckin(user.id, todayISO());
+  const date = input.date ? parseLocalDay(input.date) : todayISO();
+  if (!date) return { ok: false, error: "Invalid local date." };
+  const existing = await getDailyCheckin(user.id, date);
   const variant = input.variant ?? existing?.evening_reset_variant ?? null;
   await upsertDailyCheckin({
     user_id: user.id,
-    date: todayISO(),
+    date,
     alcohol_free: existing?.alcohol_free ?? false,
     weight: existing?.weight ?? null,
     steps: existing?.steps ?? null,
@@ -292,9 +352,11 @@ export async function logEveningResetAction(input: { completion: z.infer<typeof 
 export async function logWorkoutAction(input: { type: string; durationMinutes?: number; notes?: string; date?: string }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
+  const date = input.date ? parseLocalDay(input.date) : todayISO();
+  if (!date) return { ok: false, error: "Invalid local date." };
   await insertWorkout({
     user_id: user.id,
-    date: input.date ?? todayISO(),
+    date,
     type: input.type,
     duration_minutes: input.durationMinutes ?? null,
     notes: input.notes ?? null,
@@ -384,9 +446,11 @@ export async function logFrictionAction(input: { taskId?: string | null; reason:
   return { ok: true };
 }
 
-export async function coachAction(message: string, conversationId?: string | null) {
+export async function coachAction(message: string, conversationId?: string | null, dateInput?: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
+  const contextDate = localDayForRead(dateInput);
+  const contextWeekStart = mondayOfDay(contextDate);
 
   const [domains, plan] = await Promise.all([
     listDomains(user.id),
@@ -396,9 +460,9 @@ export async function coachAction(message: string, conversationId?: string | nul
   const todayTasks = await listTasks(user.id, { status: "today" });
   const weeklyCommitments = await listTasks(user.id, { status: "this_week" });
   const completedTasks = await listTasks(user.id, { status: "completed", limit: 50 });
-  const workouts = await listWorkouts(user.id, mondayOf());
+  const workouts = await listWorkouts(user.id, contextWeekStart);
   const financial = await listFinancialSnapshots(user.id, 1);
-  const todayCheckin = await getTodayCheckin(user.id, todayISO());
+  const todayCheckin = await getTodayCheckin(user.id, contextDate);
   const promises = await listPromises(user.id);
   const experiments = await listExperiments(user.id);
   const evidence = await listEvidence(user.id, 20);
@@ -410,7 +474,7 @@ export async function coachAction(message: string, conversationId?: string | nul
   const houseReadiness = (await listHouseProgress(user.id, 1))[0]?.readiness_score ?? null;
   const weeklyReviews = await listWeeklyReviews(user.id, 8);
   const friction = await listFrictionEvents(user.id, 20);
-  const momentum = await metricsService.computeAndStoreMomentum(user.id, mondayOf());
+  const momentum = await metricsService.computeAndStoreMomentum(user.id, contextWeekStart);
 
   let resolvedConversationId = conversationId ?? null;
   if (!resolvedConversationId) {
@@ -622,10 +686,12 @@ export async function getTasksAction() {
   return { ok: true, data: { inbox, week, today, backlog, completed, projects } };
 }
 
-export async function getDashboardAction() {
+export async function getDashboardAction(dateInput?: string, timeZoneInput?: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const weekStart = mondayOf();
+  const dashboardDate = localDayForRead(dateInput);
+  const dashboardTimeZone = safeTimeZone(timeZoneInput);
+  const weekStart = mondayOfDay(dashboardDate);
   const [domains, todayTasks, weeklyCommitments, completedTasks, workouts, financial, todayCheckin, promises, experiments, evidence, milestones, momentumHistory, ideas, weeklyReview, houseProgress, weekCheckins] = await Promise.all([
     listDomains(user.id),
     listTasks(user.id, { status: "today" }),
@@ -633,7 +699,7 @@ export async function getDashboardAction() {
     listTasks(user.id, { status: "completed", limit: 100 }),
     listWorkouts(user.id, weekStart),
     listFinancialSnapshots(user.id, 1),
-    getTodayCheckin(user.id, todayISO()),
+    getTodayCheckin(user.id, dashboardDate),
     listPromises(user.id),
     listExperiments(user.id),
     listEvidence(user.id, 30),
@@ -664,7 +730,7 @@ export async function getDashboardAction() {
       domains,
       todayTasks,
       weeklyCommitments,
-      completedToday: completedTasks.filter((t) => t.completed_at?.slice(0, 10) === todayISO()),
+      completedToday: completedTasks.filter((t) => t.completed_at && dateInTimeZone(t.completed_at, dashboardTimeZone) === dashboardDate),
       workouts,
       financial,
       todayCheckin,
@@ -679,7 +745,7 @@ export async function getDashboardAction() {
       weeklyWin: weeklyCommitments.find((t) => t.weekly_win) ?? null,
       season,
       monthlyFocus,
-      walkToday: workouts.some((w) => w.date === todayISO() && w.type === "walking"),
+      walkToday: workouts.some((w) => w.date === dashboardDate && w.type === "walking"),
       houseReadiness: houseProgress[0]?.readiness_score ?? null,
       houseReadinessDate: houseProgress[0]?.date ?? null,
       alcoholFreeDays: weekCheckins.filter((c) => c.alcohol_free).length,

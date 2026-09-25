@@ -18,6 +18,11 @@ import { TrendingDown, Flag, FlaskConical, Lightbulb } from "lucide-react";
 import type { WeekMode } from "@/domain/constants";
 import { LogProgress } from "./log-progress";
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 type DashboardData = NonNullable<Awaited<ReturnType<typeof getDashboardAction>>["data"]>;
 
 const WEEK_MODES: { value: WeekMode; label: string; hint: string }[] = [
@@ -107,7 +112,7 @@ export function ProgressView() {
   }
 
   async function load() {
-    const res = await getDashboardAction();
+    const res = await getDashboardAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
     if (!res.ok || !res.data) {
       setError(res.error ?? "Failed to load.");
       return;
@@ -120,7 +125,7 @@ export function ProgressView() {
 
   useEffect(() => {
     let cancelled = false;
-    getDashboardAction().then((res) => {
+    getDashboardAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC").then((res) => {
       if (cancelled) return;
       if (!res.ok || !res.data) {
         setError(res.error ?? "Failed to load.");

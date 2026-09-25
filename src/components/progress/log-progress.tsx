@@ -7,6 +7,11 @@ import { Button } from "@/components/ui/button";
 import type { EvidenceType } from "@/domain/constants";
 import type { DailyCheckin, FinancialSnapshot, HouseProgress } from "@/types/models";
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 const WORKOUT_TYPES = ["lifting", "walking", "running", "cycling", "swimming", "mobility", "other"] as const;
 
 const EVIDENCE_TYPES: { value: EvidenceType; label: string }[] = [
@@ -84,7 +89,7 @@ export function LogProgress({ checkin, debt, house, onSaved }: LogProgressProps)
             <NumberInput label="Weight (lb)" value={weight} onChange={setWeight} placeholder="e.g. 214" />
             <NumberInput label="Steps today" value={steps} onChange={setSteps} placeholder="e.g. 8200" />
           </div>
-          <Button size="sm" variant="secondary" disabled={busy || (!weight && !steps)} onClick={() => run(() => checkinAction({ weight: weight ? Number(weight) : null, steps: steps ? Number(steps) : null }), "Check-in saved")}>
+          <Button size="sm" variant="secondary" disabled={busy || (!weight && !steps)} onClick={() => run(() => checkinAction({ date: localToday(), weight: weight ? Number(weight) : null, steps: steps ? Number(steps) : null }), "Check-in saved")}>
             Save check-in
           </Button>
         </div>
@@ -114,7 +119,7 @@ export function LogProgress({ checkin, debt, house, onSaved }: LogProgressProps)
           </div>
           <div className="flex items-end gap-3">
             <NumberInput label="Minutes" value={workoutMinutes} onChange={setWorkoutMinutes} placeholder="e.g. 45" />
-            <Button size="sm" variant="secondary" disabled={busy || !workoutMinutes} onClick={() => run(() => logWorkoutAction({ type: workoutType, durationMinutes: Number(workoutMinutes) }), "Workout logged")}>
+            <Button size="sm" variant="secondary" disabled={busy || !workoutMinutes} onClick={() => run(() => logWorkoutAction({ type: workoutType, durationMinutes: Number(workoutMinutes), date: localToday() }), "Workout logged")}>
               Log workout
             </Button>
           </div>
