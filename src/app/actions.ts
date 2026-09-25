@@ -55,6 +55,33 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+const LOCAL_DAY_Z = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) return false;
+  const utcToday = new Date();
+  const todayDay = Date.UTC(utcToday.getUTCFullYear(), utcToday.getUTCMonth(), utcToday.getUTCDate()) / 86_400_000;
+  const inputDay = parsed.getTime() / 86_400_000;
+  return Math.abs(inputDay - todayDay) <= 1;
+}, "Date must be the current local calendar day.");
+
+function validatedLocalDay(value?: string): string {
+  const parsed = LOCAL_DAY_Z.safeParse(value);
+  return parsed.success ? parsed.data : todayISO();
+}
+
+function mondayOfDay(day: string): string {
+  const [year, month, date] = day.split("-").map(Number);
+  const d = new Date(Date.UTC(year, month - 1, date, 12));
+  const weekday = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - weekday);
+  return d.toISOString().slice(0, 10);
+}
+
 function mondayOf(date = new Date()): string {
   const d = new Date(date);
   const day = (d.getDay() + 6) % 7;
@@ -244,7 +271,7 @@ export async function checkinAction(input: {
 }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const date = input.date && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : todayISO();
+  const date = validatedLocalDay(input.date);
   const existing = await getDailyCheckin(user.id, date);
   await upsertDailyCheckin({
     user_id: user.id,
@@ -271,7 +298,7 @@ export async function logEveningResetAction(input: { completion: z.infer<typeof 
   if (!parsed.success) return { ok: false, error: "Invalid completion value." };
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const date = input.date && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : todayISO();
+  const date = validatedLocalDay(input.date);
   const existing = await getDailyCheckin(user.id, date);
   const variant = input.variant ?? existing?.evening_reset_variant ?? null;
   await upsertDailyCheckin({
@@ -297,7 +324,7 @@ export async function logWorkoutAction(input: { type: string; durationMinutes?: 
   if (!user) return { ok: false, error: "Not signed in." };
   await insertWorkout({
     user_id: user.id,
-    date: input.date ?? todayISO(),
+    date: validatedLocalDay(input.date),
     type: input.type,
     duration_minutes: input.durationMinutes ?? null,
     notes: input.notes ?? null,
@@ -390,7 +417,8 @@ export async function logFrictionAction(input: { taskId?: string | null; reason:
 export async function coachAction(message: string, conversationId?: string | null, dateInput?: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const contextDate = dateInput && /^\d{4}-\d{2}-\d{2}$/.test(dateInput) ? dateInput : todayISO();
+  const contextDate = validatedLocalDay(dateInput);
+  const contextWeekStart = mondayOfDay(contextDate);
 
   const [domains, plan] = await Promise.all([
     listDomains(user.id),
@@ -400,7 +428,7 @@ export async function coachAction(message: string, conversationId?: string | nul
   const todayTasks = await listTasks(user.id, { status: "today" });
   const weeklyCommitments = await listTasks(user.id, { status: "this_week" });
   const completedTasks = await listTasks(user.id, { status: "completed", limit: 50 });
-  const workouts = await listWorkouts(user.id, mondayOf());
+  const workouts = await listWorkouts(user.id, contextWeekStart);
   const financial = await listFinancialSnapshots(user.id, 1);
   const todayCheckin = await getTodayCheckin(user.id, contextDate);
   const promises = await listPromises(user.id);
@@ -414,7 +442,7 @@ export async function coachAction(message: string, conversationId?: string | nul
   const houseReadiness = (await listHouseProgress(user.id, 1))[0]?.readiness_score ?? null;
   const weeklyReviews = await listWeeklyReviews(user.id, 8);
   const friction = await listFrictionEvents(user.id, 20);
-  const momentum = await metricsService.computeAndStoreMomentum(user.id, mondayOf());
+  const momentum = await metricsService.computeAndStoreMomentum(user.id, contextWeekStart);
 
   let resolvedConversationId = conversationId ?? null;
   if (!resolvedConversationId) {
@@ -629,8 +657,8 @@ export async function getTasksAction() {
 export async function getDashboardAction(dateInput?: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const dashboardDate = dateInput && /^\d{4}-\d{2}-\d{2}$/.test(dateInput) ? dateInput : todayISO();
-  const weekStart = mondayOf();
+  const dashboardDate = validatedLocalDay(dateInput);
+  const weekStart = mondayOfDay(dashboardDate);
   const [domains, todayTasks, weeklyCommitments, completedTasks, workouts, financial, todayCheckin, promises, experiments, evidence, milestones, momentumHistory, ideas, weeklyReview, houseProgress, weekCheckins] = await Promise.all([
     listDomains(user.id),
     listTasks(user.id, { status: "today" }),
@@ -669,7 +697,7 @@ export async function getDashboardAction(dateInput?: string) {
       domains,
       todayTasks,
       weeklyCommitments,
-      completedToday: completedTasks.filter((t) => t.completed_at?.slice(0, 10) === todayISO()),
+      completedToday: completedTasks.filter((t) => t.completed_at?.slice(0, 10) === dashboardDate),
       workouts,
       financial,
       todayCheckin,
