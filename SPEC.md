@@ -1373,6 +1373,14 @@ Life Balance is an owner-approved, visibility-first Today support surface. It co
 
 The native iPhone companion may read only the approved daily HealthKit aggregates needed by this surface. It must not store raw heart-rate samples, workout GPS, or psychological inferences. Health sync is production-only and uses the pinned Year Mission production origin. Partial syncs preserve previously stored metrics atomically; omitted values are not deletions. Life Balance does not create streaks, quotas, scores, or completion pressure.
 
+# 49. Credit Score Context
+
+Progress may include optional manual credit-score snapshots as a secondary Money context below the core Progress experience.
+
+Each snapshot must preserve the score model, bureau, date, and source. Trends and deltas compare only snapshots from the **same bureau and score model**; Year Mission must not imply that unlike scores are directly comparable.
+
+The score is an outcome signal, not a gamification reward, personal worth measure, or basis for predicted score gains. Manual entry is sufficient for the first slice. Do not invent or require a credit-bureau API contract merely to automate retrieval.
+
 Year Mission should not become another system the user has to maintain.
 
 It should reduce the amount of mental work required to operate the year.
