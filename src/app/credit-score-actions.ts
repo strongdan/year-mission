@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
+import { escapeIlikeLiteral } from "@/domain/credit-score";
 
 const scoreInput = z.object({
   score: z.coerce.number().int().min(300).max(850),
@@ -61,8 +62,8 @@ export async function getCreditScoreProgressAction() {
     .from("credit_score_snapshots")
     .select("id,score,bureau,score_model,source,measured_at,created_at")
     .eq("user_id", user.id)
-    .ilike("bureau", latest.bureau)
-    .ilike("score_model", latest.score_model)
+    .ilike("bureau", escapeIlikeLiteral(latest.bureau))
+    .ilike("score_model", escapeIlikeLiteral(latest.score_model))
     .order("measured_at", { ascending: false })
     .order("created_at", { ascending: false });
 
