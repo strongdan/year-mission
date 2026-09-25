@@ -83,17 +83,16 @@ Before declaring Cloudflare canonical:
 
 1. public/login shell renders correctly
 2. Google sign-in and Supabase callback
-3. Apple sign-in and Supabase callback
-4. authenticated Today/task CRUD
-5. Google Tasks connect, reconnect, sync, and disconnect
-6. Google Calendar read-only context
-7. Coach/AI request path
-8. Brain Dump typed capture and server transcription path
+3. authenticated Today/task CRUD
+4. Google Tasks connect, reconnect, sync, and disconnect
+5. Google Calendar read-only context
+6. Coach/AI request path
+7. Brain Dump typed capture and server transcription path
 9. PWA manifest/service worker/installability
-10. installed iPhone PWA navigation and offline shell
-11. notifications where configured
-12. finance read-only paths that are enabled
-13. lint, typecheck, tests, Next.js build, and vinext Worker build
+9. installed iPhone PWA navigation and offline shell
+10. notifications where configured
+11. finance read-only paths that are enabled
+12. lint, typecheck, tests, Next.js build, and vinext Worker build
 
 The `next/offline` compatibility warning makes the installed-PWA/offline tests a hard cutover gate rather than an optional check.
 
