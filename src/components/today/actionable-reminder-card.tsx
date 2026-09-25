@@ -32,7 +32,10 @@ export function ActionableReminderCard() {
     setCount(due.length);
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => { void load(); });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   if (!item) return null;
 
