@@ -1,6 +1,6 @@
 # Year Mission — ROADMAP.md
 
-Last updated: 2026-09-04
+Last updated: 2026-10-01
 
 > [!NOTE]
 > The original P0 recovery program was implemented and deployed. Later owner decisions supersede historical feature choices: Sign in with Apple is now retired from the user-facing product, while Apple Health / HealthKit remains separate and supported. See `docs/BACKLOG_RECOVERY_STATUS.md` and the current reconciliation issue for present-state authority.
@@ -191,6 +191,89 @@ Acceptance criteria:
 
 ---
 
+# P1 — Guided daily execution
+
+## YM-RM-011 — Morning briefing, evening reset, and avoidance-aware follow-through
+
+**Status:** `QUEUED`
+
+**Owner request captured:** 2026-10-01. Accepted for roadmap planning, not implementation or deployment authorization. Promote the exact scope into `SPEC.md` and record changed decisions before implementation; retain the feature-freeze and reliability-first rules.
+
+Goal:
+
+Make Year Mission useful even when the user does not remember to maintain a task list. The app should help recall uncaptured responsibilities, bring back established commitments, and turn forgotten, uninteresting, unclear, or uncomfortable work into a manageable next action. The core loop is: show up, hear what matters, start something, and close the loop.
+
+### Product boundaries and integration
+
+- Make the check-in the time-appropriate entry experience within **Today**, not a new primary tab, adventure dashboard, or separate task database. Keep direct access to Today/Now; never require a check-in before doing a task.
+- Reuse the current task flow, deterministic sequencing, task events, execution mode, Floor behavior, Coach, and Momentum where they already work. Audit live code before claiming any component exists or is complete.
+- Propose at most **three meaningful actions** in the briefing and emphasize **one Now action**. This is a presentation limit, not a change to the existing five-task Today capacity. New commitments still require an explicit capacity tradeoff.
+- Distinguish suggestions from commitments. Confirm new task promotions and schedule changes; previously approved recurring responsibilities may recur according to their confirmed rules. Do not silently promote Inbox/backlog items.
+- The core must work with existing/manual task data and without AI, banking integration (`YM-RM-010`), or new Calendar/email access. Optional source context must be explicitly authorized and expose unavailable/stale states rather than invent obligations or availability.
+
+### Morning briefing and short routine checklist
+
+- Aim for a roughly two-minute interaction: orient to the current day, surface genuine time-sensitive responsibilities and mission/Weekly Win progress, then recommend a concrete first move with a short deterministic `Why this?` explanation.
+- Include a compact, user-approved routine checklist. Establish recurrence once, allow easy edits/pause, and account for routine workload rather than hiding unlimited work outside the Today limit.
+- Do not enforce three actions or fixed category quotas when fewer are appropriate. Empty days, low-energy days, and Recovery/Maintenance modes must remain useful.
+- End with `Start this now`, leading to the existing execution flow or the relevant safe destination. Example: `Open the document and find its due date`, not `Sort out all your paperwork`.
+- Keep actual deadlines distinct from preferred work dates. Explain conflicts with available time and preserve visibility of critical obligations without turning Today into an overdue wall.
+
+### Avoidance support: change the approach, not the notification volume
+
+- Offer `I'm avoiding this` as a direct entry to the existing friction/anti-avoidance flow; do not require emotional analysis, a journal entry, or a diagnostic label.
+- Offer a two-minute starting attempt, a smaller physical next step, clarification, or help. Distinguish `Forgot`, `Not important`, `Blocked`, `Don't know how`, `No energy`, and `Just avoiding it`; not every unfinished task is fear-based.
+- After repeated explicit deferrals (initial proposed threshold: two), offer a different strategy: resize, clarify, choose a realistic time, record a blocker, request support, or explicitly park/drop an optional item. Do not endlessly reissue the same reminder or force a particular choice.
+- A support option may help draft a request or plan a shared work session; it must not contact another person or book anything without explicit approval.
+- Record `started`, `resized`, `deferred`, and `completed` separately. Starting a difficult task is evidence of progress, not proof that the underlying responsibility is finished.
+- Preserve deferral history and true deadlines. Snoozing, missing a check-in, or completing a tiny first step must not erase an obligation, move its due date, or imply completion. An unopened notification alone is not proof of avoidance.
+
+### Evening reset and remembering uncaptured work
+
+- Aim for two to three minutes: resolve the outcome of today's selected actions, capture anything new, and briefly orient to tomorrow. Allow skip and resume without losing confirmed work.
+- Offer a plain text field compatible with device dictation from the first usable version. A later optional short voice-capture flow may propose tasks for review; no required metadata entry or lengthy conversation.
+- Rotate one concrete recall prompt at a time, such as `Did you promise anyone something?`, `Any mail or messages needing a response?`, or `Anything around the house you noticed but have not handled?` Let users skip or dismiss irrelevant prompts.
+- Review extracted task titles, due dates, and proposed changes before applying them. Uncertain dates stay uncertain until clarified; new captures default to Inbox, not automatic Today commitments. Preserve original input when parsing fails.
+- Reuse optional quick reflection/journaling (`YM-RM-009`) rather than making duplicate records or a second mandatory journal. A brief `something good today` reflection remains optional.
+- Recaps must be grounded in saved outcomes. Recognize meaningful effort, completed responsibilities, and mission progress without fabricated praise or treating app use as accomplishment.
+
+### Reminders, missed days, and the twenty-second fallback
+
+- Offer one morning and one evening reminder in user-chosen local time windows after opt-in. Midday is optional and off by default; use it only for a specifically requested check or action, not a third mandatory routine.
+- Reuse the existing notification mechanism where supported. Qualify actual delivery on supported iPhone surfaces; do not assume the app can reliably notify in the background. Keep an in-app fallback when permission, delivery, or platform support is unavailable.
+- Respect timezone changes, daylight-saving transitions, quiet hours, pause/disable settings, and per-check-in deduplication. Do not deliver both morning and evening catch-up notifications when reconnecting.
+- Supply a twenty-second path with one meaningful action and `Start`, `Choose a time`, or `Need help`. Check-in completion must not become a new chore or block direct task execution.
+- After absence, show the current day, not a stack of missed briefings or duplicate routine instances. Keep outstanding real commitments accessible; missed check-ins neither erase tasks nor silently re-promote the whole backlog.
+- No lost progress, broken-streak penalties, shame copy, fake XP, or rewards for notification opens/check-in volume. Use existing meaningful milestones and evidence; light mission language must not introduce another game system.
+
+### Privacy, reliability, and agent boundaries
+
+- Keep task/reflection content private under existing user isolation. Notifications should use generic copy by default; do not expose sensitive task details on the lock screen or put raw notes/transcripts in analytics, logs, or public fixtures.
+- Application code owns all mutations. Validate AI proposals, require appropriate confirmation, and make retries, repeated taps, and recurrence creation idempotent.
+- AI/network failure must preserve drafts and confirmed state. Stale recommendations must be revalidated before mutation; a task completed elsewhere must not be resurrected.
+- For optional in-app audio, define explicit microphone consent, transcription-provider disclosure, retention/deletion, and a non-audio fallback before activation. No ambient recording or emotion/health inference. Do not change the separate no-microphone rule for Conversation Confidence speaking practice.
+
+### Delivery slices
+
+- [ ] **011-A — Reconcile and admit scope:** inventory existing Today, friction, recurrence, capture, notification, and review behavior; identify reusable pieces and gaps; update `SPEC.md`/`DECISIONS.md` for the selected slice before any runtime/schema work. Keep unrelated open work and production behavior intact.
+- [ ] **011-B — Small complete daily loop:** deliver morning/evening Today entry, short routines, text/device-dictation capture with confirmation, concrete Now action, the avoidance pathway, outcome tracking, opt-in reminder controls with capability fallback, and twenty-second/missed-day recovery. Keep ranking and the core workflow deterministic.
+- [ ] **011-C — Evidence-led refinements:** add consented in-app voice transcription only if device dictation is insufficient; tune recall prompts and deferral adaptation from real use; qualify optional action-specific midday reminders. Do not make these refinements prerequisites for using 011-B.
+
+### Acceptance criteria and test coverage
+
+- [ ] A morning check-in produces no more than three proposed actions, emphasizes one Now action, respects Today capacity/routine workload, and allows starting without completing a briefing.
+- [ ] Established routine rules generate each occurrence once; retries, reopen, and simultaneous devices do not duplicate tasks or confirmations.
+- [ ] The evening flow captures an otherwise unrecorded responsibility, previews its interpretation, and saves it only after confirmation; no arbitrary date or active commitment is invented.
+- [ ] Two explicit deferrals offer changed assistance while preserving history/deadlines. A two-minute attempt records a start without completing the parent task; a genuine blocker is not treated as unwillingness.
+- [ ] After three missed days, the app returns to the current briefing with important commitments intact, no catch-up pile, and no Momentum/streak penalty. The short path remains usable.
+- [ ] Notification tests cover disabled/denied permission, unsupported delivery, quiet hours, timezone/DST changes, duplicate delivery/taps, paused reminders, and midday remaining off unless enabled. Sensitive task content is absent by default.
+- [ ] Failure/concurrency tests cover AI timeout or malformed proposals, ambiguous dictation, microphone denial, offline capture/reconnect, expired authentication, interrupted check-ins, rapid taps, and tasks changed/completed on another device. No draft loss, unauthorized writes, or task resurrection.
+- [ ] Mobile/accessibility checks cover iPhone browser/installed surfaces actually supported by the release, touch targets, keyboard/screen-reader operation, readable low-light appearance, and direct access to Now.
+- [ ] Agent-run end-to-end scenarios use fictional seeded data and isolated test accounts: mundane recurring work, an uncaptured promise, repeated avoidance, an unimportant item explicitly dropped, a real deadline conflict, an empty/low-energy day, interrupted capture, and return after absence. Agents may not access real accounts or contact people as a test.
+- [ ] Evaluate a short real-use pilot on responsibilities actually surfaced/handled, ease of starting, maintenance burden, and ease of returning after a miss—not session length, check-in streaks, task creation volume, or fabricated progress. Record observations before further scope expansion.
+
+---
+
 # P1 — Experience improvements
 
 ## YM-RM-007 — Give each season a restrained visual identity
@@ -343,12 +426,13 @@ Note: this roadmap item intentionally revisits the older V1 non-goal of financia
 
 1. `YM-RM-001` Google connection unique-constraint remediation.
 2. `YM-RM-002` `invalid_grant` recovery and reconnect UX.
-4. `YM-RM-004` expand the low/no-cost AI model registry.
-5. `YM-RM-005` AI fallback/circuit-breaker behavior.
-6. `YM-RM-006` Cloudflare pilot, parity qualification, rollback rehearsal, then cutover.
+3. `YM-RM-004` expand the low/no-cost AI model registry.
+4. `YM-RM-005` AI fallback/circuit-breaker behavior.
+5. `YM-RM-006` Cloudflare pilot, parity qualification, rollback rehearsal, then cutover.
+6. `YM-RM-011` guided daily execution, after deliberate scope promotion: morning briefing, evening reset, avoidance support, and missed-day recovery; refine from real use.
 7. `YM-RM-007` seasonal color identities.
 8. `YM-RM-008` Night Shift.
-9. `YM-RM-009` home-screen journaling + optional AI analysis.
+9. `YM-RM-009` home-screen journaling + optional AI analysis; share capture/reflection components with `YM-RM-011` rather than duplicate them.
 10. `YM-RM-010` read-only banking integration after a provider/security/cost selection spike.
 
-The ordering is intentional: repair broken external integrations first, then improve AI resilience and hosting cost, then add UX breadth and financial connectivity.
+The ordering is intentional: repair broken external integrations first, then improve AI resilience and hosting cost, then reduce daily execution friction before adding cosmetic breadth and financial connectivity. `YM-RM-011` remains queued until explicitly promoted; its placement does not reopen completed recovery work or authorize production changes.
