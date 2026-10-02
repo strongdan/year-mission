@@ -9,6 +9,10 @@ function clearCallbackFragment() {
   window.history.replaceState(null, document.title, cleanUrl);
 }
 
+export function isNativeShellHandoff(value: string | null): boolean {
+  return value === "native-shell";
+}
+
 export default function NativeCallbackPage() {
   const router = useRouter();
   const [message, setMessage] = useState("Completing sign-in…");
@@ -21,6 +25,8 @@ export default function NativeCallbackPage() {
       const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
       const accessToken = params.get("access_token");
       const refreshToken = params.get("refresh_token");
+      const query = new URLSearchParams(window.location.search);
+      const nativeShell = isNativeShellHandoff(query.get("handoff"));
       clearCallbackFragment();
 
       const result = accessToken && refreshToken
@@ -34,6 +40,20 @@ export default function NativeCallbackPage() {
         return;
       }
 
+      // The corrected native flow intercepts the HTTPS callback in
+      // ASWebAuthenticationSession, dismisses the auth browser, then loads this
+      // same callback URL with ?handoff=native-shell inside the app's primary
+      // full-screen web container. Only that full-screen handoff is intended to
+      // become the normal application surface.
+      if (nativeShell) {
+        router.replace("/");
+        return;
+      }
+
+      // Backward-compatible fallback for older native builds and normal web
+      // recovery. The full-screen fix is delivered by the native callback
+      // matcher; retaining this path avoids locking out an older installed app
+      // before its binary is replaced.
       router.replace("/");
     }
 
