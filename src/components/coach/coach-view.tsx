@@ -64,7 +64,7 @@ export function CoachView() {
     setMessages((m) => [...m, { role: "user", content: message }]);
 
     try {
-      const res = await coachAction(message, conversationId, localToday());
+      const res = await coachAction(message, conversationId, localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
       if (!res.ok || !res.data) {
         setError(res.error ?? "Coach failed. Try again.");
         setMessages((m) => m.slice(0, -1));

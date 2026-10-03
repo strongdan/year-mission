@@ -20,6 +20,11 @@ function formatCapturedAt(value: string): string {
   return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 export function IdeaDump({ initialIdeas }: { initialIdeas: Idea[] }) {
   const router = useRouter();
   const [text, setText] = useState("");
@@ -69,7 +74,7 @@ export function IdeaDump({ initialIdeas }: { initialIdeas: Idea[] }) {
     setBusy("organize");
     setError(null);
     setMessage(null);
-    const result = await organizeIdeaAction(ideaId);
+    const result = await organizeIdeaAction(ideaId, localToday());
     if (!result.ok || !result.data) {
       setError(result.error ?? "Could not organize this thought right now.");
       setBusy(null);

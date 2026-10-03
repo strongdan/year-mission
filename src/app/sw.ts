@@ -54,9 +54,7 @@ self.addEventListener("push", (event) => {
   const morning = hour < 14;
   event.waitUntil(
     self.registration.showNotification(morning ? "Year Mission · Morning" : "Year Mission · Daily check-in", {
-      body: morning
-        ? "One-minute orientation: open Year Mission and see your next move."
-        : "Open Year Mission for a brief daily check-in.",
+      body: "A scheduled Year Mission reminder is ready when useful.",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
       tag: morning ? "year-mission-morning" : "year-mission-daily-checkin",

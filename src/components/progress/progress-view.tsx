@@ -16,6 +16,7 @@ import { ProgressBar, MomentumRing } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { TrendingDown, Flag, FlaskConical, Lightbulb } from "lucide-react";
 import type { WeekMode } from "@/domain/constants";
+import { addDaysToDateOnly } from "@/domain/local-calendar";
 import { LogProgress } from "./log-progress";
 
 function localToday(): string {
@@ -152,7 +153,7 @@ export function ProgressView() {
 
   async function pickWeekMode(mode: WeekMode) {
     setWeekModeBusy(true);
-    await setWeekModeAction(mode);
+    await setWeekModeAction(mode, localToday());
     setWeekMode(mode);
     setWeekModeBusy(false);
   }
@@ -180,7 +181,7 @@ export function ProgressView() {
       overcommitted: reviewOvercommit === "yes" ? true : reviewOvercommit === "no" ? false : null,
       nextWeeklyWin: reviewNextWin,
       mostImportantActions,
-    });
+    }, localToday());
     setReviewBusy(false);
     if (res.ok) {
       setReviewSaved(true);
@@ -193,8 +194,8 @@ export function ProgressView() {
   async function createExperiment() {
     if (!expTitle.trim() || expBusy) return;
     setExpBusy(true);
-    const startDate = new Date().toISOString().slice(0, 10);
-    const plannedEnd = new Date(Date.now() + Number(expDays) * 86400000).toISOString().slice(0, 10);
+    const startDate = localToday();
+    const plannedEnd = addDaysToDateOnly(startDate, Number(expDays));
     const res = await createExperimentAction({
       title: expTitle,
       targetMetric: expMetric || undefined,

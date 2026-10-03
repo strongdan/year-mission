@@ -42,6 +42,7 @@ import { detectOvercommitment } from "@/domain/reliability";
 import { reliabilityInterpretation } from "@/domain/reliability";
 import { momentumLabel } from "@/domain/momentum";
 import { DEFERRAL_REASON_Z, FRICTION_REASON_Z, WEEK_MODE_Z } from "@/domain/constants";
+import { dateInTimeZone, isValidDateOnly, localDateFromSystemClock, mondayOfDateOnly } from "@/domain/local-calendar";
 
 function pathToRevalidate() {
   return ["/", "/tasks", "/progress", "/coach"];
@@ -52,17 +53,12 @@ function revalidateAll() {
 }
 
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateFromSystemClock();
 }
 
 const LOCAL_DAY_Z = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
-  const [year, month, day] = value.split("-").map(Number);
-  const parsed = new Date(Date.UTC(year, month - 1, day));
-  if (
-    parsed.getUTCFullYear() !== year ||
-    parsed.getUTCMonth() !== month - 1 ||
-    parsed.getUTCDate() !== day
-  ) return false;
+  if (!isValidDateOnly(value)) return false;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
   const utcToday = new Date();
   const todayDay = Date.UTC(utcToday.getUTCFullYear(), utcToday.getUTCMonth(), utcToday.getUTCDate()) / 86_400_000;
   const inputDay = parsed.getTime() / 86_400_000;
@@ -75,10 +71,6 @@ function parseLocalDay(value: string | undefined): string | null {
   return parsed.success ? parsed.data : null;
 }
 
-function localDayForRead(value?: string): string {
-  return parseLocalDay(value) ?? todayISO();
-}
-
 function safeTimeZone(value?: string): string {
   if (!value) return "UTC";
   try {
@@ -89,36 +81,9 @@ function safeTimeZone(value?: string): string {
   }
 }
 
-function dateInTimeZone(value: string, timeZone: string): string | null {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")}`;
-}
-
-function mondayOfDay(day: string): string {
-  const [year, month, date] = day.split("-").map(Number);
-  const d = new Date(Date.UTC(year, month - 1, date, 12));
-  const weekday = (d.getUTCDay() + 6) % 7;
-  d.setUTCDate(d.getUTCDate() - weekday);
-  return d.toISOString().slice(0, 10);
-}
-
-function mondayOf(date = new Date()): string {
-  const d = new Date(date);
-  const day = (d.getDay() + 6) % 7;
-  d.setDate(d.getDate() - day);
-  return d.toISOString().slice(0, 10);
-}
-
 export async function createTaskAction(input: {
   title: string;
+  localDay?: string;
   domainId?: string | null;
   notes?: string;
   estimatedMinutes?: number;
@@ -132,8 +97,10 @@ export async function createTaskAction(input: {
 
   let parsed = input;
   if (input.parseWithAi && input.title) {
+    const parserDay = parseLocalDay(input.localDay ?? todayISO());
+    if (!parserDay) return { ok: false, error: "Invalid local date." };
     const parser = new TaskAiParser();
-    const parsedAi = await parser.parseTask(input.title, todayISO());
+    const parsedAi = await parser.parseTask(input.title, parserDay);
     parsed = {
       ...input,
       title: parsedAi.title || input.title,
@@ -197,23 +164,26 @@ const WSID_INPUT_Z = z.object({
   excludeTaskId: z.string().nullable().optional(),
 });
 
-export async function whatShouldIDoAction(rawInput?: unknown) {
+export async function whatShouldIDoAction(rawInput: unknown, dateInput: string, timeZoneInput: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
 
   const parsed = WSID_INPUT_Z.safeParse(rawInput ?? {});
   if (!parsed.success) return { ok: false, error: "Invalid input." };
   const input = parsed.data;
+  const contextDate = parseLocalDay(dateInput);
+  if (!contextDate) return { ok: false, error: "Invalid local date." };
+  const contextTimeZone = safeTimeZone(timeZoneInput);
 
-  const now = new Date();
-  const weekStart = mondayOf();
+  const now = new Date(`${contextDate}T12:00:00.000Z`);
+  const weekStart = mondayOfDateOnly(contextDate);
   const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
 
   const [candidates, blockedIds, monthlyFocus, bigFour, weekMode] = await Promise.all([
     listTasks(user.id, { status: ["today", "this_week", "in_progress"] }),
     listBlockedTaskIds(user.id, since),
-    getMonthlyFocus(user.id, now.getFullYear(), now.getMonth() + 1),
-    metricsService.bigFourProgressThisWeek(user.id, weekStart),
+    getMonthlyFocus(user.id, Number(contextDate.slice(0, 4)), Number(contextDate.slice(5, 7))),
+    metricsService.bigFourProgressThisWeek(user.id, weekStart, contextTimeZone),
     getWeekMode(user.id),
   ]);
 
@@ -299,7 +269,7 @@ export async function checkinAction(input: {
 }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const date = input.date ? parseLocalDay(input.date) : todayISO();
+  const date = parseLocalDay(input.date);
   if (!date) return { ok: false, error: "Invalid local date." };
   const existing = await getDailyCheckin(user.id, date);
   await upsertDailyCheckin({
@@ -322,12 +292,12 @@ export async function checkinAction(input: {
 
 const EVENING_RESET_Z = z.enum(["target", "floor", "skipped"]);
 
-export async function logEveningResetAction(input: { completion: z.infer<typeof EVENING_RESET_Z>; variant?: string | null; date?: string }) {
+export async function logEveningResetAction(input: { completion: z.infer<typeof EVENING_RESET_Z>; variant?: string | null; date: string }) {
   const parsed = EVENING_RESET_Z.safeParse(input.completion);
   if (!parsed.success) return { ok: false, error: "Invalid completion value." };
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const date = input.date ? parseLocalDay(input.date) : todayISO();
+  const date = parseLocalDay(input.date);
   if (!date) return { ok: false, error: "Invalid local date." };
   const existing = await getDailyCheckin(user.id, date);
   const variant = input.variant ?? existing?.evening_reset_variant ?? null;
@@ -349,10 +319,10 @@ export async function logEveningResetAction(input: { completion: z.infer<typeof 
   return { ok: true };
 }
 
-export async function logWorkoutAction(input: { type: string; durationMinutes?: number; notes?: string; date?: string }) {
+export async function logWorkoutAction(input: { type: string; durationMinutes?: number; notes?: string; date: string }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const date = input.date ? parseLocalDay(input.date) : todayISO();
+  const date = parseLocalDay(input.date);
   if (!date) return { ok: false, error: "Invalid local date." };
   await insertWorkout({
     user_id: user.id,
@@ -365,12 +335,14 @@ export async function logWorkoutAction(input: { type: string; durationMinutes?: 
   return { ok: true };
 }
 
-export async function logDebtAction(input: { consumerDebt: number; cashReserve?: number | null; notes?: string }) {
+export async function logDebtAction(input: { consumerDebt: number; cashReserve?: number | null; notes?: string; date: string }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
+  const date = parseLocalDay(input.date);
+  if (!date) return { ok: false, error: "Invalid local date." };
   await upsertFinancialSnapshot({
     user_id: user.id,
-    date: todayISO(),
+    date,
     consumer_debt: input.consumerDebt,
     cash_reserve: input.cashReserve ?? null,
     notes: input.notes ?? null,
@@ -379,12 +351,14 @@ export async function logDebtAction(input: { consumerDebt: number; cashReserve?:
   return { ok: true };
 }
 
-export async function logHouseProgressAction(input: { readinessScore: number; notes?: string }) {
+export async function logHouseProgressAction(input: { readinessScore: number; notes?: string; date: string }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
+  const date = parseLocalDay(input.date);
+  if (!date) return { ok: false, error: "Invalid local date." };
   await upsertHouseProgress({
     user_id: user.id,
-    date: todayISO(),
+    date,
     readiness_score: input.readinessScore,
     notes: input.notes ?? null,
   });
@@ -392,10 +366,12 @@ export async function logHouseProgressAction(input: { readinessScore: number; no
   return { ok: true };
 }
 
-export async function setWeekModeAction(mode: z.infer<typeof WEEK_MODE_Z>) {
+export async function setWeekModeAction(mode: z.infer<typeof WEEK_MODE_Z>, dateInput: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  await upsertWeeklyMode({ user_id: user.id, week_start: mondayOf(), mode });
+  const date = parseLocalDay(dateInput);
+  if (!date) return { ok: false, error: "Invalid local date." };
+  await upsertWeeklyMode({ user_id: user.id, week_start: mondayOfDateOnly(date), mode });
   revalidateAll();
   return { ok: true };
 }
@@ -408,10 +384,12 @@ export async function saveWeeklyReviewAction(input: {
   overcommitted: boolean | null;
   nextWeeklyWin: string;
   mostImportantActions: Record<string, string>;
-}) {
+}, dateInput: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const weekStart = mondayOf();
+  const date = parseLocalDay(dateInput);
+  if (!date) return { ok: false, error: "Invalid local date." };
+  const weekStart = mondayOfDateOnly(date);
   const existing = await getWeeklyReview(user.id, weekStart);
   await upsertWeeklyReview({
     user_id: user.id,
@@ -446,11 +424,13 @@ export async function logFrictionAction(input: { taskId?: string | null; reason:
   return { ok: true };
 }
 
-export async function coachAction(message: string, conversationId?: string | null, dateInput?: string) {
+export async function coachAction(message: string, conversationId: string | null | undefined, dateInput: string, timeZoneInput: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const contextDate = localDayForRead(dateInput);
-  const contextWeekStart = mondayOfDay(contextDate);
+  const contextDate = parseLocalDay(dateInput);
+  if (!contextDate) return { ok: false, error: "Invalid local date." };
+  const contextTimeZone = safeTimeZone(timeZoneInput);
+  const contextWeekStart = mondayOfDateOnly(contextDate);
 
   const [domains, plan] = await Promise.all([
     listDomains(user.id),
@@ -469,12 +449,12 @@ export async function coachAction(message: string, conversationId?: string | nul
   const milestones = await listMilestones(user.id);
   const deferred = weeklyCommitments.filter((t) => t.defer_count > 0);
   const weeklyWins = completedTasks.filter((t) => t.weekly_win);
-  const [season, monthlyFocus] = await currentSeasonAndFocus(user.id);
+  const [season, monthlyFocus] = await currentSeasonAndFocus(user.id, contextDate);
   const weekMode = await getWeekMode(user.id);
   const houseReadiness = (await listHouseProgress(user.id, 1))[0]?.readiness_score ?? null;
   const weeklyReviews = await listWeeklyReviews(user.id, 8);
   const friction = await listFrictionEvents(user.id, 20);
-  const momentum = await metricsService.computeAndStoreMomentum(user.id, contextWeekStart);
+  const momentum = await metricsService.computeAndStoreMomentum(user.id, contextWeekStart, contextDate, contextTimeZone);
 
   let resolvedConversationId = conversationId ?? null;
   if (!resolvedConversationId) {
@@ -656,16 +636,18 @@ export async function resolveIdeaAction(ideaId: string, status: "parked" | "acti
   return { ok: true };
 }
 
-export async function recordEvidenceAction(input: { type: string; title: string; description?: string; domainId?: string | null; occurredAt?: string }) {
+export async function recordEvidenceAction(input: { type: string; title: string; description?: string; domainId?: string | null; occurredAt: string }) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
+  const occurredAt = parseLocalDay(input.occurredAt);
+  if (!occurredAt) return { ok: false, error: "Invalid local date." };
   await (await import("@/repositories/supabase-repository")).insertEvidence({
     user_id: user.id,
     type: input.type,
     title: input.title,
     description: input.description ?? null,
     domain_id: input.domainId ?? null,
-    occurred_at: input.occurredAt ?? todayISO(),
+    occurred_at: occurredAt,
     significance: 2,
   });
   revalidateAll();
@@ -686,12 +668,13 @@ export async function getTasksAction() {
   return { ok: true, data: { inbox, week, today, backlog, completed, projects } };
 }
 
-export async function getDashboardAction(dateInput?: string, timeZoneInput?: string) {
+export async function getDashboardAction(dateInput: string, timeZoneInput: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." };
-  const dashboardDate = localDayForRead(dateInput);
+  const dashboardDate = parseLocalDay(dateInput);
+  if (!dashboardDate) return { ok: false, error: "Invalid local date." };
   const dashboardTimeZone = safeTimeZone(timeZoneInput);
-  const weekStart = mondayOfDay(dashboardDate);
+  const weekStart = mondayOfDateOnly(dashboardDate);
   const [domains, todayTasks, weeklyCommitments, completedTasks, workouts, financial, todayCheckin, promises, experiments, evidence, milestones, momentumHistory, ideas, weeklyReview, houseProgress, weekCheckins] = await Promise.all([
     listDomains(user.id),
     listTasks(user.id, { status: "today" }),
@@ -711,13 +694,13 @@ export async function getDashboardAction(dateInput?: string, timeZoneInput?: str
     listDailyCheckins(user.id, weekStart),
   ]);
 
-  const bigFour = await metricsService.bigFourProgressThisWeek(user.id, weekStart);
-  const momentum = await metricsService.computeAndStoreMomentum(user.id, weekStart);
+  const bigFour = await metricsService.bigFourProgressThisWeek(user.id, weekStart, dashboardTimeZone);
+  const momentum = await metricsService.computeAndStoreMomentum(user.id, weekStart, dashboardDate, dashboardTimeZone);
   const reliabilityRaw = await metricsService.reliability(user.id);
   const agency = await metricsService.agency(user.id);
   const weekMode = await getWeekMode(user.id);
 
-  const [season, monthlyFocus] = await currentSeasonAndFocus(user.id);
+  const [season, monthlyFocus] = await currentSeasonAndFocus(user.id, dashboardDate);
 
   const outcomes = promises
     .filter((p) => p.status === "kept" || p.status === "renegotiated" || p.status === "missed")
@@ -763,17 +746,15 @@ export async function getDashboardAction(dateInput?: string, timeZoneInput?: str
   };
 }
 
-async function currentSeasonAndFocus(userId: string): Promise<[{ name: string; objective: string | null } | null, { title: string; description: string | null } | null]> {
+async function currentSeasonAndFocus(userId: string, localDay: string): Promise<[{ name: string; objective: string | null } | null, { title: string; description: string | null } | null]> {
   const plan = await getActivePlan(userId);
   let season: { name: string; objective: string | null } | null = null;
   if (plan) {
     const seasons = await listSeasons(plan.id);
-    const today = todayISO();
-    const active = seasons.find((s) => s.start_date <= today && today <= s.end_date);
+    const active = seasons.find((s) => s.start_date <= localDay && localDay <= s.end_date);
     if (active) season = { name: active.name, objective: active.objective };
   }
-  const now = new Date();
-  const focus = await getMonthlyFocus(userId, now.getFullYear(), now.getMonth() + 1);
+  const focus = await getMonthlyFocus(userId, Number(localDay.slice(0, 4)), Number(localDay.slice(5, 7)));
   const monthlyFocus = focus ? { title: focus.title, description: focus.description } : null;
   return [season, monthlyFocus];
 }

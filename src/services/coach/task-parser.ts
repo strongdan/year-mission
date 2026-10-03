@@ -31,7 +31,7 @@ export class TaskAiParser {
       return this.fallbackParse(rawInput);
     }
 
-    const todayISO = new Date(today + "T12:00:00").toISOString().slice(0, 10);
+    const todayISO = today;
     const prompt = `Parse this task capture into JSON. Today is ${todayISO}.
 Return ONLY valid JSON matching:
 {"title": string, "domain": "money"|"body"|"home"|"capability"|null, "notes": string|null, "scheduled_date": "YYYY-MM-DD"|null, "due_date": "YYYY-MM-DD"|null, "estimated_minutes": number|null, "courage_task": boolean}

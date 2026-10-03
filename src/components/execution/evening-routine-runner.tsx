@@ -42,6 +42,7 @@ export function EveningRoutineRunner({ taskId }: { taskId?: string | null }) {
         kind: "routine",
         durationSeconds: Math.max(60, Math.round((Date.now() - startTime) / 1000)),
         taskId: taskId ?? null,
+        date: localToday(),
         details: { completedSteps: finalCompleted, completion },
       }),
       checkinAction({ date: localToday(), eveningResetCompletion: completion, eveningResetVariant: "guided_v2" }),
