@@ -15,6 +15,7 @@ import {
   ideaTaskSuggestionSchema,
   organizeIdea,
 } from "@/services/ideas/idea-organizer";
+import { isValidDateOnly } from "@/domain/local-calendar";
 
 const captureSchema = z.object({
   originalText: z.string().trim().min(1).max(20_000),
@@ -52,16 +53,17 @@ export async function captureIdeaAction(rawInput: unknown) {
   return { ok: true as const, data: idea };
 }
 
-export async function organizeIdeaAction(ideaId: string) {
+export async function organizeIdeaAction(ideaId: string, localDay: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false as const, error: "Not signed in." };
+  if (!isValidDateOnly(localDay)) return { ok: false as const, error: "Invalid local date." };
 
   const ideas = await listIdeas(user.id);
   const idea = ideas.find((candidate) => candidate.id === ideaId);
   if (!idea) return { ok: false as const, error: "Idea not found." };
 
   const originalText = idea.notes?.trim() || idea.title;
-  const organized = await organizeIdea(originalText, new Date().toISOString().slice(0, 10));
+  const organized = await organizeIdea(originalText, localDay);
   await updateIdea(idea.id, { last_reviewed_at: new Date().toISOString() });
   revalidatePath("/ideas");
   return { ok: true as const, data: organized };

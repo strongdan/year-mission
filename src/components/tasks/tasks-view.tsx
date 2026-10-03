@@ -26,6 +26,11 @@ const DEFERRAL_REASONS: { value: DeferralReason; label: string }[] = [
   { value: "just_avoiding", label: "Just avoiding it" },
 ];
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -88,7 +93,7 @@ export function TasksView() {
     if (!capture.trim()) return;
     setAdding(true);
     setError(null);
-    const res = await createTaskAction({ title: capture.trim(), parseWithAi });
+    const res = await createTaskAction({ title: capture.trim(), localDay: localToday(), parseWithAi });
     if (!res.ok) setError(res.error ?? "Failed to add.");
     else setCapture("");
     setAdding(false);

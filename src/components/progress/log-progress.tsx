@@ -7,6 +7,11 @@ import { Button } from "@/components/ui/button";
 import type { EvidenceType } from "@/domain/constants";
 import type { DailyCheckin, FinancialSnapshot, HouseProgress } from "@/types/models";
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 const WORKOUT_TYPES = ["lifting", "walking", "running", "cycling", "swimming", "mobility", "other"] as const;
 
 const EVIDENCE_TYPES: { value: EvidenceType; label: string }[] = [
@@ -84,7 +89,7 @@ export function LogProgress({ checkin, debt, house, onSaved }: LogProgressProps)
             <NumberInput label="Weight (lb)" value={weight} onChange={setWeight} placeholder="e.g. 214" />
             <NumberInput label="Steps today" value={steps} onChange={setSteps} placeholder="e.g. 8200" />
           </div>
-          <Button size="sm" variant="secondary" disabled={busy || (!weight && !steps)} onClick={() => run(() => checkinAction({ weight: weight ? Number(weight) : null, steps: steps ? Number(steps) : null }), "Check-in saved")}>
+          <Button size="sm" variant="secondary" disabled={busy || (!weight && !steps)} onClick={() => run(() => checkinAction({ date: localToday(), weight: weight ? Number(weight) : null, steps: steps ? Number(steps) : null }), "Check-in saved")}>
             Save check-in
           </Button>
         </div>
@@ -92,7 +97,7 @@ export function LogProgress({ checkin, debt, house, onSaved }: LogProgressProps)
         <div className="flex flex-col gap-3">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Money</p>
           <NumberInput label="Consumer debt" value={debtValue} onChange={setDebtValue} placeholder="e.g. 12400" suffix="$" />
-          <Button size="sm" variant="secondary" disabled={busy || !debtValue} onClick={() => run(() => logDebtAction({ consumerDebt: Number(debtValue) }), "Debt saved")}>
+          <Button size="sm" variant="secondary" disabled={busy || !debtValue} onClick={() => run(() => logDebtAction({ consumerDebt: Number(debtValue), date: localToday() }), "Debt saved")}>
             Save debt
           </Button>
         </div>
@@ -114,7 +119,7 @@ export function LogProgress({ checkin, debt, house, onSaved }: LogProgressProps)
           </div>
           <div className="flex items-end gap-3">
             <NumberInput label="Minutes" value={workoutMinutes} onChange={setWorkoutMinutes} placeholder="e.g. 45" />
-            <Button size="sm" variant="secondary" disabled={busy || !workoutMinutes} onClick={() => run(() => logWorkoutAction({ type: workoutType, durationMinutes: Number(workoutMinutes) }), "Workout logged")}>
+            <Button size="sm" variant="secondary" disabled={busy || !workoutMinutes} onClick={() => run(() => logWorkoutAction({ type: workoutType, durationMinutes: Number(workoutMinutes), date: localToday() }), "Workout logged")}>
               Log workout
             </Button>
           </div>
@@ -124,7 +129,7 @@ export function LogProgress({ checkin, debt, house, onSaved }: LogProgressProps)
           <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Home</p>
           <div className="flex items-end gap-3">
             <NumberInput label="House readiness (0–100)" value={houseScore} onChange={setHouseScore} placeholder="e.g. 40" />
-            <Button size="sm" variant="secondary" disabled={busy || !houseScore} onClick={() => run(() => logHouseProgressAction({ readinessScore: Number(houseScore) }), "House saved")}>
+            <Button size="sm" variant="secondary" disabled={busy || !houseScore} onClick={() => run(() => logHouseProgressAction({ readinessScore: Number(houseScore), date: localToday() }), "House saved")}>
               Save
             </Button>
           </div>
@@ -155,7 +160,7 @@ export function LogProgress({ checkin, debt, house, onSaved }: LogProgressProps)
             placeholder="One line of context (optional)"
             className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none placeholder:text-zinc-600 focus:border-zinc-600"
           />
-          <Button size="sm" variant="secondary" disabled={busy || !evidenceTitle.trim()} onClick={() => run(() => recordEvidenceAction({ type: evidenceType, title: evidenceTitle.trim(), description: evidenceDescription.trim() || undefined }), "Evidence recorded")}>
+          <Button size="sm" variant="secondary" disabled={busy || !evidenceTitle.trim()} onClick={() => run(() => recordEvidenceAction({ type: evidenceType, title: evidenceTitle.trim(), description: evidenceDescription.trim() || undefined, occurredAt: localToday() }), "Evidence recorded")}>
             Record evidence
           </Button>
         </div>

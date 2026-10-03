@@ -1373,7 +1373,7 @@ Life Balance is an owner-approved, visibility-first Today support surface. It co
 
 The native iPhone companion may read only the approved daily HealthKit aggregates needed by this surface. It must not store raw heart-rate samples, workout GPS, or psychological inferences. Health sync is production-only and uses the pinned Year Mission production origin. Partial syncs preserve previously stored metrics atomically; omitted values are not deletions. Life Balance does not create streaks, quotas, scores, or completion pressure.
 
-# 49. Coming Up
+# 51. Coming Up
 
 Year Mission may provide a secondary **Coming Up** planning surface so birthdays, anniversaries, deadlines, travel, selected holidays, active task due dates, and read-only Google Calendar constraints can be seen early enough to prepare.
 

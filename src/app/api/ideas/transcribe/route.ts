@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { transcribeIdeaAudio } from "@/services/ideas/audio-transcription";
+import { safeTranscriptionError } from "@/domain/transcription-errors";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,8 @@ export async function POST(request: Request) {
     const result = await transcribeIdeaAudio(audio);
     return NextResponse.json({ ok: true, data: result });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not transcribe the recording.";
-    return NextResponse.json({ ok: false, error: message }, { status: 400 });
+    const safe = safeTranscriptionError(error);
+    if (safe.status === 503) console.error("[idea-transcription] provider request failed");
+    return NextResponse.json({ ok: false, error: safe.message }, { status: safe.status });
   }
 }

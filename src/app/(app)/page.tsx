@@ -1,3 +1,4 @@
+import { ActionableReminderCard } from "@/components/today/actionable-reminder-card";
 import { ConversationConfidenceCard } from "@/components/today/conversation-confidence-card";
 import { MissionChargeCard } from "@/components/today/mission-charge-card";
 import { JournalCard } from "@/components/today/journal-card";
@@ -11,6 +12,7 @@ export default function TodayPage() {
         <MissionChargeCard />
       </div>
       <TodayViewV2 />
+      <ActionableReminderCard />
       <ConversationConfidenceCard />
       <div className="px-4 pb-4">
         <LifeBalanceCard />

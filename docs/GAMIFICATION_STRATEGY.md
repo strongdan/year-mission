@@ -20,7 +20,7 @@ The meter has calm deterministic states:
 - Day won
 - Full charge
 
-The meter resets daily, but durable Mission Garden growth never regresses.
+The meter resets daily, but durable evidence of meaningful action never regresses.
 
 ### 2. Comeback recognition
 
@@ -34,9 +34,9 @@ The weakest unprotected Big Four category becomes the optional bonus mission. Th
 
 Progress reveals the next state and how much meaningful work is needed to reach it. Avoid random loot, variable-ratio rewards, countdown pressure, or artificial scarcity.
 
-### 5. Durable growth
+### 5. Durable evidence
 
-Mission Garden remains the long-horizon progression system. Daily game feedback should point toward durable evidence, milestones, courage, and comebacks rather than replacing them.
+Long-horizon progress is shown with a simple, non-plant evidence view. Daily game feedback should point toward durable evidence, milestones, courage, and comebacks rather than replacing them. Do not use seed/sprout/garden metaphors or imply that quiet periods erase progress.
 
 ## Guardrails
 

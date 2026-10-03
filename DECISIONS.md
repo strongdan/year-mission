@@ -517,7 +517,7 @@ Life Balance + Apple Health is an explicitly approved support surface, not a new
 Apple Health is read-only, owner-isolated, and limited to daily aggregates. The native sync origin is pinned to the production Year Mission Worker; previews and local environments do not issue native HealthKit tickets. Partial updates are merged atomically in PostgreSQL so concurrent uploads cannot erase omitted historical metrics. No HealthKit value is used to infer psychological state.
 
 
-# D031 — Coming Up anticipates without silently scheduling
+# D033 — Coming Up anticipates without silently scheduling
 
 **Status:** Accepted
 

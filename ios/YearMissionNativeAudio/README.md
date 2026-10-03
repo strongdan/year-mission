@@ -39,7 +39,7 @@ If the current app root already owns a HealthKit coordinator/model, keep it and 
 
 The authenticated PWA requests a short-lived signed ticket from `/api/ideas/native-ticket` and opens:
 
-`yearmission://brain-dump?ticket=...&base=https%3A%2F%2Fyear-mission.vercel.app`
+`yearmission://brain-dump?ticket=...&base=https%3A%2F%2Fyear-mission.dangaston.workers.dev`
 
 The native app then:
 
@@ -67,3 +67,56 @@ Native transcription intentionally uses deployment-level `GEMINI_API_KEY` or `OP
 - Edit one word and tap **Save thought**.
 - Return to the PWA and confirm the new idea exists and preserves the edited transcript.
 - Retry Save once and confirm it does not create a duplicate idea.
+
+
+## Native Google authentication: full-screen handoff
+
+Add `NativeGoogleAuthCoordinator.swift` to the same native target. The system authentication browser is temporary; it must never become the normal Year Mission UI.
+
+Use the coordinator with the existing Supabase Google OAuth authorization URL and the window that owns the app:
+
+```swift
+@StateObject private var authModel = NativeAuthModel()
+
+// When the user taps Google:
+authModel.google.start(
+    authURL: authorizationURL,
+    presentationWindow: window,
+    onHandoff: { callbackURL in
+        // Load this URL in the *existing primary full-screen web view*.
+        // Do not present SFSafariViewController or another auth sheet.
+        webView.load(URLRequest(url: callbackURL))
+    },
+    onFailure: { message in
+        authModel.message = message
+    }
+)
+```
+
+The coordinator uses the modern HTTPS callback matcher:
+
+```swift
+.https(
+    host: "year-mission.dangaston.workers.dev",
+    path: "/native-callback"
+)
+```
+
+A matching callback completes `ASWebAuthenticationSession`, so the system browser dismisses automatically. The coordinator then adds `handoff=native-shell` to the same callback URL and hands it to the primary web view. The web callback establishes the Supabase session in that full-screen web context and navigates to Today.
+
+Required native invariants:
+
+- associated domain includes the production Year Mission domain required by the HTTPS callback;
+- the auth browser is never reused as the app surface;
+- the main web view uses a persistent website data store so the Supabase session survives navigation and relaunch;
+- cancellation returns to the native login state without opening another browser;
+- no OAuth code, access token, refresh token, or cookie is written to logs.
+
+Physical-device acceptance:
+
+1. Launch Year Mission full-screen.
+2. Tap Google sign-in.
+3. Complete Google authentication in the temporary system browser.
+4. Verify the browser dismisses automatically.
+5. Verify authenticated Today fills the normal app window with no browser Close/Done chrome.
+6. Force-quit and reopen; verify the authenticated session is still present.

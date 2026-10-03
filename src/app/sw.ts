@@ -53,13 +53,11 @@ self.addEventListener("push", (event) => {
   const hour = new Date().getHours();
   const morning = hour < 14;
   event.waitUntil(
-    self.registration.showNotification(morning ? "Year Mission · Morning" : "Year Mission · Evening", {
-      body: morning
-        ? "One-minute check-in: open Year Mission and see your next move."
-        : "Two-minute closeout: close the loop, then leave the day behind.",
+    self.registration.showNotification(morning ? "Year Mission · Morning" : "Year Mission · Daily check-in", {
+      body: "A scheduled Year Mission reminder is ready when useful.",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
-      tag: morning ? "year-mission-morning" : "year-mission-evening",
+      tag: morning ? "year-mission-morning" : "year-mission-daily-checkin",
       data: { url: "/" },
     })
   );

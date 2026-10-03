@@ -74,7 +74,6 @@ For the Cloudflare candidate hostname, add—do not replace—the required retur
 - Supabase Auth Site URL / redirect allowlist
 - Google account-login OAuth configuration
 - Google Tasks/Calendar OAuth redirect configuration
-- Apple Services ID web return URLs
 
 Retain the Vercel URLs during rollback qualification.
 
@@ -84,17 +83,16 @@ Before declaring Cloudflare canonical:
 
 1. public/login shell renders correctly
 2. Google sign-in and Supabase callback
-3. Apple sign-in and Supabase callback
-4. authenticated Today/task CRUD
-5. Google Tasks connect, reconnect, sync, and disconnect
-6. Google Calendar read-only context
-7. Coach/AI request path
-8. Brain Dump typed capture and server transcription path
+3. authenticated Today/task CRUD
+4. Google Tasks connect, reconnect, sync, and disconnect
+5. Google Calendar read-only context
+6. Coach/AI request path
+7. Brain Dump typed capture and server transcription path
 9. PWA manifest/service worker/installability
-10. installed iPhone PWA navigation and offline shell
-11. notifications where configured
-12. finance read-only paths that are enabled
-13. lint, typecheck, tests, Next.js build, and vinext Worker build
+9. installed iPhone PWA navigation and offline shell
+10. notifications where configured
+11. finance read-only paths that are enabled
+12. lint, typecheck, tests, Next.js build, and vinext Worker build
 
 The `next/offline` compatibility warning makes the installed-PWA/offline tests a hard cutover gate rather than an optional check.
 
@@ -103,7 +101,7 @@ The `next/offline` compatibility warning makes the installed-PWA/offline tests a
 1. Merge the repository migration configuration only after normal CI and Cloudflare Worker build pass.
 2. Deploy to a non-production `workers.dev` hostname.
 3. Configure Cloudflare secrets/variables.
-4. Add the candidate hostname to Supabase/Google/Apple allowlists.
+4. Add the candidate hostname to Supabase/Google allowlists.
 5. Run parity smoke tests against both Cloudflare and the existing Vercel deployment.
 6. Rehearse rollback by confirming the Vercel deployment remains usable with the old callbacks still allowed.
 7. Make Cloudflare canonical only after parity passes.

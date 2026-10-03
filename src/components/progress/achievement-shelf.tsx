@@ -23,7 +23,9 @@ export function AchievementShelf() {
 
   useEffect(() => {
     let cancelled = false;
-    getAchievementsAction().then((result) => {
+    const now = new Date();
+    const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    getAchievementsAction(localToday, Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC").then((result) => {
       if (!cancelled && result.ok) setItems(result.data);
     });
     return () => {

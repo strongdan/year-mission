@@ -168,7 +168,7 @@ export function NotificationSettingsCard() {
       <Card className="border-amber-950/70 bg-amber-950/10">
         <CardHeader
           title="Check-in reminders"
-          subtitle="Two gentle prompts: orient in the morning, close the day in the evening."
+          subtitle="A morning orientation plus one daily check-in reminder if you have not checked in yet."
           right={subscription ? <BellRing className="h-4 w-4 text-amber-400" /> : <Bell className="h-4 w-4 text-zinc-500" />}
         />
 
@@ -206,8 +206,8 @@ export function NotificationSettingsCard() {
 
           <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950/25 px-3 py-2.5">
             <div>
-              <p className="text-sm text-zinc-300">Evening closeout</p>
-              <p className="text-[11px] text-zinc-600">Close the loop in about two minutes.</p>
+              <p className="text-sm text-zinc-300">Daily check-in</p>
+              <p className="text-[11px] text-zinc-600">Only reminds you if no check-in has been saved for today.</p>
             </div>
             <div className="flex items-center gap-2">
               <input type="checkbox" checked={eveningEnabled} onChange={(event) => setEveningEnabled(event.target.checked)} className="h-4 w-4" />
@@ -215,7 +215,7 @@ export function NotificationSettingsCard() {
             </div>
           </div>
 
-          <p className="text-[11px] text-zinc-600">Time zone: {timezone}. Reminders are intentionally limited to these two check-ins.</p>
+          <p className="text-[11px] text-zinc-600">Time zone: {timezone}. Daily check-in reminders stop once Year Mission sees today&apos;s check-in.</p>
 
           <div className="flex flex-wrap gap-2">
             {!subscription ? (

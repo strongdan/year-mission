@@ -24,11 +24,16 @@ function chargeTone(charge: number): string {
   return "from-zinc-700 to-zinc-600";
 }
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 export function MissionChargeCard() {
   const [data, setData] = useState<GameLoopData | null>(null);
 
   const load = useCallback(async () => {
-    const result = await getGameLoopAction();
+    const result = await getGameLoopAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
     if (result.ok && result.data) setData(result.data);
   }, []);
 
@@ -115,7 +120,7 @@ export function MissionChargeCard() {
       ) : null}
 
       <div className="mt-3 flex items-center gap-1.5 border-t border-zinc-800 pt-2.5 text-[10px] text-zinc-600">
-        <Flame className="h-3 w-3" /> No streak to protect · meta-work earns nothing · garden growth stays permanent
+        <Flame className="h-3 w-3" /> No streak to protect · meta-work earns nothing · durable progress stays permanent
       </div>
     </Card>
   );

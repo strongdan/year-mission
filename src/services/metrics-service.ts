@@ -15,6 +15,7 @@ import { WEEKLY_MINIMUM_COUNTS, type DomainSlug } from "@/domain/constants";
 import { sizeFromMinutes, taskWeight } from "@/domain/task-weight";
 import { computeReliability, type CommitmentOutcome } from "@/domain/reliability";
 import { agencyLevel } from "@/domain/agency";
+import { addDaysToDateOnly, dateInTimeZone } from "@/domain/local-calendar";
 
 export interface DashboardMetrics {
   momentum: number | null;
@@ -38,12 +39,6 @@ function emptyDomainUnits(): Record<DomainSlug, number> {
   return { body: 0, money: 0, home: 0, capability: 0 };
 }
 
-function isoDateOffset(date: Date, days: number): string {
-  const shifted = new Date(date);
-  shifted.setUTCDate(shifted.getUTCDate() + days);
-  return shifted.toISOString().slice(0, 10);
-}
-
 function meaningfulTaskUnits(weight: number): number {
   if (weight <= 0) return 0;
   // Keep quick/low-impact work from gaming the signal while allowing a
@@ -52,13 +47,17 @@ function meaningfulTaskUnits(weight: number): number {
 }
 
 export class MetricsService {
-  async bigFourProgressThisWeek(userId: string, weekStart: string): Promise<Record<string, { done: number; target: number }>> {
+  async bigFourProgressThisWeek(userId: string, weekStart: string, timeZone = "UTC"): Promise<Record<string, { done: number; target: number }>> {
     const workouts = await listWorkouts(userId, weekStart);
     const workoutCount = workouts.length;
     const todayTasks = await listTasks(userId, { status: "today" });
     const completedTasks = await listTasks(userId, { status: "completed", limit: 200 });
 
-    const completedThisWeek = completedTasks.filter((t) => t.completed_at && t.completed_at >= weekStart);
+    const weekEnd = addDaysToDateOnly(weekStart, 7);
+    const completedThisWeek = completedTasks.filter((t) => {
+      const completedDate = t.completed_at ? dateInTimeZone(t.completed_at, timeZone) : null;
+      return completedDate !== null && completedDate >= weekStart && completedDate < weekEnd;
+    });
     const moneyDone = completedThisWeek.filter((t) => t.domain?.slug === "money").length + todayTasks.filter((t) => t.domain?.slug === "money").length;
     const homeDone = completedThisWeek.filter((t) => t.domain?.slug === "home").length + todayTasks.filter((t) => t.domain?.slug === "home").length;
     const capabilityDone = completedThisWeek.filter((t) => t.domain?.slug === "capability").length + todayTasks.filter((t) => t.domain?.slug === "capability").length;
@@ -71,11 +70,11 @@ export class MetricsService {
     };
   }
 
-  async categoryMomentum(userId: string, asOf = new Date()): Promise<CategoryMomentum[]> {
-    const end = isoDateOffset(asOf, 0);
-    const recentStart = isoDateOffset(asOf, -6);
-    const previousStart = isoDateOffset(asOf, -13);
-    const previousEnd = isoDateOffset(asOf, -7);
+  async categoryMomentum(userId: string, asOfDate: string, timeZone = "UTC"): Promise<CategoryMomentum[]> {
+    const end = asOfDate;
+    const recentStart = addDaysToDateOnly(asOfDate, -6);
+    const previousStart = addDaysToDateOnly(asOfDate, -13);
+    const previousEnd = addDaysToDateOnly(asOfDate, -7);
     const [workouts, completed] = await Promise.all([
       listWorkouts(userId, previousStart, 200),
       listTasks(userId, { status: "completed", limit: 500 }),
@@ -103,14 +102,15 @@ export class MetricsService {
         courage: task.courage_task,
         metaWork: task.meta_work,
       });
-      add(slug, task.completed_at.slice(0, 10), meaningfulTaskUnits(weight));
+      const completedDate = dateInTimeZone(task.completed_at, timeZone);
+      if (completedDate) add(slug, completedDate, meaningfulTaskUnits(weight));
     }
 
     return computeCategoryMomentum({ recentUnits, previousUnits, weeklyTargets: WEEKLY_MINIMUM_COUNTS });
   }
 
-  async computeAndStoreMomentum(userId: string, weekStart: string): Promise<number | null> {
-    const days = await this.buildDayActivities(userId, weekStart);
+  async computeAndStoreMomentum(userId: string, weekStart: string, asOfDate: string, timeZone = "UTC"): Promise<number | null> {
+    const days = await this.buildDayActivities(userId, weekStart, timeZone);
     const momentum = computeMomentum({ days });
     if (momentum === null) return null;
     const { createServerClientForApp } = await import("@/integrations/supabase/server");
@@ -118,7 +118,7 @@ export class MetricsService {
     if (supabase) {
       await supabase.from("momentum_history").upsert({
         user_id: userId,
-        date: new Date().toISOString().slice(0, 10),
+        date: asOfDate,
         overall_score: momentum,
       });
     }
@@ -133,18 +133,14 @@ export class MetricsService {
     return data ?? [];
   }
 
-  private async buildDayActivities(userId: string, weekStart: string): Promise<DayActivity[]> {
+  private async buildDayActivities(userId: string, weekStart: string, timeZone: string): Promise<DayActivity[]> {
     const workouts = await listWorkouts(userId, weekStart, 90);
     const checkins = await this.getCheckinsSince(userId, weekStart);
     const completed = await listTasks(userId, { status: "completed", limit: 500 });
     const milestones = await listMilestones(userId);
 
     const dayMap = new Map<string, DayActivity>();
-    const days = Array.from({ length: 14 }, (_, i) => {
-      const d = new Date(weekStart + "T00:00:00");
-      d.setDate(d.getDate() + i);
-      return d.toISOString().slice(0, 10);
-    });
+    const days = Array.from({ length: 14 }, (_, i) => addDaysToDateOnly(weekStart, i));
 
     for (const date of days) {
       dayMap.set(date, {
@@ -165,7 +161,8 @@ export class MetricsService {
     const completedByDate = new Map<string, number>();
     for (const t of completed) {
       if (t.completed_at) {
-        const date = t.completed_at.slice(0, 10);
+        const date = dateInTimeZone(t.completed_at, timeZone);
+        if (!date) continue;
         if (dayMap.has(date)) {
           const weight = taskWeight({ impact: t.impact, size: "standard", courage: t.courage_task, metaWork: t.meta_work });
           completedByDate.set(date, (completedByDate.get(date) ?? 0) + weight);
