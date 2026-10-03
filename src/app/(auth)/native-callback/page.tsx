@@ -3,14 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@/integrations/supabase/client";
+import { isNativeShellHandoff } from "@/domain/native-callback";
 
 function clearCallbackFragment() {
   const cleanUrl = `${window.location.pathname}${window.location.search}`;
   window.history.replaceState(null, document.title, cleanUrl);
-}
-
-export function isNativeShellHandoff(value: string | null): boolean {
-  return value === "native-shell";
 }
 
 export default function NativeCallbackPage() {

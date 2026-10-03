@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isNativeShellHandoff } from "./page";
+import { isNativeShellHandoff } from "@/domain/native-callback";
 
 describe("native callback handoff", () => {
   it("recognizes only the explicit native-shell handoff marker", () => {
