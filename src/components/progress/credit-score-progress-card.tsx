@@ -36,13 +36,18 @@ export function CreditScoreProgressCard() {
 
   const load = () => {
     startTransition(async () => {
-      const result = await getCreditScoreProgressAction();
-      if (!result.ok) setError(result.error);
-      else {
-        setError(null);
-        setData(result.data as ProgressData);
+      try {
+        const result = await getCreditScoreProgressAction();
+        if (!result.ok) setError(result.error);
+        else {
+          setError(null);
+          setData(result.data as ProgressData);
+        }
+      } catch {
+        setError("Could not load credit score history. Try again when the connection is available.");
+      } finally {
+        setInitialLoading(false);
       }
-      setInitialLoading(false);
     });
   };
 
@@ -61,9 +66,11 @@ export function CreditScoreProgressCard() {
     const onVisible = () => {
       if (document.visibilityState === "visible") refreshLocalDate();
     };
+    const interval = window.setInterval(refreshLocalDate, 60_000);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.cancelAnimationFrame(frame);
+      window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
@@ -83,15 +90,19 @@ export function CreditScoreProgressCard() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     startTransition(async () => {
-      const result = await addCreditScoreSnapshotAction({
-        score: form.get("score"),
-        bureau: form.get("bureau"),
-        scoreModel: form.get("scoreModel"),
-        measuredAt: form.get("measuredAt"),
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-      });
-      if (!result.ok) setError(result.error);
-      else load();
+      try {
+        const result = await addCreditScoreSnapshotAction({
+          score: form.get("score"),
+          bureau: form.get("bureau"),
+          scoreModel: form.get("scoreModel"),
+          measuredAt: form.get("measuredAt"),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        });
+        if (!result.ok) setError(result.error);
+        else load();
+      } catch {
+        setError("Could not save the credit score right now. Your form values are still here; try again.");
+      }
     });
   }
 
@@ -149,20 +160,20 @@ export function CreditScoreProgressCard() {
       <form onSubmit={addScore} className="mt-5 grid gap-2 sm:grid-cols-4">
         <label className="flex flex-col gap-1 text-[11px] text-zinc-500">
           Score
-          <input name="score" type="number" min={300} max={850} required placeholder="742" className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" />
+        <input name="score" type="number" min={300} max={850} required placeholder="742" className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-base text-zinc-100" />
         </label>
         <label className="flex flex-col gap-1 text-[11px] text-zinc-500">
           Bureau
-          <input name="bureau" required placeholder="Experian" className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" />
+          <input name="bureau" required placeholder="Experian" className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-base text-zinc-100" />
         </label>
         <label className="flex flex-col gap-1 text-[11px] text-zinc-500">
           Score model
-          <input name="scoreModel" required placeholder="VantageScore 3.0" className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" />
+          <input name="scoreModel" required placeholder="VantageScore 3.0" className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-base text-zinc-100" />
         </label>
         <div className="flex items-end gap-2">
           <label className="flex min-w-0 flex-1 flex-col gap-1 text-[11px] text-zinc-500">
             Measurement date
-            <input name="measuredAt" type="date" value={dateState.selected} max={dateState.max || undefined} onChange={(event) => setDateState((current) => ({ ...current, selected: event.target.value }))} required disabled={!dateState.max} className="min-w-0 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-2 text-sm text-zinc-100 disabled:opacity-60" />
+            <input name="measuredAt" type="date" value={dateState.selected} max={dateState.max || undefined} onChange={(event) => setDateState((current) => ({ ...current, selected: event.target.value }))} required disabled={!dateState.max} className="min-w-0 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-2 text-base text-zinc-100 disabled:opacity-60" />
           </label>
           <button disabled={pending} className="rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-950 disabled:opacity-50">Add</button>
         </div>
@@ -171,7 +182,12 @@ export function CreditScoreProgressCard() {
       <p className="mt-3 text-[11px] leading-relaxed text-zinc-600">
         Year Mission compares only snapshots with the same bureau and score model. A different scoring model is a separate series, not an improvement or decline.
       </p>
-      {error ? <p role="alert" aria-live="polite" className="mt-3 text-sm text-red-300">{error}</p> : null}
+      {error ? (
+        <div role="alert" aria-live="polite" className="mt-3 flex items-center justify-between gap-3 text-sm text-red-300">
+          <p>{error}</p>
+          <button type="button" className="shrink-0 rounded-md border border-red-400/40 px-2 py-1 text-xs text-red-200" onClick={load}>Try again</button>
+        </div>
+      ) : null}
     </section>
   );
 }

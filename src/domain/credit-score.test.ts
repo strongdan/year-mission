@@ -29,6 +29,19 @@ describe("credit score identifiers", () => {
       { bureau: "Experian", scoreModel: "VantageScore 3.0" },
     )).toBe(false);
   });
+
+  it("keeps historical casing and whitespace variants in one comparable series", () => {
+    const history = [
+      { id: "older", bureau: " experian ", scoreModel: " VantageScore   3.0 " },
+      { id: "newer", bureau: "EXPERIAN", scoreModel: "VantageScore 3.0" },
+      { id: "other-model", bureau: "Experian", scoreModel: "FICO 8" },
+      { id: "other-bureau", bureau: "Equifax", scoreModel: "VantageScore 3.0" },
+    ];
+    const comparable = history.filter((item) => sameCreditSeries(item, history[0]));
+    expect(comparable.map((item) => item.id)).toEqual(["older", "newer"]);
+    expect(normalizeCreditIdentifier(history[0].bureau)).toBe("experian");
+    expect(normalizeCreditIdentifier(history[0].scoreModel)).toBe("vantagescore 3.0");
+  });
 });
 
 describe("credit score local date boundaries", () => {
