@@ -1373,29 +1373,15 @@ Life Balance is an owner-approved, visibility-first Today support surface. It co
 
 The native iPhone companion may read only the approved daily HealthKit aggregates needed by this surface. It must not store raw heart-rate samples, workout GPS, or psychological inferences. Health sync is production-only and uses the pinned Year Mission production origin. Partial syncs preserve previously stored metrics atomically; omitted values are not deletions. Life Balance does not create streaks, quotas, scores, or completion pressure.
 
-# 49. Credit Score Context
+# 51. Coming Up
 
-Progress may include optional manual credit-score snapshots as a secondary Money context below the core Progress experience.
+Year Mission may provide a secondary **Coming Up** planning surface so birthdays, anniversaries, deadlines, travel, selected holidays, active task due dates, and read-only Google Calendar constraints can be seen early enough to prepare.
 
-Each snapshot must preserve the score model, bureau, date, and source. Trends and deltas compare only snapshots from the **same bureau and score model**; Year Mission must not imply that unlike scores are directly comparable.
+Important dates may be saved manually with an explicit preparation lead time. Yearly recurrence is supported; Feb 29 recurring dates are observed on Feb 28 in non-leap years unless a future owner decision changes that policy.
 
-The score is an outcome signal, not a gamification reward, personal worth measure, or basis for predicted score gains. Manual entry is sufficient for the first slice. Do not invent or require a credit-bureau API contract merely to automate retrieval.
+A **Plan** action may create one ordinary Year Mission task at the start of the preparation window. Nothing is silently added to Today, and repeated planning attempts must not create duplicate tasks.
 
-Migration `0015_credit_score_progress.sql` is already-applied historical schema and includes a dormant `credit_score_connections` table from an earlier automation concept. The current application must not read, write, configure, or depend on that table. Do not mutate the already-applied migration to rewrite history; any future schema retirement should use a separate gated migration after the migration train is reconciled.
-
-# 50. Actionable Maintenance Reminders
-
-Year Mission may support a small set of recurring or one-time maintenance reminders for obligations such as appointments, refills, haircuts, vehicle service, and similar real-world upkeep.
-
-The model is **Notice → Launch → Commit**:
-
-- every reminder has a concrete first step;
-- an optional action/booking URL may launch the next step directly;
-- when due, the user may start, mark done, or deliberately reschedule to a real date;
-- recurring reminders roll forward from completion;
-- one-time reminders retire after completion.
-
-Reminders do not create streaks, vague snooze debt, Momentum penalties, or red failure states. A reminder belongs on Today only when due, and only the most immediate due reminder should occupy the compact Today surface. The full reminder workspace is secondary navigation.
+Coming Up is anticipatory context, not an extensive notification engine. Google Calendar remains read-only and the feature must stay useful when Google is disconnected.
 
 Year Mission should not become another system the user has to maintain.
 

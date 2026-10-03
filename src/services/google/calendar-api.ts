@@ -4,6 +4,8 @@ const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 
 export interface GoogleCalendarEvent {
   id: string;
+  recurringEventId?: string | null;
+  originalStart?: string | null;
   title: string;
   start: string;
   end: string;
@@ -14,6 +16,8 @@ export interface GoogleCalendarEvent {
 
 interface GoogleEventResource {
   id?: string;
+  recurringEventId?: string;
+  originalStartTime?: { date?: string; dateTime?: string };
   summary?: string;
   location?: string;
   htmlLink?: string;
@@ -27,35 +31,49 @@ export async function listPrimaryCalendarEvents(
   timeMin: string,
   timeMax: string
 ): Promise<GoogleCalendarEvent[]> {
-  const params = new URLSearchParams({
-    timeMin,
-    timeMax,
-    singleEvents: "true",
-    orderBy: "startTime",
-    maxResults: "50",
-    fields: "items(id,summary,start,end,location,status,htmlLink)",
-  });
+  const resources: GoogleEventResource[] = [];
+  let pageToken: string | undefined;
+  let pageCount = 0;
 
-  const res = await fetch(`${CALENDAR_API}/calendars/primary/events?${params.toString()}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-  });
+  do {
+    const params = new URLSearchParams({
+      timeMin,
+      timeMax,
+      singleEvents: "true",
+      orderBy: "startTime",
+      maxResults: "250",
+      fields: "nextPageToken,items(id,recurringEventId,originalStartTime,summary,start,end,location,status,htmlLink)",
+    });
+    if (pageToken) params.set("pageToken", pageToken);
 
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403) {
-      throw new Error("Google Calendar permission is missing or expired. Reconnect Google.");
+    const res = await fetch(`${CALENDAR_API}/calendars/primary/events?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        throw new Error("Google Calendar permission is missing or expired. Reconnect Google.");
+      }
+      throw new Error(`Google Calendar request failed (${res.status}).`);
     }
-    throw new Error(`Google Calendar request failed (${res.status}).`);
-  }
 
-  const data = (await res.json()) as { items?: GoogleEventResource[] };
-  return (data.items ?? [])
+    const data = (await res.json()) as { items?: GoogleEventResource[]; nextPageToken?: string };
+    resources.push(...(data.items ?? []));
+    pageToken = data.nextPageToken;
+    pageCount += 1;
+    if (pageCount >= 100 && pageToken) throw new Error("Google Calendar returned too many pages to load safely.");
+  } while (pageToken);
+
+  return resources
     .filter((event) => event.status !== "cancelled" && event.id && event.start && event.end)
     .map((event) => {
       const start = event.start?.dateTime ?? event.start?.date ?? "";
       const end = event.end?.dateTime ?? event.end?.date ?? "";
       return {
         id: event.id!,
+        recurringEventId: event.recurringEventId ?? null,
+        originalStart: event.originalStartTime?.dateTime ?? event.originalStartTime?.date ?? null,
         title: event.summary?.trim() || "Busy",
         start,
         end,
