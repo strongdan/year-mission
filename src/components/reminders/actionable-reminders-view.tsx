@@ -173,7 +173,6 @@ export function ActionableRemindersView() {
   }
 
   function ReminderCard({ item }: { item: ActionableReminderRecord }) {
-    const overdue = daysOverdue(item.next_due_date, today);
     const dueNow = isReminderDue(item.next_due_date, today);
     return (
       <div className={`rounded-xl border p-3 ${dueNow ? "border-amber-900/70 bg-amber-950/15" : "border-zinc-800 bg-zinc-950/20"}`}>
