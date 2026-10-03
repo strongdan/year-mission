@@ -43,6 +43,7 @@ export function HypnosisPlayer({ taskId, onComplete }: { taskId?: string | null;
       durationSeconds,
       taskId: taskId ?? null,
       date: localDateFromSystemClock(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
       details: { title: selected?.title ?? "Audiobookshelf", mediaType: selected?.type ?? "external" },
     });
     if (!result.ok) {

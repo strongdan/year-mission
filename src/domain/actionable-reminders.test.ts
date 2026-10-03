@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, daysOverdue, isReminderDue, nextDateAfterCompletion, rescheduleDate } from "./actionable-reminders";
+import { addDays, daysOverdue, isReminderDue, nextDateAfterCompletion, rescheduleDate, safeLaunchUrl } from "./actionable-reminders";
 
 describe("actionable reminder policy", () => {
   it("treats today and past dates as due", () => {
@@ -25,5 +25,11 @@ describe("actionable reminder policy", () => {
   it("handles month boundaries deterministically", () => {
     expect(addDays("2026-09-30", 1)).toBe("2026-10-01");
     expect(daysOverdue("2026-09-01", "2026-09-07")).toBe(6);
+  });
+
+  it("only treats HTTPS links as launchable action URLs", () => {
+    expect(safeLaunchUrl("https://example.com/book")).toBe("https://example.com/book");
+    expect(safeLaunchUrl("javascript:alert(1)")).toBeNull();
+    expect(safeLaunchUrl("http://example.com/book")).toBeNull();
   });
 });

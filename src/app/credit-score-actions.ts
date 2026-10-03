@@ -34,7 +34,8 @@ export async function getCreditScoreProgressAction() {
     .select("id,score,bureau,score_model,source,measured_at,created_at")
     .eq("user_id", user.id)
     .order("measured_at", { ascending: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
 
   if (latestError) return { ok: false as const, error: latestError.message };
 

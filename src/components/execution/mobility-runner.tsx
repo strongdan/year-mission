@@ -44,6 +44,7 @@ export function MobilityRunner({ slug, taskId, onComplete }: { slug: string; tas
       durationSeconds: Math.max(30, Math.round((Date.now() - startTime) / 1000)),
       taskId: taskId ?? null,
       date: localDateFromSystemClock(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
       details: { completedSteps: protocol.steps.length },
     });
     if (!result.ok) {

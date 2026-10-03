@@ -517,6 +517,22 @@ Life Balance + Apple Health is an explicitly approved support surface, not a new
 Apple Health is read-only, owner-isolated, and limited to daily aggregates. The native sync origin is pinned to the production Year Mission Worker; previews and local environments do not issue native HealthKit tickets. Partial updates are merged atomically in PostgreSQL so concurrent uploads cannot erase omitted historical metrics. No HealthKit value is used to infer psychological state.
 
 
+# D031 — Credit score is optional provenance-aware context
+
+**Status:** Accepted
+
+Credit score may appear as a secondary Money progress signal, but comparisons are valid only within the same bureau and score model. Preserve provenance and dates.
+
+The first product slice is manual entry. Do not invent a generic production bureau API, predict personal score gains, or treat the number as gamification.
+
+# D032 — Maintenance reminders must launch action, not create reminder debt
+
+**Status:** Accepted
+
+Actionable maintenance reminders are a secondary support surface for concrete real-world upkeep. Each reminder carries a first physical/actionable step and may include a direct booking/action URL.
+
+When due, the user may launch, complete, or deliberately reschedule it to a real date. Recurring reminders roll forward after completion; one-time reminders retire. Do not introduce indefinite snooze, streaks, guilt, Momentum penalties, or a large reminder dashboard on Today.
+
 # D033 — Coming Up anticipates without silently scheduling
 
 **Status:** Accepted

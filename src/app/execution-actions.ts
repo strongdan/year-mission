@@ -8,7 +8,7 @@ import { getProfile, insertTaskEvent, insertWorkout, listTaskEvents } from "@/re
 import { taskService } from "@/services/task-service";
 import type { Json } from "@/integrations/supabase/types";
 import { DEFAULT_EQUIPMENT, type EquipmentId } from "@/domain/execution-protocols";
-import { isValidDateOnly } from "@/domain/local-calendar";
+import { dateInTimeZone, isValidDateOnly, validTimeZone } from "@/domain/local-calendar";
 
 const EQUIPMENT_Z = z.enum([
   "bodyweight",
@@ -41,6 +41,7 @@ const LOG_Z = z.object({
   durationSeconds: z.number().int().min(0).max(12 * 60 * 60),
   taskId: z.string().uuid().nullable().optional(),
   date: z.string().refine(isValidDateOnly, "Invalid local date."),
+  timeZone: z.string().min(1).max(120),
   details: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -125,6 +126,8 @@ export async function logExecutionAction(input: z.infer<typeof LOG_Z>) {
   if (!parsed.success) return { ok: false, error: "Execution log is invalid." } as const;
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." } as const;
+  const localToday = dateInTimeZone(new Date().toISOString(), validTimeZone(parsed.data.timeZone));
+  if (!localToday || parsed.data.date > localToday) return { ok: false, error: "An execution cannot be logged for a future local date." } as const;
 
   const details = JSON.parse(JSON.stringify(parsed.data.details ?? {})) as Json;
   await insertTaskEvent({

@@ -97,38 +97,46 @@ export function AnticipationPlanner() {
     if (!title.trim() || !eventDate) return setMessage("Add a name and date first.");
     setMessage(null);
     startTransition(async () => {
-      const result = await addImportantDateAction({
-        title: title.trim(),
-        kind,
-        eventDate,
-        recurrence,
-        leadDays,
-        personName: personName.trim() || null,
-        notes: notes.trim() || null,
-      });
-      if (!result.ok) return setMessage(result.error);
-      setTitle(""); setPersonName(""); setEventDate(""); setNotes("");
-      setShowAdd(false);
-      setMessage("Important date saved.");
-      load();
+      try {
+        const result = await addImportantDateAction({
+          title: title.trim(),
+          kind,
+          eventDate,
+          recurrence,
+          leadDays,
+          personName: personName.trim() || null,
+          notes: notes.trim() || null,
+        });
+        if (!result.ok) return setMessage(result.error);
+        setTitle(""); setPersonName(""); setEventDate(""); setNotes("");
+        setShowAdd(false);
+        setMessage("Important date saved.");
+        load();
+      } catch {
+        setMessage("Could not save this date. Your form is still here; try again.");
+      }
     });
   }
 
   function plan(item: AnticipationItem) {
     setMessage(null);
     startTransition(async () => {
-      const result = await planAnticipationItemAction({
-        key: item.key,
-        title: item.title,
-        date: item.date,
-        kind: item.kind,
-        leadDays: item.leadDays,
-        today: localToday(),
-        personName: item.personName,
-      });
-      if (!result.ok) return setMessage(result.error);
-      setMessage(result.data.alreadyPlanned ? "A planning task already exists." : "Planning task added to your task system.");
-      load();
+      try {
+        const result = await planAnticipationItemAction({
+          key: item.key,
+          title: item.title,
+          date: item.date,
+          kind: item.kind,
+          leadDays: item.leadDays,
+          today: localToday(),
+          personName: item.personName,
+        });
+        if (!result.ok) return setMessage(result.error);
+        setMessage(result.data.alreadyPlanned ? "A planning task already exists." : "Planning task added to your task system.");
+        load();
+      } catch {
+        setMessage("Could not create the planning task. Try again when the connection is available.");
+      }
     });
   }
 
@@ -136,9 +144,13 @@ export function AnticipationPlanner() {
     const match = /^important:([0-9a-f-]+):/.exec(item.key);
     if (!match) return;
     startTransition(async () => {
-      const result = await deleteImportantDateAction(match[1]);
-      if (!result.ok) return setMessage(result.error);
-      load();
+      try {
+        const result = await deleteImportantDateAction(match[1]);
+        if (!result.ok) return setMessage(result.error);
+        load();
+      } catch {
+        setMessage("Could not delete this date. Try again when the connection is available.");
+      }
     });
   }
 

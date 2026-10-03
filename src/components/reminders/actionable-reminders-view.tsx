@@ -14,7 +14,7 @@ import {
   rescheduleActionableReminderAction,
   type ActionableReminderRecord,
 } from "@/app/actionable-reminder-actions";
-import { isReminderDue } from "@/domain/actionable-reminders";
+import { isReminderDue, safeLaunchUrl } from "@/domain/actionable-reminders";
 
 function localToday(): string {
   const now = new Date();
@@ -115,7 +115,8 @@ export function ActionableRemindersView() {
   }
 
   async function launch(item: ActionableReminderRecord) {
-    if (item.launch_url) window.open(item.launch_url, "_blank", "noopener,noreferrer");
+    const launchUrl = safeLaunchUrl(item.launch_url);
+    if (launchUrl) window.open(launchUrl, "_blank", "noopener,noreferrer");
     setBusy(item.id);
     setError(null);
     try {
@@ -174,6 +175,7 @@ export function ActionableRemindersView() {
 
   function ReminderCard({ item }: { item: ActionableReminderRecord }) {
     const dueNow = isReminderDue(item.next_due_date, today);
+    const launchUrl = safeLaunchUrl(item.launch_url);
     return (
       <div className={`rounded-xl border p-3 ${dueNow ? "border-amber-900/70 bg-amber-950/15" : "border-zinc-800 bg-zinc-950/20"}`}>
         <div className="flex items-start justify-between gap-3">
@@ -189,10 +191,10 @@ export function ActionableRemindersView() {
         </div>
         {dueNow && (
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" className="min-h-11" onClick={() => void launch(item)} disabled={busy === item.id}><Play className="h-3.5 w-3.5" /> {item.launch_url ? "Launch now" : "I started"}</Button>
+            <Button size="sm" className="min-h-11" onClick={() => void launch(item)} disabled={busy === item.id}><Play className="h-3.5 w-3.5" /> {launchUrl ? "Launch now" : "I started"}</Button>
             <Button size="sm" className="min-h-11" variant="secondary" onClick={() => void complete(item)} disabled={busy === item.id}><Check className="h-3.5 w-3.5" /> Done</Button>
             <Button size="sm" className="min-h-11" variant="ghost" onClick={() => void reschedule(item)} disabled={busy === item.id}>Not now → {item.default_reschedule_days}d</Button>
-            {item.launch_url && <a href={item.launch_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-zinc-500 hover:text-zinc-200">Open link <ExternalLink className="h-3 w-3" /></a>}
+            {launchUrl && <a href={launchUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-zinc-500 hover:text-zinc-200">Open link <ExternalLink className="h-3 w-3" /></a>}
           </div>
         )}
       </div>

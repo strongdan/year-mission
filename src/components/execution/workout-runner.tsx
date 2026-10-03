@@ -100,6 +100,7 @@ export function WorkoutRunner({ slug, taskId }: { slug: string; taskId?: string 
       durationSeconds,
       taskId: taskId ?? null,
       date: localDateFromSystemClock(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
       details: {
         exercises: protocol.exercises.map((item) => ({
           id: item.id,
