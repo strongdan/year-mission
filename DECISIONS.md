@@ -525,6 +525,14 @@ Credit score may appear as a secondary Money progress signal, but comparisons ar
 
 The first product slice is manual entry. Do not invent a generic production bureau API, predict personal score gains, or treat the number as gamification.
 
+# D032 — Maintenance reminders must launch action, not create reminder debt
+
+**Status:** Accepted
+
+Actionable maintenance reminders are a secondary support surface for concrete real-world upkeep. Each reminder carries a first physical/actionable step and may include a direct booking/action URL.
+
+When due, the user may launch, complete, or deliberately reschedule it to a real date. Recurring reminders roll forward after completion; one-time reminders retire. Do not introduce indefinite snooze, streaks, guilt, Momentum penalties, or a large reminder dashboard on Today.
+
 ---
 
 **Status:** Accepted

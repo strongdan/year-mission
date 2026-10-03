@@ -10,6 +10,11 @@ import { Card, CardHeader } from "@/components/ui/card";
 type CalendarData = NonNullable<Awaited<ReturnType<typeof getCalendarWeekAction>>["data"]>;
 type EventItem = CalendarData["events"][number];
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 function dateOnlyParts(value: string): { year: number; month: number; day: number } | null {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return null;
@@ -48,7 +53,7 @@ export function WeekSchedule() {
 
   useEffect(() => {
     let cancelled = false;
-    getCalendarWeekAction().then((res) => {
+    getCalendarWeekAction(localToday()).then((res) => {
       if (cancelled) return;
       setLoading(false);
       setLoadedAt(Date.now());

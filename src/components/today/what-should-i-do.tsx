@@ -10,6 +10,11 @@ import type { EnergyLevel } from "@/domain/sequencing";
 
 const TIME_CHIPS = [10, 20, 30, 60] as const;
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 const ENERGY_CHIPS: { value: EnergyLevel; label: string }[] = [
   { value: "low", label: "Low energy" },
   { value: "medium", label: "Medium" },
@@ -47,7 +52,7 @@ export function WhatShouldIDo({ onChange }: { onChange?: () => void }) {
         availableMinutes: minutes,
         energy,
         excludeTaskId: excludeTaskId ?? null,
-      });
+      }, localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
       if (!res.ok || !res.data) {
         setError(res.error ?? "No recommendation available right now.");
         if (!result) setResult(null);

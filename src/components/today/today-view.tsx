@@ -17,6 +17,11 @@ import { EveningResetCard } from "./evening-reset-card";
 import { NextCalendarEvent } from "./next-calendar-event";
 import { WhatShouldIDo } from "./what-should-i-do";
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 type DashboardData = Awaited<ReturnType<typeof getDashboardAction>>["data"];
 
 const DEFERRAL_REASONS: { value: DeferralReason; label: string }[] = [
@@ -56,7 +61,7 @@ export function TodayView() {
   const [loggingWalk, setLoggingWalk] = useState(false);
 
   async function load() {
-    const res = await getDashboardAction();
+    const res = await getDashboardAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
     if (!res.ok || !res.data) {
       setError(res.error ?? "Failed to load.");
       setLoading(false);
@@ -69,7 +74,7 @@ export function TodayView() {
 
   useEffect(() => {
     let cancelled = false;
-    getDashboardAction().then((res) => {
+    getDashboardAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC").then((res) => {
       if (cancelled) return;
       if (!res.ok || !res.data) {
         setError(res.error ?? "Failed to load.");
@@ -103,13 +108,13 @@ export function TodayView() {
   async function toggleAlcoholFree() {
     const next = !alcoholFree;
     setAlcoholFree(next);
-    await checkinAction({ alcoholFree: next });
+    await checkinAction({ date: localToday(), alcoholFree: next });
   }
 
   async function logWalk() {
     if (loggingWalk || !data || data.walkToday) return;
     setLoggingWalk(true);
-    await logWorkoutAction({ type: "walking", durationMinutes: 10 });
+    await logWorkoutAction({ type: "walking", durationMinutes: 10, date: localToday() });
     setLoggingWalk(false);
     await load();
   }

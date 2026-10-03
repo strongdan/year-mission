@@ -7,6 +7,7 @@ import { logExecutionAction } from "@/app/execution-actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatClock, useCountdown } from "./use-countdown";
+import { localDateFromSystemClock } from "@/domain/local-calendar";
 
 type MeditationMode = "breath" | "silent" | "body_scan";
 
@@ -37,6 +38,7 @@ export function MeditationRunner({ initialMinutes = 5, taskId, onComplete }: { i
       kind: "meditation",
       durationSeconds: completedTimer ? minutes * 60 : Math.min(minutes * 60, elapsed),
       taskId: taskId ?? null,
+      date: localDateFromSystemClock(),
       details: { mode, completedTimer },
     });
     if (!result.ok) {

@@ -19,6 +19,11 @@ import { NextCalendarEvent } from "./next-calendar-event";
 import { ResistancePanel } from "./resistance-panel";
 import { WhatShouldIDo } from "./what-should-i-do";
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 type DashboardData = Awaited<ReturnType<typeof getDashboardAction>>["data"];
 
 const DASHBOARD_CACHE_KEY = "year-mission:today-cache:v1";
@@ -79,7 +84,7 @@ export function TodayViewV2() {
   async function load() {
     setError(null);
     try {
-      const result = await getDashboardAction();
+      const result = await getDashboardAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
       if (!result.ok || !result.data) throw new Error(result.error ?? "Failed to load.");
       setData(result.data);
       cacheDashboard(result.data);
@@ -128,14 +133,14 @@ export function TodayViewV2() {
     if (usingCachedData && !navigator.onLine) return;
     const next = !alcoholFree;
     setAlcoholFree(next);
-    await checkinAction({ alcoholFree: next });
+    await checkinAction({ date: localToday(), alcoholFree: next });
   }
 
   async function logWalk() {
     const currentData = data;
     if (!currentData || loggingWalk || currentData.walkToday || (usingCachedData && !navigator.onLine)) return;
     setLoggingWalk(true);
-    await logWorkoutAction({ type: "walking", durationMinutes: 10 });
+    await logWorkoutAction({ type: "walking", durationMinutes: 10, date: localToday() });
     setLoggingWalk(false);
     await load();
   }

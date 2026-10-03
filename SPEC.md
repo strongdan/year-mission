@@ -1383,6 +1383,20 @@ The score is an outcome signal, not a gamification reward, personal worth measur
 
 Migration `0015_credit_score_progress.sql` is already-applied historical schema and includes a dormant `credit_score_connections` table from an earlier automation concept. The current application must not read, write, configure, or depend on that table. Do not mutate the already-applied migration to rewrite history; any future schema retirement should use a separate gated migration after the migration train is reconciled.
 
+# 50. Actionable Maintenance Reminders
+
+Year Mission may support a small set of recurring or one-time maintenance reminders for obligations such as appointments, refills, haircuts, vehicle service, and similar real-world upkeep.
+
+The model is **Notice → Launch → Commit**:
+
+- every reminder has a concrete first step;
+- an optional action/booking URL may launch the next step directly;
+- when due, the user may start, mark done, or deliberately reschedule to a real date;
+- recurring reminders roll forward from completion;
+- one-time reminders retire after completion.
+
+Reminders do not create streaks, vague snooze debt, Momentum penalties, or red failure states. A reminder belongs on Today only when due, and only the most immediate due reminder should occupy the compact Today surface. The full reminder workspace is secondary navigation.
+
 Year Mission should not become another system the user has to maintain.
 
 It should reduce the amount of mental work required to operate the year.

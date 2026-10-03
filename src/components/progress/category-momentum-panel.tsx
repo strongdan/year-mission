@@ -15,6 +15,11 @@ const CATEGORY_LABELS: Record<DomainSlug, string> = {
   capability: "Career",
 };
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 function formatUnits(value: number): string {
   if (Number.isInteger(value)) return String(value);
   return value.toFixed(1).replace(/\.0$/, "");
@@ -40,7 +45,7 @@ export function CategoryMomentumPanel() {
 
   useEffect(() => {
     let cancelled = false;
-    void getCategoryMomentumAction().then((result) => {
+    void getCategoryMomentumAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC").then((result) => {
       if (cancelled) return;
       if (!result.ok || !result.data) {
         setError(result.error ?? "Category momentum could not be loaded.");

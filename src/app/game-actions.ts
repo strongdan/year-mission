@@ -4,32 +4,31 @@ import { requireUser } from "@/lib/auth";
 import { getActivePlan, listEvidence, listMilestones, listTasks } from "@/repositories/supabase-repository";
 import { metricsService } from "@/services/metrics-service";
 import { buildAchievements, buildChargeState, chooseBonusMission, detectComeback } from "@/domain/game-loop";
+import { dateInTimeZone, isValidDateOnly, mondayOfDateOnly } from "@/domain/local-calendar";
 
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function mondayOf(date = new Date()): string {
-  const d = new Date(date);
-  const day = (d.getDay() + 6) % 7;
-  d.setDate(d.getDate() - day);
-  return d.toISOString().slice(0, 10);
-}
-
-export async function getGameLoopAction() {
+export async function getGameLoopAction(dateInput: string, timeZoneInput: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." } as const;
+  if (!isValidDateOnly(dateInput)) return { ok: false, error: "Invalid local date." } as const;
+  const timeZone = (() => {
+    try {
+      new Intl.DateTimeFormat("en-CA", { timeZone: timeZoneInput }).format(new Date());
+      return timeZoneInput;
+    } catch {
+      return "UTC";
+    }
+  })();
 
-  const today = todayISO();
+  const today = dateInput;
   const [completed, bigFour] = await Promise.all([
     listTasks(user.id, { status: "completed", limit: 100 }),
-    metricsService.bigFourProgressThisWeek(user.id, mondayOf()),
+    metricsService.bigFourProgressThisWeek(user.id, mondayOfDateOnly(today), timeZone),
   ]);
 
   const meaningful = completed.filter((task) => !task.meta_work && !!task.completed_at);
-  const completedToday = meaningful.filter((task) => task.completed_at?.slice(0, 10) === today);
+  const completedToday = meaningful.filter((task) => task.completed_at && dateInTimeZone(task.completed_at, timeZone) === today);
   const recentMeaningfulCompletionDates = Array.from(
-    new Set(meaningful.map((task) => task.completed_at?.slice(0, 10)).filter((date): date is string => !!date)),
+    new Set(meaningful.map((task) => task.completed_at ? dateInTimeZone(task.completed_at, timeZone) : null).filter((date): date is string => !!date)),
   ).sort().reverse();
 
   const charge = buildChargeState({ completedToday, bigFour });
@@ -51,9 +50,18 @@ export async function getGameLoopAction() {
   } as const;
 }
 
-export async function getAchievementsAction() {
+export async function getAchievementsAction(dateInput: string, timeZoneInput: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." } as const;
+  if (!isValidDateOnly(dateInput)) return { ok: false, error: "Invalid local date." } as const;
+  const timeZone = (() => {
+    try {
+      new Intl.DateTimeFormat("en-CA", { timeZone: timeZoneInput }).format(new Date());
+      return timeZoneInput;
+    } catch {
+      return "UTC";
+    }
+  })();
 
   const [plan, completed, evidence, milestones] = await Promise.all([
     getActivePlan(user.id),
@@ -62,7 +70,10 @@ export async function getAchievementsAction() {
     listMilestones(user.id),
   ]);
   const start = plan?.start_date ?? "1970-01-01";
-  const meaningful = completed.filter((task) => !task.meta_work && !!task.completed_at && task.completed_at.slice(0, 10) >= start);
+  const meaningful = completed.filter((task) => {
+    const completedDate = task.completed_at ? dateInTimeZone(task.completed_at, timeZone) : null;
+    return !task.meta_work && completedDate !== null && completedDate >= start;
+  });
   const missionEvidence = evidence.filter((item) => item.occurred_at >= start);
   const missionMilestones = milestones.filter((item) => item.achieved_at >= start);
 

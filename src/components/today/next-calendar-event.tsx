@@ -7,6 +7,11 @@ import { getCalendarWeekAction } from "@/app/calendar-actions";
 type CalendarData = NonNullable<Awaited<ReturnType<typeof getCalendarWeekAction>>["data"]>;
 type EventItem = CalendarData["events"][number];
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 function eventDate(event: EventItem): Date {
   if (event.allDay && /^\d{4}-\d{2}-\d{2}$/.test(event.start)) {
     const [year, month, day] = event.start.split("-").map(Number);
@@ -31,7 +36,7 @@ export function NextCalendarEvent() {
 
   useEffect(() => {
     let cancelled = false;
-    getCalendarWeekAction().then((result) => {
+    getCalendarWeekAction(localToday()).then((result) => {
       if (cancelled) return;
       setLoadedAt(Date.now());
       if (result.ok && result.data) setData(result.data);

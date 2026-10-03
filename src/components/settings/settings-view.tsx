@@ -96,6 +96,11 @@ function providerLabel(provider: UserAiProvider): string {
   return AI_PROVIDER_META[provider].label;
 }
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 export function SettingsView({ environment, buildSha }: { environment: string; buildSha: string }) {
   const [google, setGoogle] = useState<GoogleStatus | null>(null);
   const [calendar, setCalendar] = useState<CalendarStatus | null>(null);
@@ -113,7 +118,7 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
     setError(null);
     const [googleRes, calendarRes, aiRes] = await Promise.all([
       getGoogleSyncStatusAction(),
-      getCalendarWeekAction(),
+      getCalendarWeekAction(localToday()),
       getAiStatusAction(),
     ]);
 
@@ -266,7 +271,7 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
       </Card>
 
       <Card>
-        <CardHeader title="Account" subtitle="Sign in with Apple or Google through Supabase Auth." right={<UserRound className="h-4 w-4 text-zinc-500" />} />
+        <CardHeader title="Account" subtitle="Authenticated through Supabase Auth." right={<UserRound className="h-4 w-4 text-zinc-500" />} />
         <div className="flex items-center justify-between gap-3">
           <div><p className="text-sm font-medium text-zinc-200">Signed in</p><p className="mt-0.5 text-xs text-zinc-500">Supabase session is active.</p></div>
           <form action="/auth/signout" method="post"><Button type="submit" size="sm" variant="secondary">Sign out</Button></form>
