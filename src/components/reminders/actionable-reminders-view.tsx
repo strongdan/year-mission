@@ -14,7 +14,7 @@ import {
   rescheduleActionableReminderAction,
   type ActionableReminderRecord,
 } from "@/app/actionable-reminder-actions";
-import { daysOverdue, isReminderDue } from "@/domain/actionable-reminders";
+import { isReminderDue } from "@/domain/actionable-reminders";
 
 function localToday(): string {
   const now = new Date();
@@ -182,7 +182,7 @@ export function ActionableRemindersView() {
             <p className="text-sm font-semibold text-zinc-200">{item.title}</p>
             <p className="mt-1 text-xs leading-relaxed text-zinc-400"><span className="text-zinc-600">First step:</span> {item.launch_step}</p>
             <p className="mt-1 text-[11px] text-zinc-600">
-              {dueNow ? (overdue > 0 ? `${overdue} day${overdue === 1 ? "" : "s"} overdue` : "Due today") : `Due ${prettyDate(item.next_due_date)}`}
+              {dueNow ? `Due ${prettyDate(item.next_due_date)} · ready when useful` : `Due ${prettyDate(item.next_due_date)}`}
               {item.recurrence_days ? ` · repeats every ${item.recurrence_days} days` : " · one time"}
             </p>
           </div>
@@ -231,7 +231,14 @@ export function ActionableRemindersView() {
             <label className="text-[11px] text-zinc-500">Reschedule<input inputMode="numeric" value={rescheduleDays} onChange={(e) => setRescheduleDays(e.target.value.replace(/\D/g, ""))} className="mt-1 w-full rounded-lg border border-zinc-800 bg-zinc-950/40 px-2 py-2 text-xs text-zinc-300" /></label>
           </div>
           <Button onClick={() => void create()} disabled={!migrationReady || busy === "create" || !title.trim() || !launchStep.trim()}><Plus className="h-4 w-4" /> {busy === "create" ? "Adding…" : "Add reminder"}</Button>
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && (
+            <div className="flex items-center justify-between gap-3" role="alert">
+              <p className="text-xs text-red-400">{error}</p>
+              <button type="button" onClick={() => void load()} className="shrink-0 text-[11px] text-zinc-400 underline-offset-2 hover:text-zinc-200 hover:underline">
+                Try again
+              </button>
+            </div>
+          )}
         </div>
       </Card>
 
