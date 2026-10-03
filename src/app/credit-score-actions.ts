@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
-import { localDateInTimeZone, sameCreditSeries } from "@/domain/credit-score";
+import {
+  latestSnapshotPerMeasurementDate,
+  localDateInTimeZone,
+  sameCreditSeries,
+} from "@/domain/credit-score";
 
 const scoreInput = z.object({
   score: z.coerce.number().int().min(300).max(850),
@@ -34,19 +38,26 @@ export async function getCreditScoreProgressAction() {
 
   if (latestError) return { ok: false as const, error: latestError.message };
 
-  const latest = rows?.[0] ?? null;
-  if (!latest) {
+  const latestRow = rows?.[0] ?? null;
+  if (!latestRow) {
     return {
       ok: true as const,
       data: { snapshots: [], latest: null, previous: null, delta: null, best: null },
     };
   }
 
-  const snapshots = (rows ?? []).filter((item) => sameCreditSeries(
+  const snapshots = latestSnapshotPerMeasurementDate((rows ?? []).filter((item) => sameCreditSeries(
     { bureau: item.bureau, scoreModel: item.score_model },
-    { bureau: latest.bureau, scoreModel: latest.score_model },
-  ));
-  const previous = snapshots.find((item) => item.id !== latest.id) ?? null;
+    { bureau: latestRow.bureau, scoreModel: latestRow.score_model },
+  )));
+  const latest = snapshots[0] ?? null;
+  if (!latest) {
+    return {
+      ok: true as const,
+      data: { snapshots: [], latest: null, previous: null, delta: null, best: null },
+    };
+  }
+  const previous = snapshots.find((item) => item.measured_at < latest.measured_at) ?? null;
 
   return {
     ok: true as const,

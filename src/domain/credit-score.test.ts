@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   escapeIlikeLiteral,
+  latestSnapshotPerMeasurementDate,
   localDateInTimeZone,
   normalizeCreditIdentifier,
   sameCreditSeries,
@@ -41,6 +42,20 @@ describe("credit score identifiers", () => {
     expect(comparable.map((item) => item.id)).toEqual(["older", "newer"]);
     expect(normalizeCreditIdentifier(history[0].bureau)).toBe("experian");
     expect(normalizeCreditIdentifier(history[0].scoreModel)).toBe("vantagescore 3.0");
+  });
+
+  it("uses one logical snapshot per measurement date after preserving old variants", () => {
+    const snapshots = latestSnapshotPerMeasurementDate([
+      { id: "newer-date", measured_at: "2026-09-30" },
+      { id: "newest-same-day", measured_at: "2026-09-29" },
+      { id: "older-same-day", measured_at: "2026-09-29" },
+      { id: "oldest-date", measured_at: "2026-09-20" },
+    ]);
+    expect(snapshots.map((snapshot) => snapshot.id)).toEqual([
+      "newer-date",
+      "newest-same-day",
+      "oldest-date",
+    ]);
   });
 });
 
