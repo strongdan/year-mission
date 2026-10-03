@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { createAdminClient } from "@/integrations/supabase/server";
 import { listUpcomingPrimaryCalendarEvents } from "@/services/google/anticipation-calendar";
+import { isValidDateOnly } from "@/domain/local-calendar";
 import {
   DEFAULT_LEAD_DAYS,
   addDays,
@@ -12,11 +13,13 @@ import {
   nextOccurrence,
   planningHolidays,
   planningTaskTitle,
+  calendarEventKey,
+  calendarEventLocalDate,
   type AnticipationItem,
   type AnticipationKind,
 } from "@/domain/anticipation";
 
-const DATE_Z = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const DATE_Z = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(isValidDateOnly, "Invalid date");
 const KIND_Z = z.enum(["birthday", "anniversary", "deadline", "holiday", "travel", "other"]);
 const UUID_Z = z.string().uuid();
 
@@ -99,7 +102,7 @@ export async function getAnticipationAction(todayInput?: string, horizonDays = 1
     const [{ data: importantDates, error: importantError }, { data: taskRows, error: taskError }, { data: plans, error: plansError }] = await Promise.all([
       admin.from("important_dates").select("id,title,kind,event_date,recurrence,lead_days,person_name,notes").eq("user_id", user.id).limit(500),
       admin.from("tasks").select("id,title,due_date,notes,status,source").eq("user_id", user.id).not("due_date", "is", null).not("status", "in", '(completed,dropped)').neq("source", "anticipation").limit(500),
-      admin.from("anticipation_plans").select("event_key,task_id").eq("user_id", user.id).limit(1000),
+      admin.from("anticipation_plans").select("event_key,task_id,source_event_date,generated_prep_date,generated_title,generated_notes").eq("user_id", user.id).limit(1000),
     ]);
     if (importantError) throw importantError;
     if (taskError) throw taskError;
@@ -110,6 +113,7 @@ export async function getAnticipationAction(todayInput?: string, horizonDays = 1
     const endExclusive = localMidnightUtc(addDays(through, 1), timeZone);
     const calendar = await listUpcomingPrimaryCalendarEvents(user.id, start, endExclusive);
     const plannedByKey = new Map((plans ?? []).map((row) => [String(row.event_key), typeof row.task_id === "string" ? row.task_id : null]));
+    const planByKey = new Map((plans ?? []).map((row) => [String(row.event_key), row]));
 
     const raw: Array<Omit<AnticipationItem, "prepDate" | "daysAway" | "planningNow" | "plannedTaskId">> = [];
 
@@ -145,11 +149,12 @@ export async function getAnticipationAction(todayInput?: string, horizonDays = 1
     }
 
     for (const event of calendar.events) {
-      const date = event.start.slice(0, 10);
+      const date = calendarEventLocalDate(event, timeZone);
+      if (!date) continue;
       if (!DATE_Z.safeParse(date).success || date < today || date > through) continue;
       const classified = classifyCalendarTitle(event.title);
       raw.push({
-        key: `gcal:${event.id}`,
+        key: calendarEventKey(event),
         title: event.title,
         date,
         kind: classified.kind,
@@ -178,6 +183,28 @@ export async function getAnticipationAction(todayInput?: string, horizonDays = 1
 
     const deduped = new Map<string, (typeof raw)[number]>();
     for (const item of raw) if (!deduped.has(item.key)) deduped.set(item.key, item);
+    for (const item of deduped.values()) {
+      if (item.source !== "google_calendar" && item.source !== "task") continue;
+      const plan = planByKey.get(item.key);
+      if (!plan?.task_id) continue;
+      const prepDate = addDays(item.date, -item.leadDays);
+      const scheduledDate = prepDate < today ? today : prepDate;
+      const sourceEventDate = item.date;
+      const hasChanged = plan.source_event_date !== sourceEventDate
+        || plan.generated_prep_date !== scheduledDate
+        || plan.generated_title !== planningTaskTitle(item)
+        || plan.generated_notes !== `Upcoming: ${item.title} on ${item.date}. Created by Coming Up so there is time to prepare.`;
+      if (!hasChanged) continue;
+      const { error: reconcileError } = await admin.rpc("reconcile_anticipation_plan_task", {
+        p_user_id: user.id,
+        p_event_key: item.key,
+        p_source_event_date: sourceEventDate,
+        p_prep_date: scheduledDate,
+        p_title: planningTaskTitle(item),
+        p_notes: `Upcoming: ${item.title} on ${item.date}. Created by Coming Up so there is time to prepare.`,
+      });
+      if (reconcileError) throw reconcileError;
+    }
     const items = [...deduped.values()]
       .map((item) => enrich(item, today, plannedByKey.get(item.key) ?? null))
       .sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
@@ -262,12 +289,14 @@ export async function planAnticipationItemAction(input: {
   date: string;
   kind: AnticipationKind;
   leadDays: number;
+  today: string;
   personName?: string | null;
 }) {
   const parsed = z.object({
     key: z.string().min(3).max(500),
     title: z.string().trim().min(1).max(200),
     date: DATE_Z,
+    today: DATE_Z,
     kind: z.enum(["birthday", "anniversary", "deadline", "holiday", "travel", "calendar", "other"]),
     leadDays: z.number().int().min(0).max(120),
     personName: z.string().trim().max(120).nullable().optional(),
@@ -276,7 +305,6 @@ export async function planAnticipationItemAction(input: {
 
   try {
     const { user, admin } = await context();
-    const prepDate = addDays(parsed.data.date, -parsed.data.leadDays);
     const taskTitle = planningTaskTitle({ kind: parsed.data.kind, title: parsed.data.title, personName: parsed.data.personName });
     const taskNotes = `Upcoming: ${parsed.data.title} on ${parsed.data.date}. Created by Coming Up so there is time to prepare.`;
 
@@ -285,8 +313,10 @@ export async function planAnticipationItemAction(input: {
       p_event_key: parsed.data.key,
       p_title: taskTitle,
       p_notes: taskNotes,
-      p_prep_date: prepDate,
+      p_prep_date: addDays(parsed.data.date, -parsed.data.leadDays),
       p_impact: parsed.data.kind === "deadline" ? "high" : "medium",
+      p_source_event_date: parsed.data.date,
+      p_today: parsed.data.today,
     });
     if (planError) throw planError;
 

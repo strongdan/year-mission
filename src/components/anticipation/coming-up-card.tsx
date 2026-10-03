@@ -97,7 +97,7 @@ export function ComingUpCard() {
     setError(null);
     startTransition(async () => {
       try {
-        const result = await planAnticipationItemAction({ key: item.key, title: item.title, date: item.date, kind: item.kind, leadDays: item.leadDays, personName: item.personName });
+        const result = await planAnticipationItemAction({ key: item.key, title: item.title, date: item.date, kind: item.kind, leadDays: item.leadDays, today: localToday(), personName: item.personName });
         if (!result.ok) {
           setError(result.error ?? "Could not create the planning task.");
           return;

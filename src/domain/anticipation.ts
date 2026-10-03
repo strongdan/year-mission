@@ -1,3 +1,5 @@
+import { dateInTimeZone } from "@/domain/local-calendar";
+
 export type AnticipationKind = "birthday" | "anniversary" | "deadline" | "holiday" | "travel" | "calendar" | "other";
 
 export interface AnticipationItem {
@@ -15,6 +17,18 @@ export interface AnticipationItem {
   personName?: string | null;
   location?: string | null;
   url?: string | null;
+}
+
+export function calendarEventLocalDate(event: { allDay: boolean; start: string }, timeZone: string): string | null {
+  if (event.allDay && /^\d{4}-\d{2}-\d{2}$/.test(event.start)) return event.start;
+  return dateInTimeZone(event.start, timeZone);
+}
+
+export function calendarEventKey(event: { id: string; recurringEventId?: string | null; originalStart?: string | null }): string {
+  const occurrence = event.recurringEventId && event.originalStart
+    ? `${event.recurringEventId}:${event.originalStart}`
+    : event.id;
+  return `gcal:${occurrence}`;
 }
 
 export const DEFAULT_LEAD_DAYS: Record<Exclude<AnticipationKind, "calendar">, number> = {
@@ -114,7 +128,10 @@ export function planningHolidays(year: number): Array<{ title: string; date: str
 }
 
 export function planningTaskTitle(item: Pick<AnticipationItem, "kind" | "title" | "personName">): string {
-  if (item.kind === "birthday") return `Plan ${item.personName ?? item.title}'s birthday`;
+  if (item.kind === "birthday") {
+    if (item.personName) return `Plan ${item.personName}'s birthday`;
+    return /\b(?:bday|birthday)\b/i.test(item.title) ? `Plan ${item.title}` : `Plan ${item.title}'s birthday`;
+  }
   if (item.kind === "anniversary") return `Plan for ${item.title}`;
   if (item.kind === "holiday") return `Plan for ${item.title}`;
   if (item.kind === "travel") return `Prepare for ${item.title}`;

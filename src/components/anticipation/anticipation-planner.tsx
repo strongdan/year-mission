@@ -123,6 +123,7 @@ export function AnticipationPlanner() {
         date: item.date,
         kind: item.kind,
         leadDays: item.leadDays,
+        today: localToday(),
         personName: item.personName,
       });
       if (!result.ok) return setMessage(result.error);

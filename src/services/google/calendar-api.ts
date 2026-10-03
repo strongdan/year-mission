@@ -4,6 +4,8 @@ const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 
 export interface GoogleCalendarEvent {
   id: string;
+  recurringEventId?: string | null;
+  originalStart?: string | null;
   title: string;
   start: string;
   end: string;
@@ -14,6 +16,8 @@ export interface GoogleCalendarEvent {
 
 interface GoogleEventResource {
   id?: string;
+  recurringEventId?: string;
+  originalStartTime?: { date?: string; dateTime?: string };
   summary?: string;
   location?: string;
   htmlLink?: string;
@@ -38,7 +42,7 @@ export async function listPrimaryCalendarEvents(
       singleEvents: "true",
       orderBy: "startTime",
       maxResults: "250",
-      fields: "nextPageToken,items(id,summary,start,end,location,status,htmlLink)",
+      fields: "nextPageToken,items(id,recurringEventId,originalStartTime,summary,start,end,location,status,htmlLink)",
     });
     if (pageToken) params.set("pageToken", pageToken);
 
@@ -68,6 +72,8 @@ export async function listPrimaryCalendarEvents(
       const end = event.end?.dateTime ?? event.end?.date ?? "";
       return {
         id: event.id!,
+        recurringEventId: event.recurringEventId ?? null,
+        originalStart: event.originalStartTime?.dateTime ?? event.originalStartTime?.date ?? null,
         title: event.summary?.trim() || "Busy",
         start,
         end,
