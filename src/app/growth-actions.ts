@@ -10,6 +10,7 @@ import {
   listWorkouts,
 } from "@/repositories/supabase-repository";
 import type { DomainSlug } from "@/domain/constants";
+import { dateInTimeZone, isValidDateOnly } from "@/domain/local-calendar";
 
 export interface DomainGrowth {
   slug: DomainSlug;
@@ -43,9 +44,18 @@ function scoreFor(points: number): number {
   return Math.min(100, Math.round(100 * (1 - Math.exp(-Math.max(0, points) / 70))));
 }
 
-export async function getMissionGrowthAction() {
+export async function getMissionGrowthAction(dateInput: string, timeZoneInput: string) {
   const { user } = await requireUser();
   if (!user) return { ok: false, error: "Not signed in." } as const;
+  if (!isValidDateOnly(dateInput)) return { ok: false, error: "Invalid local date." } as const;
+  const timeZone = (() => {
+    try {
+      new Intl.DateTimeFormat("en-CA", { timeZone: timeZoneInput }).format(new Date());
+      return timeZoneInput;
+    } catch {
+      return "UTC";
+    }
+  })();
 
   const plan = await getActivePlan(user.id);
   const start = plan?.start_date ?? "1970-01-01";
@@ -66,7 +76,8 @@ export async function getMissionGrowthAction() {
   };
 
   for (const task of completed) {
-    if (!task.completed_at || task.completed_at.slice(0, 10) < start || task.meta_work) continue;
+    const completedDate = task.completed_at ? dateInTimeZone(task.completed_at, timeZone) : null;
+    if (!completedDate || completedDate < start || task.meta_work) continue;
     const slug = task.domain?.slug ?? (task.domain_id ? slugByDomain.get(task.domain_id) : undefined);
     if (!slug) continue;
     const impact = task.impact === "high" ? 5 : task.impact === "medium" ? 3 : 1;

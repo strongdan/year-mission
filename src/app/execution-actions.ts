@@ -8,6 +8,7 @@ import { getProfile, insertTaskEvent, insertWorkout, listTaskEvents } from "@/re
 import { taskService } from "@/services/task-service";
 import type { Json } from "@/integrations/supabase/types";
 import { DEFAULT_EQUIPMENT, type EquipmentId } from "@/domain/execution-protocols";
+import { isValidDateOnly } from "@/domain/local-calendar";
 
 const EQUIPMENT_Z = z.enum([
   "bodyweight",
@@ -39,6 +40,7 @@ const LOG_Z = z.object({
   kind: z.enum(["strength", "mobility", "meditation", "hypnosis", "routine"]),
   durationSeconds: z.number().int().min(0).max(12 * 60 * 60),
   taskId: z.string().uuid().nullable().optional(),
+  date: z.string().refine(isValidDateOnly, "Invalid local date."),
   details: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -140,7 +142,7 @@ export async function logExecutionAction(input: z.infer<typeof LOG_Z>) {
   if (parsed.data.kind === "strength") {
     await insertWorkout({
       user_id: user.id,
-      date: new Date().toISOString().slice(0, 10),
+      date: parsed.data.date,
       type: "strength",
       duration_minutes: Math.max(1, Math.round(parsed.data.durationSeconds / 60)),
       notes: `Year Mission protocol: ${parsed.data.protocolId}`,

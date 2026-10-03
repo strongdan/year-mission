@@ -95,7 +95,9 @@ export function MissionGrowth({ bigFour }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    getMissionGrowthAction().then((result) => {
+    const now = new Date();
+    const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    getMissionGrowthAction(localToday, Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC").then((result) => {
       if (!cancelled && result.ok && result.data) setGrowth(result.data);
     });
     return () => { cancelled = true; };

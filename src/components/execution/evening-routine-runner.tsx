@@ -11,6 +11,11 @@ import { MobilityRunner } from "./mobility-runner";
 import { MeditationRunner } from "./meditation-runner";
 import { HypnosisPlayer } from "./hypnosis-player";
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 type Phase = "intro" | "mobility" | "meditation" | "hypnosis" | "done";
 
 const STEPS = [
@@ -37,9 +42,10 @@ export function EveningRoutineRunner({ taskId }: { taskId?: string | null }) {
         kind: "routine",
         durationSeconds: Math.max(60, Math.round((Date.now() - startTime) / 1000)),
         taskId: taskId ?? null,
+        date: localToday(),
         details: { completedSteps: finalCompleted, completion },
       }),
-      checkinAction({ eveningResetCompletion: completion, eveningResetVariant: "guided_v2" }),
+      checkinAction({ date: localToday(), eveningResetCompletion: completion, eveningResetVariant: "guided_v2" }),
     ]);
     if (!execution.ok || !checkin.ok) {
       setError(execution.error ?? checkin.error ?? "Could not save evening routine.");

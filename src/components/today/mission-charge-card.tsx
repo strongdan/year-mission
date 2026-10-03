@@ -24,11 +24,16 @@ function chargeTone(charge: number): string {
   return "from-zinc-700 to-zinc-600";
 }
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 export function MissionChargeCard() {
   const [data, setData] = useState<GameLoopData | null>(null);
 
   const load = useCallback(async () => {
-    const result = await getGameLoopAction();
+    const result = await getGameLoopAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
     if (result.ok && result.data) setData(result.data);
   }, []);
 

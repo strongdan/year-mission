@@ -8,6 +8,7 @@ import { MOBILITY_PROTOCOLS } from "@/domain/execution-protocols";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatClock, useCountdown } from "./use-countdown";
+import { localDateFromSystemClock } from "@/domain/local-calendar";
 
 export function MobilityRunner({ slug, taskId, onComplete }: { slug: string; taskId?: string | null; onComplete?: () => void }) {
   const protocol = MOBILITY_PROTOCOLS[slug];
@@ -42,6 +43,7 @@ export function MobilityRunner({ slug, taskId, onComplete }: { slug: string; tas
       kind: "mobility",
       durationSeconds: Math.max(30, Math.round((Date.now() - startTime) / 1000)),
       taskId: taskId ?? null,
+      date: localDateFromSystemClock(),
       details: { completedSteps: protocol.steps.length },
     });
     if (!result.ok) {

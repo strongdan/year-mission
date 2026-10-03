@@ -7,6 +7,7 @@ import { getExecutionSettingsAction, logExecutionAction, type ExecutionSettings,
 import { DEFAULT_EQUIPMENT } from "@/domain/execution-protocols";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { localDateFromSystemClock } from "@/domain/local-calendar";
 
 export function HypnosisPlayer({ taskId, onComplete }: { taskId?: string | null; onComplete?: () => void }) {
   const [settings, setSettings] = useState<ExecutionSettings>({ equipment: DEFAULT_EQUIPMENT, pumpClubUrl: "", audiobookshelfUrl: "", hypnosisMedia: [] });
@@ -41,6 +42,7 @@ export function HypnosisPlayer({ taskId, onComplete }: { taskId?: string | null;
       kind: "hypnosis",
       durationSeconds,
       taskId: taskId ?? null,
+      date: localDateFromSystemClock(),
       details: { title: selected?.title ?? "Audiobookshelf", mediaType: selected?.type ?? "external" },
     });
     if (!result.ok) {

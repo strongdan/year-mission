@@ -96,6 +96,11 @@ function providerLabel(provider: UserAiProvider): string {
   return AI_PROVIDER_META[provider].label;
 }
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 export function SettingsView({ environment, buildSha }: { environment: string; buildSha: string }) {
   const [google, setGoogle] = useState<GoogleStatus | null>(null);
   const [calendar, setCalendar] = useState<CalendarStatus | null>(null);
@@ -113,7 +118,7 @@ export function SettingsView({ environment, buildSha }: { environment: string; b
     setError(null);
     const [googleRes, calendarRes, aiRes] = await Promise.all([
       getGoogleSyncStatusAction(),
-      getCalendarWeekAction(),
+      getCalendarWeekAction(localToday()),
       getAiStatusAction(),
     ]);
 

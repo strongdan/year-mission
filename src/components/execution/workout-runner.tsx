@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatClock, useCountdown } from "./use-countdown";
+import { localDateFromSystemClock } from "@/domain/local-calendar";
 
 interface SetEntry {
   reps: string;
@@ -98,6 +99,7 @@ export function WorkoutRunner({ slug, taskId }: { slug: string; taskId?: string 
       kind: "strength",
       durationSeconds,
       taskId: taskId ?? null,
+      date: localDateFromSystemClock(),
       details: {
         exercises: protocol.exercises.map((item) => ({
           id: item.id,

@@ -15,13 +15,18 @@ function recoveryLabel(value: LifeBalanceData["recovery"]): string {
   return "Not enough data";
 }
 
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 export function LifeBalanceCard() {
   const [data, setData] = useState<LifeBalanceData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
 
   async function load() {
-    const result = await getLifeBalanceAction();
+    const result = await getLifeBalanceAction(localToday());
     if (!result.ok || !result.data) {
       setError(result.error ?? "Life balance could not be loaded.");
       return;
@@ -31,7 +36,7 @@ export function LifeBalanceCard() {
 
   useEffect(() => {
     let cancelled = false;
-    getLifeBalanceAction().then((result) => {
+    getLifeBalanceAction(localToday()).then((result) => {
       if (cancelled) return;
       if (!result.ok || !result.data) {
         setError(result.error ?? "Life balance could not be loaded.");

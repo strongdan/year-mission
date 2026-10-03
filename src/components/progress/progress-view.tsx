@@ -16,7 +16,13 @@ import { ProgressBar, MomentumRing } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { TrendingDown, Flag, FlaskConical, Lightbulb } from "lucide-react";
 import type { WeekMode } from "@/domain/constants";
+import { addDaysToDateOnly } from "@/domain/local-calendar";
 import { LogProgress } from "./log-progress";
+
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
 
 type DashboardData = NonNullable<Awaited<ReturnType<typeof getDashboardAction>>["data"]>;
 
@@ -107,7 +113,7 @@ export function ProgressView() {
   }
 
   async function load() {
-    const res = await getDashboardAction();
+    const res = await getDashboardAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
     if (!res.ok || !res.data) {
       setError(res.error ?? "Failed to load.");
       return;
@@ -120,7 +126,7 @@ export function ProgressView() {
 
   useEffect(() => {
     let cancelled = false;
-    getDashboardAction().then((res) => {
+    getDashboardAction(localToday(), Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC").then((res) => {
       if (cancelled) return;
       if (!res.ok || !res.data) {
         setError(res.error ?? "Failed to load.");
@@ -147,7 +153,7 @@ export function ProgressView() {
 
   async function pickWeekMode(mode: WeekMode) {
     setWeekModeBusy(true);
-    await setWeekModeAction(mode);
+    await setWeekModeAction(mode, localToday());
     setWeekMode(mode);
     setWeekModeBusy(false);
   }
@@ -175,7 +181,7 @@ export function ProgressView() {
       overcommitted: reviewOvercommit === "yes" ? true : reviewOvercommit === "no" ? false : null,
       nextWeeklyWin: reviewNextWin,
       mostImportantActions,
-    });
+    }, localToday());
     setReviewBusy(false);
     if (res.ok) {
       setReviewSaved(true);
@@ -188,8 +194,8 @@ export function ProgressView() {
   async function createExperiment() {
     if (!expTitle.trim() || expBusy) return;
     setExpBusy(true);
-    const startDate = new Date().toISOString().slice(0, 10);
-    const plannedEnd = new Date(Date.now() + Number(expDays) * 86400000).toISOString().slice(0, 10);
+    const startDate = localToday();
+    const plannedEnd = addDaysToDateOnly(startDate, Number(expDays));
     const res = await createExperimentAction({
       title: expTitle,
       targetMetric: expMetric || undefined,
