@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import { addCreditScoreSnapshotAction, getCreditScoreProgressAction } from "@/app/credit-score-actions";
-import { sameCreditSeries } from "@/domain/credit-score";
+import { latestSnapshotPerMeasurementDate, sameCreditSeries } from "@/domain/credit-score";
 
 interface CreditScoreSnapshot {
   id: string;
@@ -30,6 +30,13 @@ function localToday(): string {
 export function CreditScoreProgressCard() {
   const [data, setData] = useState<ProgressData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorAction, setErrorAction] = useState<"load" | "save">("load");
+  const [lastSaveInput, setLastSaveInput] = useState<{
+    score: FormDataEntryValue | null;
+    bureau: FormDataEntryValue | null;
+    scoreModel: FormDataEntryValue | null;
+    measuredAt: FormDataEntryValue | null;
+  } | null>(null);
   const [pending, startTransition] = useTransition();
   const [initialLoading, setInitialLoading] = useState(true);
   const [dateState, setDateState] = useState({ selected: "", max: "" });
@@ -38,12 +45,17 @@ export function CreditScoreProgressCard() {
     startTransition(async () => {
       try {
         const result = await getCreditScoreProgressAction();
-        if (!result.ok) setError(result.error);
+        if (!result.ok) {
+          setErrorAction("load");
+          setError(result.error);
+        }
         else {
           setError(null);
+          setErrorAction("load");
           setData(result.data as ProgressData);
         }
       } catch {
+        setErrorAction("load");
         setError("Could not load credit score history. Try again when the connection is available.");
       } finally {
         setInitialLoading(false);
@@ -77,33 +89,61 @@ export function CreditScoreProgressCard() {
 
   const trend = useMemo(() => {
     if (!data?.latest) return [];
-    return data.snapshots
+    return latestSnapshotPerMeasurementDate(data.snapshots
       .filter((item) => sameCreditSeries(
         { bureau: item.bureau, scoreModel: item.score_model },
         { bureau: data.latest!.bureau, scoreModel: data.latest!.score_model },
-      ))
+      )))
       .slice(0, 12)
       .reverse();
   }, [data]);
 
-  function addScore(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
+  function saveScore(input: {
+    score: FormDataEntryValue | null;
+    bureau: FormDataEntryValue | null;
+    scoreModel: FormDataEntryValue | null;
+    measuredAt: FormDataEntryValue | null;
+  }) {
     startTransition(async () => {
       try {
         const result = await addCreditScoreSnapshotAction({
-          score: form.get("score"),
-          bureau: form.get("bureau"),
-          scoreModel: form.get("scoreModel"),
-          measuredAt: form.get("measuredAt"),
+          score: input.score,
+          bureau: input.bureau,
+          scoreModel: input.scoreModel,
+          measuredAt: input.measuredAt,
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         });
-        if (!result.ok) setError(result.error);
-        else load();
+        if (!result.ok) {
+          setErrorAction("save");
+          setError(result.error);
+        } else {
+          setError(null);
+          setErrorAction("load");
+          load();
+        }
       } catch {
+        setErrorAction("save");
         setError("Could not save the credit score right now. Your form values are still here; try again.");
       }
     });
+  }
+
+  function addScore(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const input = {
+      score: form.get("score"),
+      bureau: form.get("bureau"),
+      scoreModel: form.get("scoreModel"),
+      measuredAt: form.get("measuredAt"),
+    };
+    setLastSaveInput(input);
+    saveScore(input);
+  }
+
+  function retry() {
+    if (errorAction === "save" && lastSaveInput) saveScore(lastSaveInput);
+    else load();
   }
 
   const latest = data?.latest;
@@ -175,7 +215,7 @@ export function CreditScoreProgressCard() {
             Measurement date
             <input name="measuredAt" type="date" value={dateState.selected} max={dateState.max || undefined} onChange={(event) => setDateState((current) => ({ ...current, selected: event.target.value }))} required disabled={!dateState.max} className="min-w-0 rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-2 text-base text-zinc-100 disabled:opacity-60" />
           </label>
-          <button disabled={pending} className="rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-950 disabled:opacity-50">Add</button>
+          <button disabled={pending} className="min-h-11 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-950 disabled:opacity-50">Add</button>
         </div>
       </form>
 
@@ -185,7 +225,7 @@ export function CreditScoreProgressCard() {
       {error ? (
         <div role="alert" aria-live="polite" className="mt-3 flex items-center justify-between gap-3 text-sm text-red-300">
           <p>{error}</p>
-          <button type="button" className="shrink-0 rounded-md border border-red-400/40 px-2 py-1 text-xs text-red-200" onClick={load}>Try again</button>
+          <button type="button" className="min-h-11 shrink-0 rounded-md border border-red-400/40 px-2 py-1 text-xs text-red-200" onClick={retry}>Try again</button>
         </div>
       ) : null}
     </section>
