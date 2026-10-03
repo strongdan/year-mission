@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, Bell, Lightbulb, Settings2 } from "lucide-react";
 
-const linkClass = "inline-flex h-8 items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/80 px-2.5 text-xs text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-100";
+const linkClass = "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/80 px-2.5 text-xs text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-100";
 
 export function AppUtilityBar() {
   const pathname = usePathname();

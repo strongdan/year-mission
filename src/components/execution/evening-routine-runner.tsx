@@ -43,6 +43,7 @@ export function EveningRoutineRunner({ taskId }: { taskId?: string | null }) {
         durationSeconds: Math.max(60, Math.round((Date.now() - startTime) / 1000)),
         taskId: taskId ?? null,
         date: localToday(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         details: { completedSteps: finalCompleted, completion },
       }),
       checkinAction({ date: localToday(), eveningResetCompletion: completion, eveningResetVariant: "guided_v2" }),

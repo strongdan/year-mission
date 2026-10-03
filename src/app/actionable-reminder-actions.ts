@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { createServerClientForApp } from "@/integrations/supabase/server";
-import { nextDateAfterCompletion, rescheduleDate } from "@/domain/actionable-reminders";
+import { nextDateAfterCompletion, rescheduleDate, safeLaunchUrl } from "@/domain/actionable-reminders";
 
 const DATE_Z = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const URL_Z = z.string().trim().url().max(2000).nullable().optional();
+const URL_Z = z.string().trim().url().max(2000).refine((value) => safeLaunchUrl(value) !== null, "Use an HTTPS action link.").nullable().optional();
 const CREATE_Z = z.object({
   title: z.string().trim().min(1).max(240),
   launchStep: z.string().trim().min(1).max(500),

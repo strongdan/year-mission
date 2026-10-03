@@ -26,6 +26,16 @@ export function localDateFromSystemClock(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
+export function validTimeZone(value: string | undefined): string {
+  if (!value) return "UTC";
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value }).format(new Date());
+    return value;
+  } catch {
+    return "UTC";
+  }
+}
+
 export function dateInTimeZone(value: string, timeZone: string): string | null {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;

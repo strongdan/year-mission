@@ -47,3 +47,13 @@ export function daysOverdue(nextDueDate: string, today: string): number {
   const now = parseIsoDate(today).getTime();
   return Math.max(0, Math.floor((now - due) / 86_400_000));
 }
+
+export function safeLaunchUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}

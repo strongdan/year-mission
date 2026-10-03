@@ -39,6 +39,7 @@ export function MeditationRunner({ initialMinutes = 5, taskId, onComplete }: { i
       durationSeconds: completedTimer ? minutes * 60 : Math.min(minutes * 60, elapsed),
       taskId: taskId ?? null,
       date: localDateFromSystemClock(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
       details: { mode, completedTimer },
     });
     if (!result.ok) {

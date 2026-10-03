@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDaysToDateOnly, dateInTimeZone, isValidDateOnly, localDateInTimeZone, mondayOfDateOnly } from "./local-calendar";
+import { addDaysToDateOnly, dateInTimeZone, isValidDateOnly, localDateInTimeZone, mondayOfDateOnly, validTimeZone } from "./local-calendar";
 
 describe("local calendar context", () => {
   it("validates date-only values without using a UTC date prefix as a local date", () => {
@@ -19,5 +19,10 @@ describe("local calendar context", () => {
     expect(dateInTimeZone(timestamp, "America/Juneau")).toBe("2026-09-25");
     expect(dateInTimeZone(timestamp, "America/New_York")).toBe("2026-09-25");
     expect(localDateInTimeZone(new Date("2026-09-26T07:30:00.000Z"), "America/Juneau")).toBe("2026-09-25");
+  });
+
+  it("falls back safely for an invalid timezone", () => {
+    expect(validTimeZone("Not/AZone")).toBe("UTC");
+    expect(validTimeZone("America/Juneau")).toBe("America/Juneau");
   });
 });
