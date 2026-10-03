@@ -1373,6 +1373,20 @@ Life Balance is an owner-approved, visibility-first Today support surface. It co
 
 The native iPhone companion may read only the approved daily HealthKit aggregates needed by this surface. It must not store raw heart-rate samples, workout GPS, or psychological inferences. Health sync is production-only and uses the pinned Year Mission production origin. Partial syncs preserve previously stored metrics atomically; omitted values are not deletions. Life Balance does not create streaks, quotas, scores, or completion pressure.
 
+# 49. Actionable Maintenance Reminders
+
+Year Mission may support a small set of recurring or one-time maintenance reminders for obligations such as appointments, refills, haircuts, vehicle service, and similar real-world upkeep.
+
+The model is **Notice → Launch → Commit**:
+
+- every reminder has a concrete first step;
+- an optional action/booking URL may launch the next step directly;
+- when due, the user may start, mark done, or deliberately reschedule to a real date;
+- recurring reminders roll forward from completion;
+- one-time reminders retire after completion.
+
+Reminders do not create streaks, vague snooze debt, Momentum penalties, or red failure states. A reminder belongs on Today only when due, and only the most immediate due reminder should occupy the compact Today surface. The full reminder workspace is secondary navigation.
+
 Year Mission should not become another system the user has to maintain.
 
 It should reduce the amount of mental work required to operate the year.

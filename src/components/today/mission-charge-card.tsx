@@ -115,7 +115,7 @@ export function MissionChargeCard() {
       ) : null}
 
       <div className="mt-3 flex items-center gap-1.5 border-t border-zinc-800 pt-2.5 text-[10px] text-zinc-600">
-        <Flame className="h-3 w-3" /> No streak to protect · meta-work earns nothing · garden growth stays permanent
+        <Flame className="h-3 w-3" /> No streak to protect · meta-work earns nothing · durable progress stays permanent
       </div>
     </Card>
   );
