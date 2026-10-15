@@ -220,7 +220,8 @@ export function getConversationMonth(month: number) {
 
 export function confidencePhaseForMonth(month: number) {
   const normalized = Math.min(12, Math.max(1, Math.trunc(month)));
-  return CONFIDENCE_PHASES.find((phase) => phase.months.includes(normalized as never)) ?? CONFIDENCE_PHASES[0];
+  const phaseIndex = Math.min(CONFIDENCE_PHASES.length - 1, Math.floor((normalized - 1) / 3));
+  return CONFIDENCE_PHASES[phaseIndex];
 }
 
 export function currentConfidenceRep(input: {
