@@ -1357,15 +1357,23 @@ E2E:
 
 # 46. Final Standard
 
-# 47. Optional Conversation Confidence Focus
+# 47. Optional Self-Trust & Confidence Focus
 
-An Annual Focus may optionally use the **Social Ease & Expression** 12-month pathway. Its default objective is to become more comfortable around people, express thoughts clearly, sustain conversations more naturally, and build closer relationships without feeling like performance is required.
+An Annual Focus may optionally use the **Self-Trust & Confidence** 12-month pathway. Its default objective is to build enough self-trust to act like yourself even when you feel awkward, uncertain, imperfect, or disapproved of. Social ease remains part of the pathway, but the focus also includes expressing preferences, tolerating disagreement, boundaries, competence, recovery from mistakes, and choosing from values rather than anticipated approval.
 
-The pathway is a set of relative monthly themes, not deadlines. The user may rename it, pause it, repeat a month, skip a month, move forward explicitly, or stop it. Elapsed time never advances it automatically. Weekly orientation is light: one current-month skill and one natural opportunity, with a five-minute speaking workout available without microphone access or recording.
+The year is grouped into four approximate 13-week phases: **Be Seen**, **Take Up Space**, **Trust Yourself**, and **Choose Your Life**. The twelve month themes are relative prompts, not calendar deadlines. The user may rename the focus, pause it, repeat a month, skip a month, move forward explicitly, or stop it. Elapsed time never advances it automatically.
 
-Optional guided audio or hypnosis is an external support resource only. Listening is never progress by itself, never a streak, and never required before real-world practice. Year Mission stores source links, not copied audio or microphone data.
+Today should present one **weekly edge** and one small **confidence rep**. The user may complete it, request another, or reduce it to a tiny version. A rep counts because the user acted with discomfort present; it does not require feeling confident. A difficult day may be complete enough with a tiny rep or simply noticing the approval reflex. Skipping creates no catch-up debt and has zero Momentum, XP, or Reliability penalty.
 
-Conversation practice has no speech score, confidence grade, eye-contact requirement, talk-time target, behavioral debt, or punitive streak. A hard week is complete enough with one meaningful interaction or a few minutes of speaking practice. Skipping has zero Momentum, XP, or Reliability penalty.
+After a rep, the app may record a bounded evidence outcome such as: nothing bad happened; it was awkward and I handled it; someone disapproved and I handled it; or I backed out but noticed the pattern. At most one short useful lesson should be encouraged before closing the review. The product must not encourage repeated social tape review, mind-reading, or rumination.
+
+Evidence may appear on Progress as simple counts and observations. **Do not calculate or display a confidence score.** The purpose is to accumulate evidence that the user can act and recover, not to quantify self-worth or social performance.
+
+Provide an **Opinion Reset** for moments when anticipated judgment starts controlling behavior: separate observable facts from the story being added, ask whether the person's opinion deserves that much influence, and identify the next action the user would take without needing to repair the other person's opinion. Opinion Reset text is ephemeral by default and should not become a journaling requirement.
+
+Conversation tools remain available inside the focus: one natural participation opportunity, a five-minute speaking workout without microphone access or recording, and optional external guided support. Listening is never progress by itself, never a streak, and never required before real-world practice. Year Mission stores source links, not copied audio or microphone data.
+
+The focus has no speech score, confidence grade, eye-contact requirement, talk-time target, behavioral debt, punitive streak, or health-based psychological inference. Recovery/energy context may reduce challenge size, but must never determine that the user is incapable of social action.
 
 # 48. Life Balance + Apple Health
 
