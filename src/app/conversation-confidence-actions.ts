@@ -5,7 +5,14 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { createServerClientForApp } from "@/integrations/supabase/server";
 import { getProfile } from "@/repositories/supabase-repository";
-import { applyMonthChoice, getConversationMonth, mondayConversationPlan, type MonthChoice } from "@/domain/conversation-confidence";
+import {
+  applyMonthChoice,
+  currentConfidenceRep,
+  getConversationMonth,
+  mondayConversationPlan,
+  summarizeConfidenceEvidence,
+  type MonthChoice,
+} from "@/domain/conversation-confidence";
 import { resourcesForMonth } from "@/domain/support-resources";
 import { parseStoredConversationPath, type StoredConversationPath } from "@/domain/conversation-confidence-storage";
 
@@ -18,6 +25,11 @@ const PATH_Z = z.object({
 });
 
 const CHOICE_Z = z.enum(["repeat", "next", "skip", "pause"]);
+const CHALLENGE_Z = z.enum(["normal", "tiny"]);
+const EVIDENCE_Z = z.object({
+  outcome: z.enum(["nothing-bad", "awkward-handled", "disapproval-handled", "noticed-avoidance"]),
+  lesson: z.string().trim().max(240).optional().default(""),
+});
 const REFLECTION_Z = z.object({
   month: z.number().int().min(1).max(12),
   willingness: z.number().int().min(1).max(5).nullable().optional(),
@@ -59,6 +71,12 @@ export async function getConversationConfidenceAction() {
       path,
       month,
       monday: mondayConversationPlan(path.month),
+      rep: currentConfidenceRep({
+        month: path.month,
+        repIndex: path.repIndex,
+        challengeLevel: path.challengeLevel,
+      }),
+      summary: summarizeConfidenceEvidence(path.evidence),
       resources: resourcesForMonth(path.month).slice(0, 2),
     },
   } as const;
@@ -66,10 +84,16 @@ export async function getConversationConfidenceAction() {
 
 export async function saveConversationConfidenceAction(input: unknown) {
   const parsed = PATH_Z.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Conversation focus details are invalid." } as const;
+  if (!parsed.success) return { ok: false, error: "Confidence focus details are invalid." } as const;
   const current = await getConversationConfidenceAction();
   if (!current.ok) return current;
-  return savePath({ ...parsed.data, reflections: current.data.path.reflections ?? {} });
+  return savePath({
+    ...parsed.data,
+    reflections: current.data.path.reflections,
+    repIndex: current.data.path.repIndex,
+    challengeLevel: current.data.path.challengeLevel,
+    evidence: current.data.path.evidence,
+  });
 }
 
 export async function chooseConversationMonthAction(input: unknown) {
@@ -78,7 +102,49 @@ export async function chooseConversationMonthAction(input: unknown) {
   const current = await getConversationConfidenceAction();
   if (!current.ok) return current;
   const next = applyMonthChoice(current.data.path.month, choice.data as MonthChoice);
-  return savePath({ ...current.data.path, ...next, active: true });
+  return savePath({ ...current.data.path, ...next, active: true, challengeLevel: "normal" });
+}
+
+export async function advanceConfidenceRepAction() {
+  const current = await getConversationConfidenceAction();
+  if (!current.ok) return current;
+  return savePath({
+    ...current.data.path,
+    repIndex: current.data.path.repIndex + 1,
+    challengeLevel: "normal",
+  });
+}
+
+export async function setConfidenceChallengeLevelAction(input: unknown) {
+  const parsed = CHALLENGE_Z.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Challenge level is invalid." } as const;
+  const current = await getConversationConfidenceAction();
+  if (!current.ok) return current;
+  return savePath({ ...current.data.path, challengeLevel: parsed.data });
+}
+
+export async function recordConfidenceEvidenceAction(input: unknown) {
+  const parsed = EVIDENCE_Z.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Confidence evidence is invalid." } as const;
+  const current = await getConversationConfidenceAction();
+  if (!current.ok) return current;
+
+  const entry = {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    repId: current.data.rep.id,
+    category: current.data.rep.category,
+    outcome: parsed.data.outcome,
+    ...(parsed.data.lesson ? { lesson: parsed.data.lesson } : {}),
+  };
+  const evidence = [...current.data.path.evidence, entry].slice(-100);
+
+  return savePath({
+    ...current.data.path,
+    evidence,
+    repIndex: current.data.path.repIndex + 1,
+    challengeLevel: "normal",
+  });
 }
 
 export async function renameConversationFocusAction(title: unknown) {
@@ -102,6 +168,6 @@ export async function saveConversationReflectionAction(input: unknown) {
   if (!current.ok) return current;
   return savePath({
     ...current.data.path,
-    reflections: { ...(current.data.path.reflections ?? {}), [parsed.data.month]: parsed.data },
+    reflections: { ...current.data.path.reflections, [parsed.data.month]: parsed.data },
   });
 }
