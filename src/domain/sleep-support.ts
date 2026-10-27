@@ -118,3 +118,57 @@ export function sleepCueForHour(hour: number) {
     action: "Sleep wind-down",
   };
 }
+
+
+export interface OptionalSleepTool {
+  id: "warm-bath" | "exercise-timing" | "nsdr" | "temperature-minimum" | "supplements";
+  title: string;
+  detail: string;
+  evidence: "supported" | "promising" | "mixed" | "advanced";
+  actionLabel?: string;
+  href?: string;
+}
+
+export const OPTIONAL_SLEEP_TOOLS: OptionalSleepTool[] = [
+  {
+    id: "warm-bath",
+    title: "Warm shower or bath",
+    detail: "Try it roughly 1–2 hours before bed if it feels relaxing. Passive warming can support the later drop in body temperature, but it is optional rather than a nightly requirement.",
+    evidence: "supported",
+  },
+  {
+    id: "exercise-timing",
+    title: "Exercise timing",
+    detail: "Keep regular exercise wherever it is easiest to sustain. If hard late workouts reliably disturb your sleep, finish them earlier or make late sessions lighter; there is no universal rule that evening exercise is bad.",
+    evidence: "supported",
+  },
+  {
+    id: "nsdr",
+    title: "NSDR / yoga nidra-style rest",
+    detail: "Use guided deep relaxation as a rest or downshift tool when useful. It may help sleep and stress, but current insomnia evidence is still preliminary and it does not replace adequate sleep.",
+    evidence: "promising",
+    actionLabel: "Try 10-minute body scan",
+    href: "/execute/meditation?minutes=10",
+  },
+  {
+    id: "temperature-minimum",
+    title: "Temperature-minimum timing",
+    detail: "Treat this as an advanced circadian-shifting concept for travel or schedule changes, not a daily optimization target. Year Mission should not ask you to calculate it during ordinary weeks.",
+    evidence: "advanced",
+  },
+  {
+    id: "supplements",
+    title: "Sleep supplements",
+    detail: "Not part of the default protocol. Evidence for commonly promoted sleep supplements varies, interactions matter, and the app should not turn a supplement stack into a nightly checklist. Magnesium evidence for insomnia remains mixed and low-certainty.",
+    evidence: "mixed",
+  },
+];
+
+export function sleepToolEvidenceLabel(value: OptionalSleepTool["evidence"]): string {
+  switch (value) {
+    case "supported": return "Useful option";
+    case "promising": return "Promising, limited evidence";
+    case "mixed": return "Mixed evidence";
+    case "advanced": return "Advanced / situational";
+  }
+}
