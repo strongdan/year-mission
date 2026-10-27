@@ -1425,6 +1425,12 @@ The app should expose an evidence/source note for each protocol and distinguish 
 
 Foundations come before optimization. The default product must not prescribe supplement stacks, hormone manipulation, aggressive fasting, extreme cold/heat exposure, rigid stimulant timing, or other medicalized optimization protocols. Such ideas require a separate evidence/safety decision before implementation.
 
+Sleep support is part of Foundations. It should emphasize a few anchors across the day rather than a sleep score: reasonably consistent wake time, outdoor daylight when practical, caffeine kept well away from intended sleep, avoidance of relying on alcohol/nicotine/cannabis as sleep tools, a dimmer evening, and a cool/dark/quiet sleep environment. A warm shower or bath may be offered as an optional wind-down cue.
+
+For middle-of-the-night awakenings, use stimulus-control principles: do not encourage clock watching; if the user feels awake for roughly twenty minutes, leave the bed, do something quiet in dim light, and return when sleepy. Gentle breathing, meditation, NSDR/yoga-nidra-style relaxation, or a boring paper book may be offered as options. Do not tell the user to fight for sleep in bed or compensate by radically shifting the next morning's wake time.
+
+If persistent insomnia or daytime impairment is reported, the product should point toward CBT-I or professional sleep care rather than escalating to more optimization hacks.
+
 Year Mission should not become another system the user has to maintain.
 
 It should reduce the amount of mental work required to operate the year.
