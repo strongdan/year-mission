@@ -535,6 +535,17 @@ When due, the user may launch, complete, or deliberately reschedule it to a real
 
 # D033 — Coming Up anticipates without silently scheduling
 
+# D034 — Foundations before optimization
+
+**Status:** Accepted
+
+Year Mission may borrow practical protocols from Andrew Huberman's *Protocols* and related research only when they fit the product's existing execution philosophy and have a favorable evidence/risk profile.
+
+The product should prefer low-cost behavioral foundations over optimization stacks: outdoor daylight, ordinary movement, brief stress-regulation practices, regular exercise, and a calmer evening transition. Each runnable protocol should carry a concise evidence note and safety boundary where relevant.
+
+Do not make "Huberman compliance" a goal, do not create another scored health domain, and do not promote supplements, rigid stimulant rules, or aggressive exposure protocols merely because they are popular or appear in the source material. Independent evidence and user usefulness outrank brand fidelity.
+
+
 **Status:** Accepted
 
 Coming Up combines manual important dates, task due dates, planning-oriented holidays, and read-only Google Calendar constraints. It exists to create preparation time, not another obligations dashboard.
