@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Dumbbell, Headphones, Moon, Play, Sparkles, TimerReset } from "lucide-react";
+import { Dumbbell, Footprints, Headphones, Moon, Play, Sparkles, Sun, TimerReset, Wind } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 const ITEMS = [
+  { href: "/execute/morning-outdoor-light", title: "Morning Outdoor Light", detail: "10 min default · circadian anchor", icon: Sun },
+  { href: "/execute/calm-breathing", title: "Calm Breathing", detail: "5 min · exhale-focused breathing", icon: Wind },
+  { href: "/execute/post-meal-walk", title: "Post-Meal Walk", detail: "10 min · easy movement", icon: Footprints },
   { href: "/execute/strength-a", title: "Strength A", detail: "~32 min · full body", icon: Dumbbell },
   { href: "/execute/strength-b", title: "Strength B", detail: "~31 min · full body", icon: Dumbbell },
   { href: "/execute/strength-quick", title: "Quick Strength", detail: "~15 min · minimum viable lift", icon: TimerReset },
