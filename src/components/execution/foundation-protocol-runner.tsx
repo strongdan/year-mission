@@ -38,24 +38,28 @@ export function FoundationProtocolRunner({ slug }: { slug: FoundationProtocolSlu
     if (saving || finished) return;
     setSaving(true);
     setError(null);
-    const startTime = startedAt.current ?? Date.now();
-    const elapsed = Math.max(1, Math.round((Date.now() - startTime) / 1000));
-    const result = await logExecutionAction({
-      protocolId: protocol.slug,
-      kind: "routine",
-      durationSeconds: completedProtocol ? totalSeconds : Math.min(totalSeconds, elapsed),
-      taskId: null,
-      date: localDateFromSystemClock(),
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-      details: { completedProtocol, evidenceLabel: protocol.evidenceLabel },
-    });
-    if (!result.ok) {
-      setError(result.error ?? "Could not save this protocol.");
+    try {
+      const startTime = startedAt.current ?? Date.now();
+      const elapsed = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+      const result = await logExecutionAction({
+        protocolId: protocol.slug,
+        kind: "routine",
+        durationSeconds: completedProtocol ? totalSeconds : Math.min(totalSeconds, elapsed),
+        taskId: null,
+        date: localDateFromSystemClock(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        details: { completedProtocol, evidenceLabel: protocol.evidenceLabel },
+      });
+      if (!result.ok) {
+        setError(result.error ?? "Could not save this protocol.");
+        return;
+      }
+      setFinished(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not save this protocol. Try again.");
+    } finally {
       setSaving(false);
-      return;
     }
-    setFinished(true);
-    setSaving(false);
   }
 
   if (finished) {
