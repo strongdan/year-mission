@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Moon, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AWAKE_AT_NIGHT_STEPS, SLEEP_ANCHORS } from "@/domain/sleep-support";
+import { AWAKE_AT_NIGHT_STEPS, OPTIONAL_SLEEP_TOOLS, SLEEP_ANCHORS, sleepToolEvidenceLabel } from "@/domain/sleep-support";
 
 export function SleepProtocolRunner({ mode }: { mode: "wind-down" | "awake-at-night" }) {
   if (mode === "awake-at-night") {
@@ -78,6 +78,26 @@ export function SleepProtocolRunner({ mode }: { mode: "wind-down" | "awake-at-ni
         <Link href="/execute/evening-reset"><Button className="w-full">Start evening reset</Button></Link>
         <Link href="/execute/awake-at-night"><Button className="w-full" variant="secondary">I&apos;m awake now</Button></Link>
       </div>
+
+      <details className="rounded-xl border border-zinc-800 bg-zinc-950/20 p-3">
+        <summary className="cursor-pointer text-xs font-medium text-zinc-300">Optional tools from the protocol literature</summary>
+        <div className="mt-3 flex flex-col gap-2">
+          {OPTIONAL_SLEEP_TOOLS.map((tool) => (
+            <div key={tool.id} className="rounded-xl border border-zinc-800 bg-zinc-950/25 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm font-medium text-zinc-200">{tool.title}</p>
+                <span className="shrink-0 text-[10px] text-zinc-600">{sleepToolEvidenceLabel(tool.evidence)}</span>
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-zinc-500">{tool.detail}</p>
+              {tool.href && tool.actionLabel && (
+                <Link href={tool.href} className="mt-3 inline-block">
+                  <Button size="sm" variant="secondary">{tool.actionLabel}</Button>
+                </Link>
+              )}
+            </div>
+          ))}
+        </div>
+      </details>
 
       <p className="text-[11px] leading-relaxed text-zinc-600">
         Sleep medicine gives more weight to a consistent schedule, a cool/dark environment, and stimulus control than to elaborate optimization routines.
