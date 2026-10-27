@@ -12,22 +12,15 @@ import { formatClock, useCountdown } from "./use-countdown";
 
 export function FoundationProtocolRunner({ slug }: { slug: FoundationProtocolSlug }) {
   const protocol = FOUNDATION_PROTOCOLS[slug];
-  const [stepIndex, setStepIndex] = useState(0);
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const startedAt = useRef<number | null>(null);
-  const step = protocol.steps[stepIndex];
-  const totalSeconds = protocol.steps.reduce((sum, item) => sum + item.durationSeconds, 0);
+  const step = protocol.steps[0];
+  const totalSeconds = step.durationSeconds;
 
-  const timer = useCountdown(step.durationSeconds, () => {
-    if (stepIndex < protocol.steps.length - 1) {
-      setStepIndex((value) => value + 1);
-    } else {
-      void finish(true);
-    }
-  });
+  const timer = useCountdown(step.durationSeconds, () => void finish(true));
 
   function start() {
     startedAt.current = Date.now();
@@ -37,7 +30,6 @@ export function FoundationProtocolRunner({ slug }: { slug: FoundationProtocolSlu
 
   function reset() {
     setStarted(false);
-    setStepIndex(0);
     startedAt.current = null;
     timer.reset(protocol.steps[0].durationSeconds, false);
   }
