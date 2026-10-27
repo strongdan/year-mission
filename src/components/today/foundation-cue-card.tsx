@@ -1,14 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles, Wind } from "lucide-react";
-import { foundationCueForHour } from "@/domain/foundational-protocols";
+import { foundationCueForHour, type FoundationCue } from "@/domain/foundational-protocols";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 
+const FALLBACK_CUE: FoundationCue = {
+  id: "day-walk",
+  title: "Choose one useful foundation",
+  detail: "Outdoor light, a short walk, or a brief stress reset are all available without creating another obligation.",
+  href: "/execute",
+};
+
 export function FoundationCueCard() {
-  const cue = useMemo(() => foundationCueForHour(new Date().getHours()), []);
+  const [cue, setCue] = useState<FoundationCue>(FALLBACK_CUE);
+
+  useEffect(() => {
+    const refreshCue = () => setCue(foundationCueForHour(new Date().getHours()));
+    refreshCue();
+    const timer = window.setInterval(refreshCue, 15 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <Card className="border-sky-950/70 bg-sky-950/10">
