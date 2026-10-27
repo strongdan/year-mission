@@ -111,7 +111,7 @@ export function foundationCueForHour(hour: number): FoundationCue {
   return {
     id: "evening-downshift",
     title: "Lower the lights and start winding down",
-    detail: "Use the evening reset as a transition out of stimulation rather than trying to force sleep at the last minute.",
-    href: "/execute/evening-reset",
+    detail: "Use the sleep protocol to lower stimulation, cool and darken the room, and let the evening reset carry you toward sleep.",
+    href: "/execute/sleep-wind-down",
   };
 }
