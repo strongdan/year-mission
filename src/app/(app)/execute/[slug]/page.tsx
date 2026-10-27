@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { EveningRoutineRunner } from "@/components/execution/evening-routine-runner";
 import { FocusRunner } from "@/components/execution/focus-runner";
 import { FoundationProtocolRunner } from "@/components/execution/foundation-protocol-runner";
+import { SleepProtocolRunner } from "@/components/execution/sleep-protocol-runner";
 import { HypnosisPlayer } from "@/components/execution/hypnosis-player";
 import { MeditationRunner } from "@/components/execution/meditation-runner";
 import { MobilityRunner } from "@/components/execution/mobility-runner";
@@ -22,6 +23,8 @@ export default async function ExecutionProtocolPage({ params, searchParams }: Pa
   if (WORKOUT_PROTOCOLS[slug]) return <WorkoutRunner slug={slug} taskId={taskId} />;
   if (MOBILITY_PROTOCOLS[slug]) return <MobilityRunner slug={slug} taskId={taskId} />;
   if (slug in FOUNDATION_PROTOCOLS) return <FoundationProtocolRunner slug={slug as FoundationProtocolSlug} />;
+  if (slug === "sleep-wind-down") return <SleepProtocolRunner mode="wind-down" />;
+  if (slug === "awake-at-night") return <SleepProtocolRunner mode="awake-at-night" />;
   if (slug === "focus") {
     if (!taskId) notFound();
     const parsed = Number(query.minutes ?? "5");
