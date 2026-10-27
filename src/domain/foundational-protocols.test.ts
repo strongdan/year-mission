@@ -34,7 +34,7 @@ describe("foundational protocols", () => {
   it("uses the existing evening reset at night", () => {
     expect(foundationCueForHour(21)).toMatchObject({
       id: "evening-downshift",
-      href: "/execute/evening-reset",
+      href: "/execute/sleep-wind-down",
     });
   });
 
