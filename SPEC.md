@@ -1407,6 +1407,30 @@ A **Plan** action may create one ordinary Year Mission task at the start of the 
 
 Coming Up is anticipatory context, not an extensive notification engine. Google Calendar remains read-only and the feature must stay useful when Google is disconnected.
 
+
+# 52. Foundational Physiology Protocols
+
+Year Mission may provide a deliberately small **Foundations** layer derived from well-supported behavioral protocols for sleep timing, stress control, movement, and focus support.
+
+The first runnable set is:
+
+- **Morning outdoor light** — a short outdoor daylight block after waking when practical. The app must explicitly warn against staring at the sun and must handle dark winter mornings by suggesting the first practical daylight later rather than pretending a fixed clock time works everywhere.
+- **Exhale-focused breathing** — a brief, comfortable breathing practice using a gentle two-part inhale and longer exhale. No breath-hold challenge, hyperventilation target, or underwater use.
+- **Post-meal walking** — an easy short walk after lunch or dinner when practical. It is movement support, not compensation for eating.
+- **Evening downshift** — reuse the existing evening reset while encouraging lower ambient light and a calmer transition toward sleep.
+
+These protocols are optional cues, not daily obligations. They create no streak, score, Momentum penalty, catch-up debt, or health grade. Today should show at most one context-sensitive Foundation cue plus a direct stress-reset option; the full list belongs in Execute.
+
+The app should expose an evidence/source note for each protocol and distinguish stronger evidence from promising evidence. Do not imply that every protocol popularized by a public educator has equal scientific support.
+
+Foundations come before optimization. The default product must not prescribe supplement stacks, hormone manipulation, aggressive fasting, extreme cold/heat exposure, rigid stimulant timing, or other medicalized optimization protocols. Such ideas require a separate evidence/safety decision before implementation.
+
+Sleep support is part of Foundations. It should emphasize a few anchors across the day rather than a sleep score: reasonably consistent wake time, outdoor daylight when practical, caffeine kept well away from intended sleep, avoidance of relying on alcohol/nicotine/cannabis as sleep tools, a dimmer evening, and a cool/dark/quiet sleep environment. A warm shower or bath may be offered as an optional wind-down cue.
+
+For middle-of-the-night awakenings, use stimulus-control principles: do not encourage clock watching; if the user feels awake for roughly twenty minutes, leave the bed, do something quiet in dim light, and return when sleepy. Gentle breathing, meditation, NSDR/yoga-nidra-style relaxation, or a boring paper book may be offered as options. Do not tell the user to fight for sleep in bed or compensate by radically shifting the next morning's wake time.
+
+If persistent insomnia or daytime impairment is reported, the product should point toward CBT-I or professional sleep care rather than escalating to more optimization hacks.
+
 Year Mission should not become another system the user has to maintain.
 
 It should reduce the amount of mental work required to operate the year.
