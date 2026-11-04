@@ -27,7 +27,7 @@ export function ConfidenceProgressCard() {
     <div className="px-4 pb-4">
       <Card className="border-violet-950/70 bg-violet-950/10">
         <CardHeader
-          title="Confidence evidence"
+          title="Confidence evidence · latest 100 reps"
           subtitle={phase.title + " · Month " + view.month.number + " of 12"}
           right={<Sparkles className="h-4 w-4 text-violet-400" />}
         />

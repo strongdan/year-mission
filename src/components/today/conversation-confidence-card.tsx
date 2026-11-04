@@ -130,9 +130,10 @@ export function ConversationConfidenceCard() {
   }
 
   async function record(outcome: ConfidenceEvidenceOutcome) {
+    if (!view) return;
     setError(null);
     setBusy(true);
-    const result = await recordConfidenceEvidenceAction({ outcome, lesson });
+    const result = await recordConfidenceEvidenceAction({ outcome, lesson, month: view.path.month, repIndex: view.path.repIndex });
     if (result.ok) {
       await refresh();
       setCheckInOpen(false);
@@ -278,7 +279,7 @@ export function ConversationConfidenceCard() {
             )}
 
             <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-950/20 p-3">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Confidence evidence</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Confidence evidence · latest 100 reps</p>
               <p className="mt-1 text-xs leading-relaxed text-zinc-300">
                 {summary.total} real-world reps · {summary.fearedOutcomeDidNotHappen} feared outcomes did not happen · {summary.disapprovalAndHandled} times you handled disapproval
               </p>
