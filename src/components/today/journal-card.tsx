@@ -10,6 +10,7 @@ import {
   saveJournalEntryAction,
   type JournalEntryView,
 } from "@/app/journal-actions";
+import { MORTALS_PRACTICES } from "@/domain/advice";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 
@@ -21,6 +22,8 @@ function createdLabel(value: string): string {
 
 export function JournalCard() {
   const [body, setBody] = useState("");
+  const [practiceId, setPracticeId] = useState("");
+  const practice = MORTALS_PRACTICES.find((item) => item.id === practiceId);
   const [entries, setEntries] = useState<JournalEntryView[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -56,6 +59,7 @@ export function JournalCard() {
 
     replaceEntry(saved.data);
     setBody("");
+    setPracticeId("");
     setMessage("Journal entry saved.");
 
     if (analyze) {
@@ -127,7 +131,27 @@ export function JournalCard() {
           right={<BookOpen className="h-4 w-4 text-zinc-500" />}
         />
 
+        <label className="mb-2 block text-xs text-zinc-400">
+          Writing prompt (optional)
+          <select
+            value={practiceId}
+            onChange={(event) => setPracticeId(event.target.value)}
+            className="mt-1 block min-h-11 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-base text-zinc-200"
+          >
+            <option value="">Free writing</option>
+            {MORTALS_PRACTICES.map((item) => (
+              <option key={item.id} value={item.id}>{item.title}</option>
+            ))}
+          </select>
+        </label>
+        {practice && (
+          <p id="journal-writing-prompt" className="mb-2 text-sm leading-relaxed text-zinc-300">
+            {practice.action}
+          </p>
+        )}
         <textarea
+          aria-label="Your reflection"
+          aria-describedby={practice ? "journal-writing-prompt" : undefined}
           value={body}
           onChange={(event) => setBody(event.target.value)}
           rows={3}
