@@ -4,6 +4,7 @@ import { MissionChargeCard } from "@/components/today/mission-charge-card";
 import { JournalCard } from "@/components/today/journal-card";
 import { TodayViewV2 } from "@/components/today/today-view-v2";
 import { LifeBalanceCard } from "@/components/today/life-balance-card";
+import { FoundationCueCard } from "@/components/today/foundation-cue-card";
 
 export default function TodayPage() {
   return (
@@ -16,6 +17,7 @@ export default function TodayPage() {
       <ConversationConfidenceCard />
       <div className="px-4 pb-4">
         <LifeBalanceCard />
+        <div className="mt-4"><FoundationCueCard /></div>
       </div>
       <JournalCard />
     </>
