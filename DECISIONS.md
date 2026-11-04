@@ -500,13 +500,17 @@ Not because it is intellectually interesting.
 
 # D028 — The product should practice its own philosophy
 
-# D029 — Conversation Confidence is an optional, user-controlled Annual Focus
+# D029 — Self-Trust & Confidence is an optional, user-controlled Annual Focus
 
 **Status:** Accepted
 
-Social Ease & Expression is implemented as an optional 12-month Annual Focus thread. Its month themes are relative prompts, not deadlines, and progression requires explicit user choice. The feature reuses profile-owned preferences and existing planning surfaces rather than introducing a separate behavior-tracking subsystem.
+Self-Trust & Confidence broadens the existing Conversation Confidence thread rather than creating a second subsystem. The focus is a 12-month, user-paced practice organized around four phases: Be Seen, Take Up Space, Trust Yourself, and Choose Your Life. Social confidence remains included, but confidence is defined more broadly as acting and recovering while discomfort is present.
 
-The application may link to curated third-party guided audio as optional support. It never copies or rehosts audio, treats listening as progress, requests microphone access for speaking practice, or infers psychological state from health or audio data. Real-world participation remains the primary practice.
+The feature continues to reuse profile-owned preferences and existing Today/Progress surfaces. It stores only bounded practice state and evidence outcomes, not a confidence score. Reps may be reduced to tiny versions, skipped without penalty, or advanced only by explicit user choice. Progress surfaces real-world evidence rather than app engagement.
+
+Opinion Reset is intentionally ephemeral: it separates observable facts from mind-reading and identifies the next values-consistent action without turning the moment into a required journal entry. Post-rep review is intentionally bounded to one useful lesson before closure to discourage rumination.
+
+The application may still link to curated third-party guided audio as optional support. It never copies or rehosts audio, treats listening as progress, requests microphone access for speaking practice, or infers psychological state from health or audio data. Real-world participation remains the primary practice.
 
 # D030 — Life Balance is visibility-first and production-scoped
 
