@@ -16,39 +16,39 @@ export function FoundationProtocolRunner({ slug }: { slug: FoundationProtocolSlu
   const [finished, setFinished] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const startedAt = useRef<number | null>(null);
+  const saveInFlight = useRef(false);
   const step = protocol.steps[0];
   const totalSeconds = step.durationSeconds;
 
   const timer = useCountdown(step.durationSeconds, () => void finish(true));
 
   function start() {
-    startedAt.current = Date.now();
     setStarted(true);
     timer.reset(step.durationSeconds, true);
   }
 
   function reset() {
     setStarted(false);
-    startedAt.current = null;
+    setError(null);
     timer.reset(protocol.steps[0].durationSeconds, false);
   }
 
   async function finish(completedProtocol = false) {
-    if (saving || finished) return;
+    if (saveInFlight.current || finished) return;
+    saveInFlight.current = true;
+    timer.pause();
     setSaving(true);
     setError(null);
     try {
-      const startTime = startedAt.current ?? Date.now();
-      const elapsed = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+      const complete = completedProtocol || timer.secondsLeft === 0;
       const result = await logExecutionAction({
         protocolId: protocol.slug,
         kind: "routine",
-        durationSeconds: completedProtocol ? totalSeconds : Math.min(totalSeconds, elapsed),
+        durationSeconds: complete ? totalSeconds : totalSeconds - timer.secondsLeft,
         taskId: null,
         date: localDateFromSystemClock(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-        details: { completedProtocol, evidenceLabel: protocol.evidenceLabel },
+        details: { completedProtocol: complete, evidenceLabel: protocol.evidenceLabel },
       });
       if (!result.ok) {
         setError(result.error ?? "Could not save this protocol.");
@@ -58,6 +58,7 @@ export function FoundationProtocolRunner({ slug }: { slug: FoundationProtocolSlu
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save this protocol. Try again.");
     } finally {
+      saveInFlight.current = false;
       setSaving(false);
     }
   }
@@ -98,10 +99,10 @@ export function FoundationProtocolRunner({ slug }: { slug: FoundationProtocolSlu
             <Button onClick={start}><Play className="mr-1.5 h-4 w-4" /> Begin</Button>
           ) : (
             <>
-              <Button onClick={timer.toggle}>
+              <Button onClick={timer.toggle} disabled={saving || timer.secondsLeft === 0}>
                 {timer.running ? <><Pause className="mr-1.5 h-4 w-4" /> Pause</> : <><Play className="mr-1.5 h-4 w-4" /> Resume</>}
               </Button>
-              <Button variant="secondary" onClick={() => void finish(false)} disabled={saving}>End here</Button>
+              <Button variant="secondary" onClick={() => void finish(false)} disabled={saving}>{error ? "Retry save" : "End here"}</Button>
             </>
           )}
         </div>
@@ -120,7 +121,7 @@ export function FoundationProtocolRunner({ slug }: { slug: FoundationProtocolSlu
       </div>
 
       {started && (
-        <button onClick={reset} className="mx-auto inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-300">
+        <button disabled={saving} onClick={reset} className="mx-auto inline-flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-300">
           <RotateCcw className="h-3 w-3" /> Restart
         </button>
       )}
