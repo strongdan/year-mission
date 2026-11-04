@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   ADVICE_CATEGORY_LABELS,
   ADVICE_ITEMS,
+  MORTALS_PRACTICES,
   adviceForCategory,
   dailyAdvice,
   randomAdvice,
@@ -13,6 +14,14 @@ const CATEGORIES = Object.keys(ADVICE_CATEGORY_LABELS) as AdviceCategory[];
 describe("advice catalog", () => {
   it("has unique stable IDs", () => {
     expect(new Set(ADVICE_ITEMS.map((item) => item.id)).size).toBe(ADVICE_ITEMS.length);
+  });
+
+  it("makes every optional journal prompt available through its advice category", () => {
+    expect(MORTALS_PRACTICES).toHaveLength(6);
+    for (const practice of MORTALS_PRACTICES) {
+      expect(adviceForCategory(practice.category)).toContain(practice);
+      expect(practice.action.trim().length).toBeGreaterThan(0);
+    }
   });
 
   it("has useful content in every exposed category", () => {

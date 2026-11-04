@@ -232,7 +232,7 @@ export function TasksView() {
           </Card>
 
           <Card>
-            <CardHeader title="Inbox" subtitle="Uncommitted. Nothing here is a promise." />
+            <CardHeader title="Inbox" subtitle="A place to collect possibilities. Choose what matters and let the rest pass." />
             {sections.inbox.length > 0 ? (
               <div className="flex flex-col gap-2">{sections.inbox.map((t) => <TaskRow key={t.id} task={t} section="inbox" />)}</div>
             ) : (

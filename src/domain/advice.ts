@@ -27,6 +27,52 @@ export const ADVICE_CATEGORY_LABELS: Record<AdviceCategory, string> = {
   meditation: "Meditation & hypnosis",
 };
 
+// Reflections inspired by Oliver Burkeman's Meditations for Mortals.
+export const MORTALS_PRACTICES = [
+  {
+    id: "focus-river",
+    category: "focus",
+    title: "Let something flow past",
+    body: "An inbox keeps filling. You can pick something worth your time and let other possibilities pass.",
+    action: "What deserves your attention today? What can you leave in the inbox?",
+  },
+  {
+    id: "growth-done-list",
+    category: "personal_growth",
+    title: "Notice what already counted",
+    body: "Care, patience, and work that happened off the list still took part of your day.",
+    action: "What did you do today that never appeared on your list?",
+  },
+  {
+    id: "growth-road",
+    category: "personal_growth",
+    title: "Choose with what you know",
+    body: "You get to see how one path unfolds. The other can look easier when you only have to imagine it.",
+    action: "What mattered when you made your choice? What can you do on this path now?",
+  },
+  {
+    id: "recovery-dailyish",
+    category: "recovery",
+    title: "Pick a habit back up",
+    body: "A missed practice can stay missed. You can begin again with an ordinary session.",
+    action: "When could you do the smallest enjoyable version again?",
+  },
+  {
+    id: "focus-interruption",
+    category: "focus",
+    title: "Consider the interruption",
+    body: "Sometimes a conversation in the middle of a busy day is worth making room for. Sometimes you need to agree on a better time.",
+    action: "Which interruption would you welcome, and which one needs a boundary?",
+  },
+  {
+    id: "growth-hospitality",
+    category: "personal_growth",
+    title: "Make a simple invitation",
+    body: "A friend can come over for leftovers while the house looks lived in.",
+    action: "Who would you like to see? What could you invite them to just as things are?",
+  },
+] satisfies Required<AdviceItem>[];
+
 export const ADVICE_ITEMS: AdviceItem[] = [
   { id: "focus-next-action", category: "focus", title: "Shrink the start", body: "When a task feels vague, define the next physical action. Starting should require less interpretation than avoiding it.", action: "Name one action you can do in under five minutes." },
   { id: "focus-five-minutes", category: "focus", title: "Use a five-minute bridge", body: "You do not need to commit to finishing. Commit to five minutes of contact with the task; continuation can be a separate decision.", action: "Start the five-minute timer instead of deciding whether you feel motivated." },
@@ -85,6 +131,7 @@ export const ADVICE_ITEMS: AdviceItem[] = [
   { id: "meditation-evening", category: "meditation", title: "Chain the evening routine", body: "Stretching, slow breathing, meditation, and hypnosis work better as one sequence than as four independent habits competing for attention." },
   { id: "meditation-hypnosis", category: "meditation", title: "Use hypnosis as rehearsal, not magic", body: "Repeated listening can support attention, self-regulation, and behavioral rehearsal. Judge it by whether useful behavior changes, not by how dramatic the session feels." },
   { id: "meditation-safe", category: "meditation", title: "Keep hypnosis context safe", body: "Only listen when you can give it your attention in a safe setting. You remain able to pause or stop the session at any time." },
+  ...MORTALS_PRACTICES,
 ];
 
 export function adviceForCategory(category: AdviceCategory): AdviceItem[] {

@@ -883,6 +883,8 @@ The Coach should not primarily generate generic motivational advice.
 
 # 29. Reflection-to-Action Rule
 
+Quick reflection may offer optional prompts inspired by Oliver Burkeman’s *Meditations for Mortals* about choosing from the inbox, noticing work already done, decisions, returning to habits, interruptions, and simple invitations. Free writing is the default. Selecting a prompt preserves the draft and has no effect on tasks or scores. The same practices may appear in the advice catalog.
+
 Add this to the Coach system prompt:
 
 > Once a useful insight has produced a sufficiently clear next physical action, further reflection should receive diminishing priority.
