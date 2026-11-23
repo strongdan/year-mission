@@ -28,6 +28,7 @@ const CHALLENGE_Z = z.enum(["normal", "tiny"]);
 const EVIDENCE_Z = z.object({
   month: z.number().int().min(1).max(12),
   repIndex: z.number().int().nonnegative(),
+  repId: z.string().min(1).max(120),
   outcome: z.enum(["nothing-bad", "awkward-handled", "disapproval-handled", "noticed-avoidance"]),
   lesson: z.string().trim().max(240).optional().default(""),
 });
@@ -67,6 +68,7 @@ async function updatePath(change: (current: StoredPath) => StoredPath | null) {
   if (!data) return { ok: false, error: "Your confidence focus changed. Refresh Today and try again." } as const;
   revalidatePath("/");
   revalidatePath("/progress");
+  revalidatePath("/confidence");
   return { ok: true } as const;
 }
 
@@ -126,10 +128,11 @@ export async function setConfidenceChallengeLevelAction(input: unknown) {
 
 export async function recordConfidenceEvidenceAction(input: unknown) {
   const parsed = EVIDENCE_Z.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Confidence evidence is invalid." } as const;
+  if (!parsed.success) return { ok: false, error: "Confidence practice details changed or are invalid. Refresh Today and try again." } as const;
   return updatePath((current) => {
     if (current.month !== parsed.data.month || current.repIndex !== parsed.data.repIndex) return null;
     const rep = currentConfidenceRep(current);
+    if (rep.id !== parsed.data.repId) return null;
     const entry = {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),

@@ -1,21 +1,10 @@
+import { CONFIDENCE_ROADMAP } from "./confidence-roadmap";
+
 export const CONVERSATION_CONFIDENCE_TITLE = "Self-Trust & Confidence";
 export const CONVERSATION_CONFIDENCE_OBJECTIVE =
-  "Build enough self-trust to act like myself even when I feel awkward, uncertain, imperfect, or disapproved of.";
+  "Recover from mistakes without turning against myself: repair what needs repairing, return to participation, and build confidence, connection, and comfort with myself.";
 
-export const CONVERSATION_MONTHS = [
-  "Notice the approval reflex",
-  "Be seen imperfectly",
-  "Stay through awkwardness",
-  "Express preferences",
-  "Disagree without over-explaining",
-  "Set small boundaries",
-  "Attempt before outsourcing",
-  "Show unfinished work and admit uncertainty",
-  "Recover openly from mistakes",
-  "Initiate what matters",
-  "Choose by values, not reception",
-  "Sustainable self-trust",
-] as const;
+export const CONVERSATION_MONTHS = CONFIDENCE_ROADMAP.map((month) => month.title);
 
 export type ConversationPathStatus = "active" | "paused" | "stopped";
 export type MonthChoice = "repeat" | "next" | "skip" | "pause";
@@ -40,31 +29,38 @@ export type ConfidenceEvidence = {
 export const CONFIDENCE_PHASES = [
   {
     number: 1,
-    title: "Be Seen",
+    title: "Recover & Participate",
     months: [1, 2, 3] as const,
-    edge: "Let people see a slightly imperfect version of me without rushing to repair their impression.",
+    edge: "Notice the alarm after a small mistake, make any needed repair, and stay involved while discomfort settles in its own time.",
   },
   {
     number: 2,
-    title: "Take Up Space",
+    title: "Connect & Express",
     months: [4, 5, 6] as const,
-    edge: "Express preferences, disagreement, and boundaries without treating approval as permission.",
+    edge: "Respond fairly to myself, offer connection, and express preferences while respecting other people's choices.",
   },
   {
     number: 3,
-    title: "Trust Yourself",
+    title: "Trust & Be Seen",
     months: [7, 8, 9] as const,
-    edge: "Build competence by attempting, deciding, and recovering instead of hiding or immediately outsourcing uncertainty.",
+    edge: "Build ownership, make room for play, and take a meaningful visible step with permission to learn and recover.",
   },
   {
     number: 4,
-    title: "Choose Your Life",
+    title: "Live & Maintain",
     months: [10, 11, 12] as const,
-    edge: "Initiate what matters and make more choices from values than from anticipated reactions.",
+    edge: "Carry useful skills into ordinary life, return after setbacks, and keep only the practices that help.",
   },
 ] as const;
 
 export const CONFIDENCE_REPS = [
+  {
+    id: "recover-and-rejoin",
+    phase: 1,
+    category: "social",
+    prompt: "After a small mistake that happens naturally, name what happened, make any needed repair, and rejoin the moment. You can still feel embarrassed.",
+    tiny: "Notice the shame response and offer yourself one fair sentence. No need to force laughter or feel better on a deadline.",
+  },
   {
     id: "genuine-thought",
     phase: 1,
@@ -94,6 +90,34 @@ export const CONFIDENCE_REPS = [
     tiny: "Notice one moment when you are tempted to fake certainty.",
   },
   {
+    id: "listen-and-repair",
+    phase: 1,
+    category: "social",
+    prompt: "Let someone finish their thought and respond to its last point. If you interrupt, say I jumped in—please finish, then give the floor back.",
+    tiny: "Give one conversational turn a little more room.",
+  },
+  {
+    id: "genuine-follow-up",
+    phase: 1,
+    category: "connection",
+    prompt: "Ask one follow-up that interests you, listen to the answer, and share something related from your own experience.",
+    tiny: "Ask about one thing a familiar person previously mentioned.",
+  },
+  {
+    id: "fair-response",
+    phase: 2,
+    category: "competence",
+    prompt: "After one awkward moment, identify any useful correction and return to an activity. You can acknowledge the memory without reopening the whole review.",
+    tiny: "Say: That was uncomfortable. I can take the next useful step.",
+  },
+  {
+    id: "gentle-humor",
+    phase: 2,
+    category: "social",
+    prompt: "For a harmless stumble, allow a neutral Oops or warm humor if it feels natural. Repair any harm first; a joke is never required.",
+    tiny: "Let a small imperfection receive a neutral response instead of a character judgment.",
+  },
+  {
     id: "state-preference",
     phase: 2,
     category: "opinion",
@@ -118,8 +142,8 @@ export const CONFIDENCE_REPS = [
     id: "tolerate-annoyance",
     phase: 2,
     category: "boundaries",
-    prompt: "If someone seems mildly annoyed, wait before apologizing, explaining, or trying to change their reaction.",
-    tiny: "Wait 30 seconds before trying to repair someone's possible annoyance.",
+    prompt: "If someone seems mildly annoyed, separate what happened from what you are guessing. Address a real problem; an uncertain reaction can remain uncertain.",
+    tiny: "Ask whether a repair is actually needed before reacting to possible annoyance.",
   },
   {
     id: "attempt-before-ai",
@@ -150,6 +174,20 @@ export const CONFIDENCE_REPS = [
     tiny: "Make one trivial choice without checking whether someone else agrees.",
   },
   {
+    id: "try-something-playful",
+    phase: 3,
+    category: "connection",
+    prompt: "Take one small step into music, dancing, a class, or another shared activity because the experience interests you.",
+    tiny: "Choose one activity you would enjoy exploring, or attend as an observer.",
+  },
+  {
+    id: "meaningful-visible-step",
+    phase: 3,
+    category: "visibility",
+    prompt: "Take one workable step toward a performance, presentation, gathering, or other visible activity that matters to you.",
+    tiny: "Share a short practice with one trusted person, if that fits your chosen goal.",
+  },
+  {
     id: "initiate-plan",
     phase: 4,
     category: "connection",
@@ -177,6 +215,27 @@ export const CONFIDENCE_REPS = [
     prompt: "State one boundary or preference that protects time, energy, relationships, or priorities that matter.",
     tiny: "Name the boundary to yourself before deciding whether to say it aloud.",
   },
+  {
+    id: "another-setting",
+    phase: 4,
+    category: "social",
+    prompt: "Try a familiar small participation step with a different person or in another setting. Reuse the recovery guide if you stumble.",
+    tiny: "Greet someone in a setting where you usually stay quiet.",
+  },
+  {
+    id: "return-with-one-step",
+    phase: 4,
+    category: "connection",
+    prompt: "After noticing withdrawal, reconnect with one person or activity through a manageable step. There is no missed-practice debt.",
+    tiny: "Choose one small return step from where you are today.",
+  },
+  {
+    id: "keep-what-helps",
+    phase: 4,
+    category: "competence",
+    prompt: "Keep one practice that helps everyday life and let go of tracking that no longer serves you.",
+    tiny: "Name one useful practice worth keeping, with no new system to build.",
+  },
 ] as const satisfies readonly {
   id: string;
   phase: number;
@@ -184,6 +243,23 @@ export const CONFIDENCE_REPS = [
   prompt: string;
   tiny: string;
 }[];
+
+// Stable IDs preserve past evidence; month-specific choices keep today's rep aligned
+// with the roadmap. Recovery remains available throughout the year.
+export const CONFIDENCE_MONTH_REPS = {
+  1: ["recover-and-rejoin", "stay-one-minute", "admit-dont-know"],
+  2: ["genuine-thought", "allow-pause", "recover-and-rejoin"],
+  3: ["listen-and-repair", "genuine-follow-up", "genuine-thought", "recover-and-rejoin"],
+  4: ["fair-response", "gentle-humor", "recover-and-rejoin"],
+  5: ["initiate-plan", "genuine-follow-up", "genuine-thought", "recover-and-rejoin"],
+  6: ["state-preference", "mild-disagreement", "clean-no", "tolerate-annoyance", "recover-and-rejoin"],
+  7: ["attempt-before-ai", "decide-without-polling", "admit-mistake", "recover-and-rejoin"],
+  8: ["try-something-playful", "show-unfinished", "genuine-thought", "recover-and-rejoin"],
+  9: ["meaningful-visible-step", "visible-imperfection", "admit-mistake", "recover-and-rejoin"],
+  10: ["another-setting", "allow-pause", "recover-and-rejoin"],
+  11: ["return-with-one-step", "fair-response", "recover-and-rejoin"],
+  12: ["values-over-reception", "meaningful-boundary", "keep-what-helps", "recover-and-rejoin"],
+} as const satisfies Record<number, readonly (typeof CONFIDENCE_REPS)[number]["id"][]>;
 
 export const SPEAKING_WORKOUT = [
   "Describe an actual event",
@@ -208,9 +284,9 @@ export const CONVERSATION_LOOP = [
 ] as const;
 
 export const RECOVERY_LANGUAGE = [
-  "A pause does not mean the conversation failed.",
-  "I can return to something they already said.",
-  "I can end naturally when I am actually finished.",
+  "I can make a mistake and stay on my own side.",
+  "I can repair what needs repairing and return while embarrassment is still present.",
+  "A neutral Oops is enough. Laughter is optional, and recovery has no deadline.",
 ] as const;
 
 export function getConversationMonth(month: number) {
@@ -219,7 +295,7 @@ export function getConversationMonth(month: number) {
 }
 
 export function confidencePhaseForMonth(month: number) {
-  const normalized = Math.min(12, Math.max(1, Math.trunc(month)));
+  const normalized = Number.isFinite(month) ? Math.min(12, Math.max(1, Math.trunc(month))) : 1;
   const phaseIndex = Math.min(CONFIDENCE_PHASES.length - 1, Math.floor((normalized - 1) / 3));
   return CONFIDENCE_PHASES[phaseIndex];
 }
@@ -229,10 +305,11 @@ export function currentConfidenceRep(input: {
   repIndex?: number;
   challengeLevel?: ConfidenceChallengeLevel;
 }) {
-  const phase = confidencePhaseForMonth(input.month);
-  const reps = CONFIDENCE_REPS.filter((rep) => rep.phase === phase.number);
-  const index = Math.max(0, Math.trunc(input.repIndex ?? 0)) % reps.length;
-  const rep = reps[index];
+  const month = (Number.isFinite(input.month) ? Math.min(12, Math.max(1, Math.trunc(input.month))) : 1) as keyof typeof CONFIDENCE_MONTH_REPS;
+  const repIds = CONFIDENCE_MONTH_REPS[month];
+  const rawIndex = input.repIndex ?? 0;
+  const index = (Number.isFinite(rawIndex) ? Math.max(0, Math.trunc(rawIndex)) : 0) % repIds.length;
+  const rep = CONFIDENCE_REPS.find((candidate) => candidate.id === repIds[index])!;
   const challengeLevel = input.challengeLevel ?? "normal";
   return {
     ...rep,
@@ -269,18 +346,20 @@ export function applyMonthChoice(month: number, choice: MonthChoice): { month: n
 }
 
 export function conversationFloor(weekCapacity: "normal" | "hard-week" | "recovery") {
-  if (weekCapacity === "normal") return "One small real-world rep is enough. The point is willingness, not performance.";
-  return "One tiny rep or simply noticing the approval reflex is enough. There is no catch-up debt.";
+  if (weekCapacity === "normal") return "One small real-world step is enough. Returning counts even while embarrassment remains.";
+  return "One tiny approach or one fair response to yourself is enough. There is no catch-up debt or recovery deadline.";
 }
 
 export function mondayConversationPlan(month: number) {
   const current = getConversationMonth(month) ?? getConversationMonth(1)!;
   const phase = confidencePhaseForMonth(current.number);
+  const roadmap = CONFIDENCE_ROADMAP[current.number - 1];
   return {
     month: current,
     phase,
-    skill: phase.edge,
-    practice: "Choose about three small reps this week. A rep counts when you act with discomfort present; it does not need to feel confident.",
+    skill: roadmap.skill,
+    practice: "On Monday, choose two small real-world actions and one skill. Make room for recovery and ordinary enjoyment; missed practice creates no debt.",
+    actions: roadmap.weeklyActions,
   };
 }
 

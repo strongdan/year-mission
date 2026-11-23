@@ -29,6 +29,7 @@ import {
   insertIdea,
   updateIdea,
   insertTaskEvent,
+  getProfile,
 } from "@/repositories/supabase-repository";
 import { coachService } from "@/services/coach/coach-service";
 import { metricsService } from "@/services/metrics-service";
@@ -432,9 +433,10 @@ export async function coachAction(message: string, conversationId: string | null
   const contextTimeZone = safeTimeZone(timeZoneInput);
   const contextWeekStart = mondayOfDateOnly(contextDate);
 
-  const [domains, plan] = await Promise.all([
+  const [domains, plan, profile] = await Promise.all([
     listDomains(user.id),
     getActivePlan(user.id),
+    getProfile(user.id),
   ]);
 
   const todayTasks = await listTasks(user.id, { status: "today" });
@@ -492,6 +494,7 @@ export async function coachAction(message: string, conversationId: string | null
     promises,
     friction,
     recentConversation: history,
+    profilePreferences: profile?.preferences,
   });
 
   const reply = await coachService.chat({ message, context, history });

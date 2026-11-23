@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { getConversationConfidenceAction } from "@/app/conversation-confidence-actions";
 import { Card, CardHeader } from "@/components/ui/card";
+import { ConfidencePlanLinks } from "@/components/confidence/confidence-plan-links";
 
 type View = NonNullable<Awaited<ReturnType<typeof getConversationConfidenceAction>>["data"]>;
 
@@ -14,11 +15,20 @@ export function ConfidenceProgressCard() {
     let active = true;
     void getConversationConfidenceAction().then((result) => {
       if (active && result.ok && result.data.path.active) setView(result.data);
+    }).catch(() => {
+      if (active) setView(null);
     });
     return () => { active = false; };
   }, []);
 
-  if (!view) return null;
+  if (!view) return (
+    <div className="px-4 pb-4">
+      <Card>
+        <CardHeader title="Self-Trust & Confidence" subtitle="Read the roadmap or use a brief mistake-recovery guide." />
+        <ConfidencePlanLinks />
+      </Card>
+    </div>
+  );
 
   const summary = view.summary;
   const phase = view.monday.phase;
@@ -41,6 +51,7 @@ export function ConfidenceProgressCard() {
         <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
           These are observations, not a confidence score. The aim is accumulated evidence that you can act and recover.
         </p>
+        <div className="mt-3"><ConfidencePlanLinks /></div>
       </Card>
     </div>
   );

@@ -9,6 +9,7 @@ import type {
   DailyCheckin,
   FrictionEvent,
 } from "@/types/models";
+import { buildConfidenceCoachContext, type ConfidenceCoachContext } from "./confidence-context";
 
 export interface CoachContextPacket {
   plan: { title: string; start: string; end: string } | null;
@@ -35,6 +36,7 @@ export interface CoachContextPacket {
   promises: Promise_[];
   friction: FrictionEvent[];
   conversations: { role: string; content: string }[];
+  confidenceFocus?: ConfidenceCoachContext;
 }
 
 export interface ContextBuilderInputs {
@@ -60,6 +62,7 @@ export interface ContextBuilderInputs {
   promises: Promise_[];
   friction: FrictionEvent[];
   recentConversation: { role: string; content: string }[];
+  profilePreferences?: unknown;
 }
 
 export function buildCoachContext(input: ContextBuilderInputs): CoachContextPacket {
@@ -92,6 +95,7 @@ export function buildCoachContext(input: ContextBuilderInputs): CoachContextPack
     promises: input.promises,
     friction: input.friction,
     conversations: input.recentConversation,
+    confidenceFocus: buildConfidenceCoachContext(input.profilePreferences),
   };
 }
 

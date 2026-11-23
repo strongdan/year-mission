@@ -576,3 +576,15 @@ Prefer:
 over:
 
 > sophisticated architecture for imagined futures
+
+---
+
+# D035 — The full confidence roadmap centers recovery from mistakes
+
+**Status:** Accepted — explicitly requested 2026-11-22.
+
+Extend D029 with the full twelve-month plan and make recovery from fear and shame after perceived mistakes the central practice from the first month. Recovery means noticing the response, describing facts, repairing proportionately, and returning to participation. Humor is optional and affectionate; neither emotional recovery speed nor laughter is a success requirement.
+
+Keep Today compact and expose the complete plan through a secondary `/confidence` page linked from Today and Progress. Reuse existing profile-owned focus state and manual month progression. Preserve custom objectives, current month/status, and historical evidence. Select a practice relevant to the current month. Do not add a primary tab, scored domain, compulsory journal, calendar deadlines, automatic reminders, or a new database table.
+
+Retain the full mix of supported and promising methods with concise evidence notes and sources. Hypnosis is an optional four-to-six-week trial alongside real-world practice, with a review based on everyday usefulness. No treatment promise, recovered-memory approach, automatic audio, or forced paid program. Coach context includes the current optional focus and respects paused/stopped state; ephemeral recovery/reset text is excluded.

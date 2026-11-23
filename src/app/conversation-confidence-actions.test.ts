@@ -30,17 +30,29 @@ vi.mock("@/integrations/supabase/server", () => ({
   }),
 }));
 
-const first = { month: 1, repIndex: 0, outcome: "nothing-bad" };
+const first = { month: 1, repIndex: 0, repId: "recover-and-rejoin", outcome: "nothing-bad" };
 beforeEach(() => { db.preferences = { anotherSetting: "keep" }; });
 
 it("accepts only one overlapping submission and rejects a later replay of the same rep", async () => {
   const results = await Promise.all([recordConfidenceEvidenceAction(first), recordConfidenceEvidenceAction(first)]);
   expect(results.filter((result) => result.ok)).toHaveLength(1);
   expect((await recordConfidenceEvidenceAction(first)).ok).toBe(false);
-  expect((await recordConfidenceEvidenceAction({ ...first, repIndex: 1 })).ok).toBe(true);
+  expect((await recordConfidenceEvidenceAction({ ...first, repIndex: 1, repId: "stay-one-minute" })).ok).toBe(true);
   expect(db.preferences.anotherSetting).toBe("keep");
   expect(db.preferences.conversationConfidence).toMatchObject({
     repIndex: 2,
     evidence: [expect.objectContaining({ outcome: "nothing-bad" }), expect.objectContaining({ outcome: "nothing-bad" })],
   });
+});
+
+it("rejects an old tab's practice ID even when its month and index still match", async () => {
+  const result = await recordConfidenceEvidenceAction({ ...first, repId: "genuine-thought" });
+  expect(result).toMatchObject({ ok: false, error: expect.stringContaining("Refresh Today") });
+  expect(db.preferences).toEqual({ anotherSetting: "keep" });
+});
+
+it("requires the expected practice ID from pre-release submissions", async () => {
+  const result = await recordConfidenceEvidenceAction({ month: 1, repIndex: 0, outcome: "nothing-bad" });
+  expect(result).toMatchObject({ ok: false, error: expect.stringContaining("Refresh Today") });
+  expect(db.preferences).toEqual({ anotherSetting: "keep" });
 });

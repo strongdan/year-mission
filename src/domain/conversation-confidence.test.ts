@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CONFIDENCE_PHASES,
+  CONFIDENCE_MONTH_REPS,
   CONVERSATION_MONTHS,
   applyMonthChoice,
   confidencePhaseForMonth,
@@ -14,20 +15,27 @@ import {
   type ConfidenceEvidence,
 } from "./conversation-confidence";
 import { resourcesForMonth, SUPPORT_RESOURCES } from "./support-resources";
+import { CONFIDENCE_METHODS, CONFIDENCE_ROADMAP, CONFIDENCE_SOURCES } from "./confidence-roadmap";
 
 describe("conversation confidence", () => {
   it("defines twelve relative confidence themes", () => {
     expect(CONVERSATION_MONTHS).toHaveLength(12);
-    expect(mondayConversationPlan(1).month.theme).toBe("Notice the approval reflex");
-    expect(mondayConversationPlan(12).month.theme).toBe("Sustainable self-trust");
+    expect(CONFIDENCE_ROADMAP.map((month) => month.month)).toEqual(Array.from({ length: 12 }, (_, index) => index + 1));
+    for (const month of CONFIDENCE_ROADMAP) {
+      const plan = mondayConversationPlan(month.month);
+      expect(plan.month.theme).toBe(month.title);
+      expect(plan.skill).toBe(month.skill);
+      expect(plan.actions).toEqual(month.weeklyActions);
+      expect(plan.actions).toHaveLength(2);
+    }
   });
 
   it("groups the year into four confidence phases", () => {
     expect(CONFIDENCE_PHASES).toHaveLength(4);
-    expect(confidencePhaseForMonth(1).title).toBe("Be Seen");
-    expect(confidencePhaseForMonth(4).title).toBe("Take Up Space");
-    expect(confidencePhaseForMonth(7).title).toBe("Trust Yourself");
-    expect(confidencePhaseForMonth(10).title).toBe("Choose Your Life");
+    expect(CONFIDENCE_PHASES.flatMap((phase) => [...phase.months])).toEqual(CONFIDENCE_ROADMAP.map((month) => month.month));
+    for (const phase of CONFIDENCE_PHASES) {
+      for (const month of phase.months) expect(confidencePhaseForMonth(month)).toBe(phase);
+    }
   });
 
   it("keeps pause and repeat user-controlled", () => {
@@ -48,6 +56,35 @@ describe("conversation confidence", () => {
     expect(normal.id).toBe("attempt-before-ai");
     expect(tiny.id).toBe(normal.id);
     expect(tiny.label).toContain("Write down");
+  });
+
+  it("offers month-specific practice with recovery available from the start and throughout the year", () => {
+    expect(currentConfidenceRep({ month: 1 }).id).toBe("recover-and-rejoin");
+    expect(currentConfidenceRep({ month: 3 }).id).toBe("listen-and-repair");
+    expect(currentConfidenceRep({ month: 5 }).id).toBe("initiate-plan");
+    expect(currentConfidenceRep({ month: 9 }).id).toBe("meaningful-visible-step");
+    expect(currentConfidenceRep({ month: 11 }).id).toBe("return-with-one-step");
+    for (const [month, ids] of Object.entries(CONFIDENCE_MONTH_REPS)) {
+      expect(ids).toContain("recover-and-rejoin");
+      for (let index = 0; index < ids.length; index += 1) {
+        const normal = currentConfidenceRep({ month: Number(month), repIndex: index });
+        const tiny = currentConfidenceRep({ month: Number(month), repIndex: index, challengeLevel: "tiny" });
+        expect(normal.id).toBe(ids[index]);
+        expect(tiny.id).toBe(normal.id);
+        expect(tiny.label).toBe(normal.tiny);
+      }
+      expect(currentConfidenceRep({ month: Number(month), repIndex: ids.length }).id).toBe(ids[0]);
+    }
+  });
+
+  it("keeps clinical evidence links resolvable and uniquely identified", () => {
+    const ids = new Set(CONFIDENCE_SOURCES.map((source) => source.id));
+    expect(ids.size).toBe(CONFIDENCE_SOURCES.length);
+    for (const method of CONFIDENCE_METHODS) {
+      expect(method.sourceIds.length).toBeGreaterThan(0);
+      for (const id of method.sourceIds) expect(ids.has(id)).toBe(true);
+    }
+    for (const source of CONFIDENCE_SOURCES) expect(new URL(source.url).protocol).toBe("https:");
   });
 
   it("summarizes evidence without creating a score", () => {
