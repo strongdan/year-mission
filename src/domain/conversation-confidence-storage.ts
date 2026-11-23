@@ -7,8 +7,10 @@ import {
 } from "./conversation-confidence";
 
 const LEGACY_TITLE = "Social Ease & Expression";
-const LEGACY_OBJECTIVE =
-  "Become more comfortable around people, express thoughts clearly, sustain conversations more naturally, and build closer relationships without feeling like I have to perform.";
+const LEGACY_OBJECTIVES: readonly string[] = [
+  "Become more comfortable around people, express thoughts clearly, sustain conversations more naturally, and build closer relationships without feeling like I have to perform.",
+  "Build enough self-trust to act like myself even when I feel awkward, uncertain, imperfect, or disapproved of.",
+];
 
 const REFLECTION_SCHEMA = z.object({
   month: z.number().int().min(1).max(12),
@@ -67,7 +69,7 @@ export function parseStoredConversationPath(preferences: unknown): StoredConvers
     return {
       ...parsed.data,
       title: parsed.data.title === LEGACY_TITLE ? CONVERSATION_CONFIDENCE_TITLE : parsed.data.title,
-      objective: parsed.data.objective === LEGACY_OBJECTIVE ? CONVERSATION_CONFIDENCE_OBJECTIVE : parsed.data.objective,
+      objective: LEGACY_OBJECTIVES.includes(parsed.data.objective) ? CONVERSATION_CONFIDENCE_OBJECTIVE : parsed.data.objective,
     };
   }
   return {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseStoredConversationPath } from "./conversation-confidence-storage";
+import { CONVERSATION_CONFIDENCE_OBJECTIVE } from "./conversation-confidence";
 
 describe("conversation confidence storage", () => {
   it("preserves saved reflections while adding confidence defaults", () => {
@@ -29,7 +30,7 @@ describe("conversation confidence storage", () => {
     } });
 
     expect(path.title).toBe("Self-Trust & Confidence");
-    expect(path.objective).toContain("Build enough self-trust");
+    expect(path.objective).toBe(CONVERSATION_CONFIDENCE_OBJECTIVE);
     expect(path.month).toBe(4);
   });
 
@@ -55,5 +56,48 @@ describe("conversation confidence storage", () => {
     expect(path.repIndex).toBe(3);
     expect(path.challengeLevel).toBe("tiny");
     expect(path.evidence[0]?.outcome).toBe("awkward-handled");
+    expect(path.objective).toBe(CONVERSATION_CONFIDENCE_OBJECTIVE);
+    expect(path.month).toBe(2);
+  });
+
+  it("preserves a custom objective, paused month, reflections, and historical rep IDs", () => {
+    const stored = {
+      active: true,
+      title: "My own focus",
+      objective: "Have more ordinary conversations with my neighbors",
+      month: 9,
+      status: "paused",
+      repIndex: 27,
+      challengeLevel: "tiny",
+      reflections: { "9": { month: 9, note: "One useful lesson" } },
+      evidence: [{
+        id: "old-evidence",
+        createdAt: "2026-10-14T20:00:00.000Z",
+        repId: "admit-mistake",
+        category: "competence",
+        outcome: "awkward-handled",
+        lesson: "I corrected the fact and continued.",
+      }],
+    };
+    expect(parseStoredConversationPath({ conversationConfidence: stored })).toEqual(stored);
+  });
+
+  it("normalizes only the previous default without reactivating a stopped focus", () => {
+    const path = parseStoredConversationPath({ conversationConfidence: {
+      active: false,
+      title: "A title I chose",
+      objective: "Build enough self-trust to act like myself even when I feel awkward, uncertain, imperfect, or disapproved of.",
+      month: 12,
+      status: "stopped",
+      repIndex: 42,
+    } });
+    expect(path).toMatchObject({
+      active: false,
+      title: "A title I chose",
+      objective: CONVERSATION_CONFIDENCE_OBJECTIVE,
+      month: 12,
+      status: "stopped",
+      repIndex: 42,
+    });
   });
 });

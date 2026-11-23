@@ -22,6 +22,7 @@ import {
 } from "@/domain/conversation-confidence";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
+import { ConfidencePlanLinks } from "@/components/confidence/confidence-plan-links";
 
 type View = NonNullable<Awaited<ReturnType<typeof getConversationConfidenceAction>>["data"]>;
 
@@ -34,6 +35,7 @@ const OUTCOMES: readonly { value: ConfidenceEvidenceOutcome; label: string }[] =
 
 export function ConversationConfidenceCard() {
   const [view, setView] = useState<View | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [setup, setSetup] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [workoutStep, setWorkoutStep] = useState<number | null>(null);
@@ -58,7 +60,11 @@ export function ConversationConfidenceCard() {
   useEffect(() => {
     let active = true;
     void getConversationConfidenceAction().then((result) => {
-      if (active && result.ok) setView(result.data);
+      if (!active) return;
+      if (result.ok) setView(result.data);
+      else setLoadFailed(true);
+    }).catch(() => {
+      if (active) setLoadFailed(true);
     });
     return () => { active = false; };
   }, []);
@@ -77,7 +83,20 @@ export function ConversationConfidenceCard() {
     return () => window.clearInterval(timer);
   }, [workoutStep]);
 
-  if (dismissed || !view) return null;
+  if (dismissed) return null;
+  if (!view) return (
+    <div id="confidence-focus" className="scroll-mt-20 px-4 pb-4">
+      <Card>
+        <CardHeader
+          title="Self-Trust & Confidence"
+          subtitle={loadFailed
+            ? "Your saved focus is unavailable right now. The recovery guide and full plan are still ready."
+            : "Loading your saved focus. You can already explore the recovery guide and full plan."}
+        />
+        <ConfidencePlanLinks />
+      </Card>
+    </div>
+  );
 
   async function activate() {
     setError(null);
@@ -133,7 +152,7 @@ export function ConversationConfidenceCard() {
     if (!view) return;
     setError(null);
     setBusy(true);
-    const result = await recordConfidenceEvidenceAction({ outcome, lesson, month: view.path.month, repIndex: view.path.repIndex });
+    const result = await recordConfidenceEvidenceAction({ outcome, lesson, month: view.path.month, repIndex: view.path.repIndex, repId: view.rep.id });
     if (result.ok) {
       await refresh();
       setCheckInOpen(false);
@@ -174,13 +193,14 @@ export function ConversationConfidenceCard() {
 
   if (!view.path.active) {
     return (
-      <div className="px-4 pb-4">
+      <div id="confidence-focus" className="scroll-mt-20 px-4 pb-4">
         <Card>
           <CardHeader
             title="Optional annual focus"
-            subtitle="Build self-trust through small real-world confidence reps."
+            subtitle="Practice recovering from mistakes and being more at ease with yourself."
             right={<MessageCircle className="h-4 w-4 text-violet-400" />}
           />
+          <div className="mb-3"><ConfidencePlanLinks /></div>
           {!setup ? (
             <Button size="sm" variant="secondary" onClick={() => setSetup(true)}>
               Choose Self-Trust & Confidence
@@ -205,13 +225,14 @@ export function ConversationConfidenceCard() {
   const summary = view.summary;
 
   return (
-    <div className="px-4 pb-4">
+    <div id="confidence-focus" className="scroll-mt-20 px-4 pb-4">
       <Card className="border-violet-950/70 bg-violet-950/10">
         <CardHeader
           title="Confidence practice"
           subtitle={phase.title + " · Month " + current.number + " of 12"}
           right={<Sparkles className="h-4 w-4 text-violet-400" />}
         />
+        <div className="mb-3"><ConfidencePlanLinks /></div>
 
         {view.path.status === "paused" ? (
           <>
@@ -222,7 +243,8 @@ export function ConversationConfidenceCard() {
           <>
             <div className="rounded-xl border border-violet-900/50 bg-zinc-950/25 p-3">
               <p className="text-[11px] font-medium uppercase tracking-wide text-violet-300">This week&apos;s edge</p>
-              <p className="mt-1 text-sm leading-relaxed text-zinc-200">{phase.edge}</p>
+              <p className="mt-1 text-sm leading-relaxed text-zinc-200">{view.monday.skill}</p>
+              <p className="mt-2 text-xs text-zinc-400">Month {current.number}: {current.theme}</p>
             </div>
 
             <div className="mt-3 rounded-xl border border-zinc-800 bg-zinc-950/25 p-3">
@@ -231,7 +253,7 @@ export function ConversationConfidenceCard() {
                 {rep.challengeLevel === "tiny" && <span className="text-[11px] text-emerald-300">Tiny version</span>}
               </div>
               <p className="mt-1 text-sm leading-relaxed text-zinc-200">{rep.label}</p>
-              <p className="mt-2 text-[11px] text-zinc-500">The rep counts because you acted with discomfort present, not because you felt confident.</p>
+              <p className="mt-2 text-xs text-zinc-400">Returning while still uncomfortable counts. There is no deadline to feel better or laugh.</p>
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => setCheckInOpen((value) => !value)} disabled={busy}>I did it</Button>

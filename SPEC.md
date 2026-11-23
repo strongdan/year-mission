@@ -1361,9 +1361,9 @@ E2E:
 
 # 47. Optional Self-Trust & Confidence Focus
 
-An Annual Focus may optionally use the **Self-Trust & Confidence** 12-month pathway. Its default objective is to build enough self-trust to act like yourself even when you feel awkward, uncertain, imperfect, or disapproved of. Social ease remains part of the pathway, but the focus also includes expressing preferences, tolerating disagreement, boundaries, competence, recovery from mistakes, and choosing from values rather than anticipated approval.
+An Annual Focus may optionally use the **Self-Trust & Confidence** 12-month pathway. Its central objective is to recover from perceived mistakes without turning against yourself: notice fear or shame, describe the actual event, make a proportionate repair if needed, and return to participation. Warm humor is optional; neutral acceptance and returning while still uncomfortable count. Never require quick emotional recovery, laughter, or a perfectly calm response. Social ease, listening, friendship, preferences, boundaries, competence, and values remain part of the full plan.
 
-The year is grouped into four approximate 13-week phases: **Be Seen**, **Take Up Space**, **Trust Yourself**, and **Choose Your Life**. The twelve month themes are relative prompts, not calendar deadlines. The user may rename the focus, pause it, repeat a month, skip a month, move forward explicitly, or stop it. Elapsed time never advances it automatically.
+The year is grouped into four three-month phases covering recovery and participation, connection and expression, competence and visibility, and sustainable practice. The twelve themes are: recovery foundations; approaching imperfection; listening and conversational repair; self-criticism and rumination; friendship; assertiveness; competence and agency; expression and play; a meaningful visible step; different contexts; returning after setbacks; and maintenance. Recovery practice begins in month one and remains available throughout. Themes are relative prompts, not calendar deadlines. The user may rename the focus, pause it, repeat a month, skip a month, move forward explicitly, or stop it. Elapsed time never advances it automatically. Existing month, status, custom goals, and evidence history must survive the updated content.
 
 Today should present one **weekly edge** and one small **confidence rep**. The user may complete it, request another, or reduce it to a tiny version. A rep counts because the user acted with discomfort present; it does not require feeling confident. A difficult day may be complete enough with a tiny rep or simply noticing the approval reflex. Skipping creates no catch-up debt and has zero Momentum, XP, or Reliability penalty.
 
@@ -1376,6 +1376,16 @@ Provide an **Opinion Reset** for moments when anticipated judgment starts contro
 Conversation tools remain available inside the focus: one natural participation opportunity, a five-minute speaking workout without microphone access or recording, and optional external guided support. Listening is never progress by itself, never a streak, and never required before real-world practice. Year Mission stores source links, not copied audio or microphone data.
 
 The focus has no speech score, confidence grade, eye-contact requirement, talk-time target, behavioral debt, punitive streak, or health-based psychological inference. Recovery/energy context may reduce challenge size, but must never determine that the user is incapable of social action.
+
+## Full roadmap and mistake recovery (owner-requested 2026-11-22)
+
+Expose the entire plan at the secondary `/confidence` route, linked from Today and Progress without adding a primary tab. The plan must remain readable before activation and while paused or stopped. Today stays compact: one relevant practice and links to the recovery guide and complete plan. Select practices by the current month rather than offering the same unrelated phase-wide rotation for three months.
+
+The full plan includes all twelve months, goals and examples, the four-step recovery guide, optional affectionate humor, a first-week start, a five-minute Monday review choosing two small actions and one listening/practice skill, a demanding-week floor, monthly reflection prompts, adjustment rules, and a return-after-setbacks plan. Do not automatically create tasks or reminders. Reflection may be done mentally; no new compulsory journal or sensitive recovery-note storage is required.
+
+Include concise evidence notes and source links: social-anxiety-specific CBT/exposure as the best-supported clinical foundation; ACT, self-compassion, specific social skills, and mindfulness with appropriately qualified evidence; and optional hypnosis as a limited trial reviewed after four to six weeks. A brief home-practice schedule is an example, not a validated dose. Hypnosis should support real-world participation from week one, never become a prerequisite, claim a cure, or use recovered-memory techniques. Suggest a qualified clinician for assessment/treatment when appropriate. Do not create or play audio automatically or activate a paid program.
+
+The Coach may use the current optional focus, status, month's practices, and recovery guidance as context. It must respect a paused or stopped focus, keep suggestions small, and avoid shame, repeated reassurance seeking, forced humor, recovery speed targets, or turning self-worth into performance. The private, ephemeral reset fields must not be included in AI context.
 
 # 48. Life Balance + Apple Health
 
